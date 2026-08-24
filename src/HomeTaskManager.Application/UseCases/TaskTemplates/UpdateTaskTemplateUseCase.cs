@@ -24,6 +24,7 @@ public interface IUpdateTaskTemplateUseCase
 public sealed class UpdateTaskTemplateUseCase(
     ITaskTemplateRepository taskTemplateRepository,
     IUserRepository userRepository,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork) : IUpdateTaskTemplateUseCase
 {
     public async Task<TaskTemplateDto> ExecuteAsync(UpdateTaskTemplateCommand command, CancellationToken cancellationToken = default)
@@ -40,12 +41,18 @@ public sealed class UpdateTaskTemplateUseCase(
             throw new ForbiddenOperationException("Only the author or an administrator can modify this task.");
         }
 
+        var oldValue = $"Title={taskTemplate.Title}; Priority={taskTemplate.Priority}";
+
         taskTemplate.Rename(command.Title);
         taskTemplate.ChangeDescription(command.Description);
         taskTemplate.ChangeDifficulty(command.ManualDifficultyScore);
         taskTemplate.ChangePriority(command.Priority);
         taskTemplate.ChangeFrequency(command.FrequencyType);
         taskTemplate.ChangeEstimatedDuration(command.EstimatedDurationMinutes);
+
+        await auditLogger.LogAsync(
+            AuditEntityTypes.TaskTemplate, taskTemplate.Id, AuditActions.Updated, requestingUser.Id,
+            oldValue, $"Title={taskTemplate.Title}; Priority={taskTemplate.Priority}", cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

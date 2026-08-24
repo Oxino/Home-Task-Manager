@@ -33,6 +33,9 @@ public static class DependencyInjection
         services.AddScoped<IWeekRepository, WeekRepository>();
         services.AddScoped<ITaskInstanceRepository, TaskInstanceRepository>();
         services.AddScoped<IAssignmentRunRepository, AssignmentRunRepository>();
+        services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IAuditLogger, AuditLogger>();
 
         return services;
     }

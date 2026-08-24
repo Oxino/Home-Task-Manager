@@ -12,7 +12,7 @@ public interface ICreateUserUseCase
     Task<UserProfileDto> ExecuteAsync(CreateUserCommand command, CancellationToken cancellationToken = default);
 }
 
-public sealed class CreateUserUseCase(IUserRepository userRepository, IUnitOfWork unitOfWork) : ICreateUserUseCase
+public sealed class CreateUserUseCase(IUserRepository userRepository, IAuditLogger auditLogger, IUnitOfWork unitOfWork) : ICreateUserUseCase
 {
     public async Task<UserProfileDto> ExecuteAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
     {
@@ -24,6 +24,12 @@ public sealed class CreateUserUseCase(IUserRepository userRepository, IUnitOfWor
 
         var user = new User(command.DisplayName, command.IsAdmin, command.AvailabilityPercentage);
         await userRepository.AddAsync(user, cancellationToken);
+
+        // BR-017: no acting admin exists yet for the very first profile, so the profile self-attributes its creation.
+        await auditLogger.LogAsync(
+            AuditEntityTypes.User, user.Id, AuditActions.Created, user.Id,
+            newValue: $"DisplayName={user.DisplayName}; IsAdmin={user.IsAdmin}", cancellationToken: cancellationToken);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return UserProfileMapper.ToDto(user);

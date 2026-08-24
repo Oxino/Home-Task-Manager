@@ -1,4 +1,6 @@
 using HomeTaskManager.Application.UseCases.Assignments;
+using HomeTaskManager.Application.UseCases.Audit;
+using HomeTaskManager.Application.UseCases.Settings;
 using HomeTaskManager.Application.UseCases.TaskInstances;
 using HomeTaskManager.Application.UseCases.TaskTemplates;
 using HomeTaskManager.Application.UseCases.Users;
@@ -27,7 +29,12 @@ public static class DependencyInjection
 
         // V1 default strategy per PRODUCT_VISION; RandomStrategy remains available as an alternate registration.
         services.AddScoped<IAssignmentStrategy, IntelligentV1Strategy>();
+        services.AddScoped<IAssignmentEngineSettingsProvider, AssignmentEngineSettingsProvider>();
+        services.AddScoped<IGetAssignmentEngineSettingsUseCase, GetAssignmentEngineSettingsUseCase>();
+        services.AddScoped<IUpdateAssignmentEngineSettingsUseCase, UpdateAssignmentEngineSettingsUseCase>();
         services.AddScoped<IRunAssignmentEngineUseCase, RunAssignmentEngineUseCase>();
+
+        services.AddScoped<IGetAuditLogsForEntityUseCase, GetAuditLogsForEntityUseCase>();
 
         return services;
     }

@@ -1,6 +1,7 @@
 using HomeTaskManager.Application.Abstractions;
 using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Application.Exceptions;
+using HomeTaskManager.Application.UseCases.Settings;
 using HomeTaskManager.Application.UseCases.Weeks;
 using HomeTaskManager.Domain.Engine;
 using HomeTaskManager.Domain.Entities;
@@ -27,6 +28,8 @@ public sealed class RunAssignmentEngineUseCase(
     ITaskInstanceRepository taskInstanceRepository,
     IAssignmentRunRepository assignmentRunRepository,
     IAssignmentStrategy assignmentStrategy,
+    IAssignmentEngineSettingsProvider settingsProvider,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork) : IRunAssignmentEngineUseCase
 {
     public async Task<RunAssignmentEngineResult> ExecuteAsync(
@@ -63,7 +66,7 @@ public sealed class RunAssignmentEngineUseCase(
 
         if (activeParticipants.Count > 0 && assignableInstances.Count > 0)
         {
-            var settings = AssignmentEngineSettings.Default;
+            var settings = await settingsProvider.GetAsync(cancellationToken);
 
             // BR-053: equity window, defaults to 8 weeks before the target week; the run being (re)assigned is excluded.
             var since = week.StartDate.AddDays(-7 * settings.EquityWindowWeeks);
@@ -96,6 +99,11 @@ public sealed class RunAssignmentEngineUseCase(
                 instancesById[assignment.TaskInstanceId].Assign(run.Id, assignment.AssignedUserId);
             }
         }
+
+        var assignedCount = assignableInstances.Count(instance => instance.AssignmentRunId == run.Id);
+        await auditLogger.LogAsync(
+            AuditEntityTypes.AssignmentRun, run.Id, AuditActions.Executed, requestingUser.Id,
+            newValue: $"WeekId={week.Id}; Strategy={run.StrategyName}; AssignedCount={assignedCount}", cancellationToken: cancellationToken);
 
         await assignmentRunRepository.AddAsync(run, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

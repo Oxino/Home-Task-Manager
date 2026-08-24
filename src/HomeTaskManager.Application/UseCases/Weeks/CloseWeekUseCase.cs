@@ -22,6 +22,7 @@ public sealed class CloseWeekUseCase(
     IWeekRepository weekRepository,
     IUserRepository userRepository,
     ITaskInstanceRepository taskInstanceRepository,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork) : ICloseWeekUseCase
 {
     public async Task<CloseWeekResult> ExecuteAsync(CloseWeekCommand command, CancellationToken cancellationToken = default)
@@ -83,6 +84,10 @@ public sealed class CloseWeekUseCase(
 
             await taskInstanceRepository.AddRangeAsync(carriedOverInstances, cancellationToken);
         }
+
+        await auditLogger.LogAsync(
+            AuditEntityTypes.Week, week.Id, AuditActions.Closed, requestingUser.Id,
+            newValue: $"CarriedOverCount={carriedOverInstances.Count}", cancellationToken: cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

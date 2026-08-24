@@ -15,6 +15,10 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
 
     public DbSet<AssignmentRun> AssignmentRuns => Set<AssignmentRun>();
 
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(entity =>
@@ -55,6 +59,23 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
             entity.HasKey(run => run.Id);
             entity.HasIndex(run => run.WeekId);
             entity.Property(run => run.StrategyName).HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<SystemSetting>(entity =>
+        {
+            entity.HasKey(setting => setting.Id);
+            entity.HasIndex(setting => setting.Key).IsUnique();
+            entity.Property(setting => setting.Key).HasMaxLength(200).IsRequired();
+            entity.Property(setting => setting.Value).HasMaxLength(1000).IsRequired();
+        });
+
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(entry => entry.Id);
+            entity.HasIndex(entry => new { entry.EntityType, entry.EntityId });
+            entity.HasIndex(entry => entry.PerformedAt);
+            entity.Property(entry => entry.EntityType).HasMaxLength(100).IsRequired();
+            entity.Property(entry => entry.Action).HasMaxLength(100).IsRequired();
         });
     }
 }

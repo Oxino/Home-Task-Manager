@@ -13,7 +13,7 @@ public class CloseWeekUseCaseTests
         InMemoryWeekRepository weekRepository,
         InMemoryUserRepository userRepository,
         InMemoryTaskInstanceRepository instanceRepository) =>
-        new(weekRepository, userRepository, instanceRepository, new NoOpUnitOfWork());
+        new(weekRepository, userRepository, instanceRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
     [Fact]
     public async Task Closes_the_week_and_carries_over_unfinished_instances()

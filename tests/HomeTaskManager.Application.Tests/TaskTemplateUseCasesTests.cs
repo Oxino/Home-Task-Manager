@@ -42,7 +42,7 @@ public class CreateTaskTemplateUseCaseTests
         var author = new User("Julie");
         userRepository.Seed(author);
         var taskTemplateRepository = new InMemoryTaskTemplateRepository();
-        var useCase = new CreateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpUnitOfWork());
+        var useCase = new CreateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var command = new CreateTaskTemplateCommand("Aspirateur", "Salon", 40, FrequencyType.Weekly, TaskPriority.Normal, 30, author.Id);
         var taskTemplate = await useCase.ExecuteAsync(command);
@@ -59,7 +59,7 @@ public class CreateTaskTemplateUseCaseTests
         userRepository.Seed(author);
         var taskTemplateRepository = new InMemoryTaskTemplateRepository();
         taskTemplateRepository.Seed(new TaskTemplate("Aspirateur", author.Id, 40, FrequencyType.Weekly));
-        var useCase = new CreateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpUnitOfWork());
+        var useCase = new CreateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var command = new CreateTaskTemplateCommand("Aspirateur", null, 40, FrequencyType.Weekly, TaskPriority.Normal, null, author.Id);
         var action = () => useCase.ExecuteAsync(command);
@@ -75,7 +75,7 @@ public class CreateTaskTemplateUseCaseTests
         author.SetActive(false);
         userRepository.Seed(author);
         var taskTemplateRepository = new InMemoryTaskTemplateRepository();
-        var useCase = new CreateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpUnitOfWork());
+        var useCase = new CreateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var command = new CreateTaskTemplateCommand("Aspirateur", null, 40, FrequencyType.Weekly, TaskPriority.Normal, null, author.Id);
         var action = () => useCase.ExecuteAsync(command);
@@ -95,7 +95,7 @@ public class UpdateTaskTemplateUseCaseTests
         var taskTemplate = new TaskTemplate("Aspirateur", author.Id, 40, FrequencyType.Weekly);
         var taskTemplateRepository = new InMemoryTaskTemplateRepository();
         taskTemplateRepository.Seed(taskTemplate);
-        var useCase = new UpdateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpUnitOfWork());
+        var useCase = new UpdateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var command = new UpdateTaskTemplateCommand(
             taskTemplate.Id, author.Id, "Aspirateur salon", "Description", 50, TaskPriority.Critical, FrequencyType.Weekly, 45);
@@ -116,7 +116,7 @@ public class UpdateTaskTemplateUseCaseTests
         var taskTemplate = new TaskTemplate("Aspirateur", author.Id, 40, FrequencyType.Weekly);
         var taskTemplateRepository = new InMemoryTaskTemplateRepository();
         taskTemplateRepository.Seed(taskTemplate);
-        var useCase = new UpdateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpUnitOfWork());
+        var useCase = new UpdateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var command = new UpdateTaskTemplateCommand(
             taskTemplate.Id, otherUser.Id, "Aspirateur salon", null, 40, TaskPriority.Normal, FrequencyType.Weekly, null);
@@ -136,7 +136,7 @@ public class UpdateTaskTemplateUseCaseTests
         var taskTemplate = new TaskTemplate("Aspirateur", author.Id, 40, FrequencyType.Weekly);
         var taskTemplateRepository = new InMemoryTaskTemplateRepository();
         taskTemplateRepository.Seed(taskTemplate);
-        var useCase = new UpdateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpUnitOfWork());
+        var useCase = new UpdateTaskTemplateUseCase(taskTemplateRepository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var command = new UpdateTaskTemplateCommand(
             taskTemplate.Id, admin.Id, "Aspirateur salon", null, 40, TaskPriority.Normal, FrequencyType.Weekly, null);

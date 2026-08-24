@@ -23,6 +23,7 @@ public interface ICreateTaskTemplateUseCase
 public sealed class CreateTaskTemplateUseCase(
     ITaskTemplateRepository taskTemplateRepository,
     IUserRepository userRepository,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork) : ICreateTaskTemplateUseCase
 {
     public async Task<TaskTemplateDto> ExecuteAsync(CreateTaskTemplateCommand command, CancellationToken cancellationToken = default)
@@ -51,6 +52,11 @@ public sealed class CreateTaskTemplateUseCase(
             command.EstimatedDurationMinutes);
 
         await taskTemplateRepository.AddAsync(taskTemplate, cancellationToken);
+
+        await auditLogger.LogAsync(
+            AuditEntityTypes.TaskTemplate, taskTemplate.Id, AuditActions.Created, author.Id,
+            newValue: $"Title={taskTemplate.Title}", cancellationToken: cancellationToken);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return TaskTemplateMapper.ToDto(taskTemplate);

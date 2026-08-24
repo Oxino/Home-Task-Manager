@@ -34,13 +34,25 @@ public sealed class NoOpUnitOfWork : IUnitOfWork
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
 }
 
+public sealed class NoOpAuditLogger : IAuditLogger
+{
+    public Task LogAsync(
+        string entityType,
+        Guid entityId,
+        string action,
+        Guid performedByUserId,
+        string? oldValue = null,
+        string? newValue = null,
+        CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
 public class CreateUserUseCaseTests
 {
     [Fact]
     public async Task Creates_a_profile_when_display_name_is_unique()
     {
         var repository = new InMemoryUserRepository();
-        var useCase = new CreateUserUseCase(repository, new NoOpUnitOfWork());
+        var useCase = new CreateUserUseCase(repository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var profile = await useCase.ExecuteAsync(new CreateUserCommand("Julie", false, 100));
 
@@ -53,7 +65,7 @@ public class CreateUserUseCaseTests
     {
         var repository = new InMemoryUserRepository();
         repository.Seed(new User("Julie"));
-        var useCase = new CreateUserUseCase(repository, new NoOpUnitOfWork());
+        var useCase = new CreateUserUseCase(repository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
         var action = () => useCase.ExecuteAsync(new CreateUserCommand("Julie", false, 100));
 

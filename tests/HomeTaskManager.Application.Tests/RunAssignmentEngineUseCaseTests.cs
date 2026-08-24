@@ -2,6 +2,7 @@ using FluentAssertions;
 using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Application.Exceptions;
 using HomeTaskManager.Application.UseCases.Assignments;
+using HomeTaskManager.Application.UseCases.Settings;
 using HomeTaskManager.Domain.Engine;
 using HomeTaskManager.Domain.Entities;
 using HomeTaskManager.Domain.Enums;
@@ -33,7 +34,8 @@ public class RunAssignmentEngineUseCaseTests
         IAssignmentStrategy? strategy = null,
         InMemoryTaskTemplateRepository? templateRepository = null) =>
         new(weekRepository, userRepository, templateRepository ?? new InMemoryTaskTemplateRepository(), instanceRepository,
-            new InMemoryAssignmentRunRepository(), strategy ?? new RandomStrategy(new Random(1)), new NoOpUnitOfWork());
+            new InMemoryAssignmentRunRepository(), strategy ?? new RandomStrategy(new Random(1)),
+            new AssignmentEngineSettingsProvider(new InMemorySystemSettingRepository()), new NoOpAuditLogger(), new NoOpUnitOfWork());
 
     private static async Task<(Week Week, TaskInstance Instance)> SeedGeneratedWeekAsync(
         InMemoryWeekRepository weekRepository, InMemoryTaskInstanceRepository instanceRepository)

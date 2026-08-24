@@ -18,6 +18,7 @@ public sealed class SetTaskInstanceCompletionUseCase(
     ITaskInstanceRepository taskInstanceRepository,
     IWeekRepository weekRepository,
     IUserRepository userRepository,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork) : ISetTaskInstanceCompletionUseCase
 {
     public async Task<TaskInstanceDto> ExecuteAsync(
@@ -39,7 +40,13 @@ public sealed class SetTaskInstanceCompletionUseCase(
         var week = await weekRepository.GetByIdAsync(instance.WeekId, cancellationToken)
             ?? throw new DomainValidationException("The instance's week does not exist.");
 
+        var wasCompleted = instance.IsCompleted;
         instance.SetCompletion(command.IsCompleted, week);
+
+        await auditLogger.LogAsync(
+            AuditEntityTypes.TaskInstance, instance.Id, AuditActions.CompletionChanged, requestingUser.Id,
+            $"IsCompleted={wasCompleted}", $"IsCompleted={instance.IsCompleted}", cancellationToken);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return WeekMapper.ToDto(instance);

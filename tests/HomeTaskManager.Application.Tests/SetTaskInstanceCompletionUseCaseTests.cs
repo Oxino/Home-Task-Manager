@@ -13,7 +13,7 @@ public class SetTaskInstanceCompletionUseCaseTests
         InMemoryTaskInstanceRepository instanceRepository,
         InMemoryWeekRepository weekRepository,
         InMemoryUserRepository userRepository) =>
-        new(instanceRepository, weekRepository, userRepository, new NoOpUnitOfWork());
+        new(instanceRepository, weekRepository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
 
     [Fact]
     public async Task Owner_can_mark_their_task_as_completed()
