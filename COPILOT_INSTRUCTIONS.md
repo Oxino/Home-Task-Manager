@@ -15,12 +15,56 @@ Avant toute modification du code, tu dois toujours analyser :
 - /docs/PRODUCT_VISION.md
 - /docs/ARCHITECTURE.md
 - /docs/DOMAIN_MODEL.md
+- /docs/USE_CASES.md
+- /docs/BUSINESS_RULES.md
 - /docs/ASSIGNMENT_ENGINE.md
+- /docs/RISKS_AND_EDGE_CASES.md
 - /docs/DECISIONS.md
+- /docs/BACKLOG.md
 
 Ces documents sont la source de vérité du projet.
 
 Le code doit toujours être aligné avec la documentation.
+
+En cas de conflit entre documents, l'ordre de priorité est :
+
+1. DECISIONS.md (ADR validés)
+2. BUSINESS_RULES.md
+3. DOMAIN_MODEL.md / ARCHITECTURE.md
+4. PRODUCT_VISION.md / README.md
+
+---
+
+# Décisions structurantes en vigueur
+
+Ces décisions (voir DECISIONS.md) sont actées et doivent toujours être respectées :
+
+- **Authentification par sélection de profil** uniquement, sans email ni mot de passe
+  (ADR-003, ADR-006). L'unicité utilisateur porte sur `DisplayName`.
+- **Deux rôles seulement**, portés par le booléen `IsAdmin` (ADR-010).
+- **Droits sur les tâches** : l'administrateur gère toutes les tâches ; l'utilisateur crée des
+  tâches et ne modifie que celles dont il est l'auteur (ADR-007, BR-037).
+- **Séparation TaskTemplate / TaskInstance** (ADR-001). Modifier un modèle n'altère pas les
+  instances déjà générées (BR-047).
+- **Chaque affectation est rattachée à une semaine ISO-8601** via l'entité `Week`
+  (ADR-008, BR-038). Une tâche quotidienne obligatoire génère 7 instances.
+- **Relancer une affectation écrase** l'affectation existante de la semaine (ADR-013, BR-041).
+- **Complétude** : librement modifiable durant la semaine active, **figée à la clôture**
+  (ADR-011, BR-043, BR-055).
+- **Priorité de tâche** (Faible / Normale / Critique, défaut Normale) influençant le score
+  (ADR-012, BR-052, BR-056).
+- **Aucune purge** : l'historique est conservé intégralement (ADR-004, BR-057).
+- **Moteur paramétrable** par l'administrateur (score, priorités, fenêtre d'équité, pénalité)
+  (ADR-014, BR-058).
+
+---
+
+# Hors périmètre V1 (ne pas implémenter sans demande explicite)
+
+- Prise en compte des absences dans le moteur (`UserAbsence`, BR-025).
+- Réaffectation automatique sur indisponibilité (BR-042).
+- Statistiques avancées et tendances.
+- Gamification, IA, application mobile native, canaux de notification additionnels.
 
 ---
 
@@ -156,9 +200,11 @@ Toute décision d'architecture importante doit être documentée dans :
 Lorsqu'un nouveau concept métier apparaît :
 
 - mettre à jour DOMAIN_MODEL.md
+- mettre à jour BUSINESS_RULES.md si une règle est concernée
+- mettre à jour ARCHITECTURE.md si la structure technique évolue
 - mettre à jour PRODUCT_VISION.md si nécessaire
 
-La documentation doit évoluer avec le projet.
+La documentation doit évoluer avec le projet et rester cohérente entre tous les fichiers.
 
 ---
 
@@ -188,6 +234,24 @@ RandomStrategy
 
 FutureAlgorithmStrategy
 
+## Calcul du score (V1)
+
+```text
+Score    = ManualDifficultyScore × MultiplicateurPriorité × (Durée / DuréeRéférence)
+Pénalité = OccurrencesRécentes × PoidsPénalité × Score
+```
+
+La cible de points d'un participant est proportionnelle à sa disponibilité
+(`AvailabilityPercentage`, BR-040). Le départage en cas d'égalité est déterministe (BR-048).
+
+Les paramètres suivants sont administrables (SystemSetting, BR-058) et ne doivent JAMAIS être
+codés en dur — valeurs par défaut :
+
+- multiplicateurs de priorité : 0.5 / 1.0 / 1.5
+- durée de référence : 30 min
+- fenêtre d'équité : 8 semaines
+- poids de la pénalité anti-répétition : 0.25
+
 ---
 
 # Historique
@@ -197,13 +261,18 @@ L'historique est critique.
 Ne jamais :
 
 - supprimer l'historique
+- purger des données métier
 - modifier rétroactivement des affectations validées
+- modifier la complétude d'une semaine clôturée (BR-055)
 
 L'historique est utilisé pour :
 
 - les statistiques futures
 - les calculs d'équité
 - les explications d'affectation
+- l'auditabilité (AuditLog, CompletionChangeLog)
+
+Toute suppression doit être **logique** uniquement (BR-016).
 
 ---
 

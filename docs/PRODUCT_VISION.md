@@ -88,12 +88,15 @@ Un administrateur peut :
 
 ## Authentification
 
-Le système doit permettre :
+Le système repose sur une authentification simple par **sélection de profil** (usage familial
+local, ADR-003 / ADR-006) :
 
-- l'authentification des utilisateurs ;
-- la gestion des rôles ;
-- la gestion des autorisations ;
-- la déconnexion sécurisée.
+- sélection du profil parmi les profils actifs ;
+- gestion des rôles (administrateur / utilisateur via `IsAdmin`, ADR-010) ;
+- gestion des autorisations ;
+- déconnexion.
+
+Aucune adresse email ni mot de passe n'est requis.
 
 ---
 
@@ -177,11 +180,12 @@ Un administrateur peut créer un utilisateur.
 
 Informations requises :
 
-- prénom ;
-- nom ;
-- adresse email ;
-- rôle ;
+- nom d'affichage (DisplayName) ;
+- rôle (administrateur / utilisateur) ;
+- disponibilité ;
 - statut actif/inactif.
+
+Aucune adresse email n'est requise (authentification par sélection de profil).
 
 ---
 
@@ -212,13 +216,17 @@ Un administrateur doit pouvoir consulter :
 
 ## Création
 
-Un administrateur peut créer une tâche.
+Un administrateur comme un utilisateur peut créer une tâche.
+
+- l'administrateur peut créer, modifier et supprimer **toutes** les tâches ;
+- l'utilisateur peut créer des tâches et modifier **uniquement les siennes** (BR-037, ADR-007).
 
 ### Champs obligatoires
 
 - titre ;
 - description ;
 - priorité ;
+- pénibilité ;
 - statut ;
 - fréquence.
 
@@ -254,11 +262,10 @@ Une tâche peut être :
 ### Champs obligatoires
 
 - Id
-- Prénom
-- Nom
-- Email
-- Rôle
+- DisplayName
+- IsAdmin
 - StatutActif
+- Disponibilité
 
 ### Champs de suivi
 
@@ -275,6 +282,7 @@ Une tâche peut être :
 - Titre
 - Description
 - Priorité
+- Pénibilité
 - Statut
 - Fréquence
 - Actif

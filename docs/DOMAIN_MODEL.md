@@ -43,6 +43,12 @@ Exemples :
 - 50 = disponibilité réduite
 - 0 = indisponible
 
+## Authentification
+
+L'authentification se fait par **sélection de profil** (ADR-003 / ADR-006) : pas d'email, pas de
+mot de passe. `DisplayName` est unique (BR-002). Le rôle est porté par le booléen `IsAdmin` :
+l'application ne comporte que deux rôles, administrateur et utilisateur (ADR-010).
+
 ---
 
 # UserAbsence
@@ -78,6 +84,7 @@ Définition permanente d'une tâche.
 | Title | string | Oui |
 | Description | string | Non |
 | ManualDifficultyScore | int | Oui |
+| Priority | enum | Oui |
 | EstimatedDurationMinutes | int | Non |
 | FrequencyType | enum | Oui |
 | IsActive | bool | Oui |
@@ -94,9 +101,33 @@ ManualDifficultyScore :
 - minimum 1
 - maximum 100
 
+Priority :
+
+- valeurs : Low, Normal, Critical
+- valeur par défaut : Normal
+- influence le score global de la tâche (BR-052, BR-056)
+
 EstimatedDurationMinutes :
 
 - minimum 1
+
+## Droits
+
+- `CreatedByUserId` identifie l'auteur.
+- Un utilisateur ne peut modifier que les tâches dont il est l'auteur ; l'administrateur peut
+  modifier et supprimer toutes les tâches (BR-037, ADR-007).
+
+---
+
+# TaskPriority
+
+Enum.
+
+```csharp
+Low,
+Normal,
+Critical
+```
 
 ---
 
@@ -131,7 +162,10 @@ Permet d'isoler le calcul de charge.
 
 CalculatedScore doit être recalculable.
 
-Le calcul pourra évoluer sans modifier la structure.
+Formule V1 : `ManualDifficultyScore × MultiplicateurPriorité × FacteurDurée` (BR-052).
+
+Le mode de calcul et les multiplicateurs sont paramétrables par l'administrateur (BR-058) et
+stockés en `SystemSetting`. Le calcul pourra évoluer sans modifier la structure.
 
 ---
 
@@ -195,6 +229,7 @@ Représente une exécution de répartition.
 |---------|---------|---------|
 | Id | Guid | Oui |
 | GeneratedAt | DateTime | Oui |
+| WeekId | Guid | Oui |
 | StrategyId | Guid | Oui |
 | TriggeredByUserId | Guid | Oui |
 | IsAutomatic | bool | Oui |
@@ -207,6 +242,11 @@ Permet :
 - de savoir quand une répartition a été effectuée
 - de restaurer l'historique
 - de comprendre les décisions
+
+## Note de cohérence
+
+`WeekId` rattache l'exécution à une semaine ISO-8601 (BR-038 / ADR-008). Une relance d'affectation
+pour une semaine remplace l'affectation existante de cette semaine (BR-041).
 
 ---
 
@@ -221,10 +261,12 @@ Occurrence réelle d'une tâche.
 | Id | Guid | Oui |
 | TaskTemplateId | Guid | Oui |
 | AssignmentRunId | Guid | Oui |
+| WeekId | Guid | Oui |
 | AssignedUserId | Guid | Oui |
 | PlannedDate | DateOnly | Oui |
 | DueDate | DateOnly | Oui |
 | Status | enum | Oui |
+| IsCompleted | bool | Oui |
 | IsCarryOver | bool | Oui |
 | ParentTaskInstanceId | Guid | Non |
 | CreatedAt | DateTime | Oui |
@@ -236,6 +278,10 @@ Une tâche reportée :
 
 - possède IsCarryOver = true
 - référence éventuellement sa tâche d'origine
+
+`IsCompleted` porte l'état courant réversible durant la semaine active (BR-043). À la clôture de
+la semaine (BR-055), cet état est figé. Le `Status` (`Pending` / `Completed` / `Cancelled`)
+représente le cycle de vie de l'instance ; `WeekId` rattache l'instance à sa semaine.
 
 ---
 
@@ -265,6 +311,28 @@ Historique de réalisation.
 ## Notes
 
 Permet de conserver l'historique complet.
+
+---
+
+# CompletionChangeLog
+
+Journal des changements d'état de complétude (historique bidirectionnel, BR-043).
+
+## CompletionChangeLog
+
+| Champ | Type | Obligatoire |
+|---------|---------|---------|
+| Id | Guid | Oui |
+| TaskInstanceId | Guid | Oui |
+| ChangedByUserId | Guid | Oui |
+| OldValue | bool | Oui |
+| NewValue | bool | Oui |
+| ChangedAt | DateTime | Oui |
+
+## Notes
+
+Enregistre chaque bascule complété ↔ non complété durant la semaine active. Après clôture
+(BR-055), plus aucun enregistrement n'est ajouté pour l'instance concernée.
 
 ---
 
@@ -352,4 +420,117 @@ Préférences d'un utilisateur.
 ## UserPreferences
 
 | Champ | Type | Obligatoire |
-|---------|---------|
+|---------|---------|---------|
+| Id | Guid | Oui |
+| UserId | Guid | Oui |
+| NotificationsEnabled | bool | Oui |
+| CreatedAt | DateTime | Oui |
+| UpdatedAt | DateTime | Oui |
+
+## Notes
+
+Activation/désactivation indépendante des notifications par utilisateur (BR-045, UC-NOT-01).
+
+---
+
+# Entités complémentaires (issues de l'analyse de cohérence)
+
+> Ces entités comblent des lacunes identifiées dans `RISKS_AND_EDGE_CASES.md`.
+> Elles restent soumises aux décisions ADR-006 à ADR-009.
+
+---
+
+# Week
+
+Représente une semaine ISO-8601 servant de période de référence.
+
+## Week
+
+| Champ | Type | Obligatoire |
+|---------|---------|---------|
+| Id | Guid | Oui |
+| Year | int | Oui |
+| WeekNumber | int | Oui |
+| StartDate | DateOnly | Oui |
+| EndDate | DateOnly | Oui |
+| Status | enum | Oui |
+| ClosedAt | DateTime | Non |
+
+## Contraintes
+
+- `(Year, WeekNumber)` unique, conforme ISO-8601 (années à 53 semaines gérées).
+- Référencée par `AssignmentRun` et `TaskInstance` (BR-038, R-13).
+
+## WeekStatus
+
+```csharp
+Active,
+Closed
+```
+
+Une semaine `Closed` verrouille la complétude de ses instances (BR-055).
+
+---
+
+# SystemSetting
+
+Paramètre système configurable par un administrateur.
+
+## SystemSetting
+
+| Champ | Type | Obligatoire |
+|---------|---------|---------|
+| Id | Guid | Oui |
+| Key | string | Oui |
+| Value | string | Oui |
+| UpdatedByUserId | Guid | Oui |
+| UpdatedAt | DateTime | Oui |
+
+## Notes
+
+Supporte BR-031 (paramètres d'affectation, notification, fuseau horaire BR-051, etc.).
+`Key` unique. Évite les valeurs métier codées en dur.
+
+---
+
+# AuditLog
+
+Journal d'audit générique des modifications métier.
+
+## AuditLog
+
+| Champ | Type | Obligatoire |
+|---------|---------|---------|
+| Id | Guid | Oui |
+| EntityType | string | Oui |
+| EntityId | Guid | Oui |
+| Action | string | Oui |
+| PerformedByUserId | Guid | Oui |
+| OldValue | string | Non |
+| NewValue | string | Non |
+| PerformedAt | DateTime | Oui |
+
+## Notes
+
+Couvre BR-011, BR-017, BR-033 et BR-043 (traçabilité complète, y compris les
+changements de complétude bidirectionnels).
+
+---
+
+# TaskComment
+
+Commentaire associé à une instance de tâche.
+
+## TaskComment
+
+| Champ | Type | Obligatoire |
+|---------|---------|---------|
+| Id | Guid | Oui |
+| TaskInstanceId | Guid | Oui |
+| AuthorUserId | Guid | Oui |
+| Content | string | Oui |
+| CreatedAt | DateTime | Oui |
+
+## Notes
+
+Supporte BR-013 (commentaires utilisateur), absent du modèle initial (R-18).

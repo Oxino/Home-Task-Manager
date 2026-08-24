@@ -56,6 +56,12 @@ Version initiale :
 
 L'application doit cependant supporter un nombre illimité de participants.
 
+## Authentification
+
+Authentification simple par **sélection de profil** : l'utilisateur choisit son profil parmi la
+liste, sans email ni mot de passe (usage familial local). Le rôle est porté par un booléen
+`IsAdmin` ; l'application ne comporte que deux rôles.
+
 ## Rôles
 
 ### Administrateur
@@ -63,17 +69,17 @@ L'application doit cependant supporter un nombre illimité de participants.
 Peut :
 
 - gérer les utilisateurs
-- supprimer des tâches
+- créer, modifier et supprimer **toutes** les tâches
 - configurer les algorithmes
 - lancer une affectation
-- relancer une affectation existante
+- relancer une affectation existante (écrase l'affectation de la semaine)
 
 ### Utilisateur
 
 Peut :
 
 - créer des tâches
-- modifier des tâches
+- modifier **uniquement les tâches dont il est l'auteur**
 - consulter son historique
 - consulter ses affectations
 - marquer une tâche comme terminée
@@ -97,6 +103,7 @@ Attributs principaux :
 - titre
 - description
 - fréquence
+- priorité (Faible / Normale / Critique — influence le score)
 - pénibilité
 - durée estimée
 
@@ -200,6 +207,17 @@ Elle s'ajoute aux nouvelles tâches générées.
 
 ---
 
+# Complétude hebdomadaire
+
+Durant la semaine active, l'utilisateur peut modifier librement l'état de ses tâches
+(complété / non complété), autant de fois que nécessaire.
+
+À la clôture de la semaine, l'état est **figé définitivement** et ne peut plus être modifié.
+
+L'intégralité de l'historique est conservée (aucune purge).
+
+---
+
 # Répartition intelligente
 
 La V1 implémente un algorithme nommé :
@@ -293,15 +311,18 @@ Aucune application mobile native n'est prévue.
 ## Backend
 
 - ASP.NET Core 9
+- Clean Architecture (Domain / Application / Infrastructure / API)
 
 ## Frontend
 
 - React
 - TypeScript
+- Responsive (desktop / tablette / smartphone)
 
 ## Base de données
 
 - PostgreSQL
+- Entity Framework Core (migrations, contraintes explicites)
 
 ## Conteneurisation
 
@@ -312,8 +333,62 @@ Aucune application mobile native n'est prévue.
 
 - Clean Architecture
 - Domain Driven Design (léger)
-- Architecture modulaire
-- Moteur d'affectation extensible
+- CQRS léger (commandes / queries)
+- Moteur d'affectation extensible (pattern Strategy)
+
+> La conception technique complète (architecture logicielle, modèle BDD, design d'API,
+> déploiement) est décrite dans [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+---
+
+# Architecture (résumé)
+
+Découpage en couches Clean Architecture :
+
+```text
+Frontend (React)  →  API (REST)  →  Application (use cases)  →  Domain (entités, règles)
+                                                   ▲
+                                     Infrastructure (EF Core, PostgreSQL,
+                                     notifications, scheduler)
+```
+
+Concepts clés du modèle de données :
+
+- `User`, `TaskTemplate`, `TaskScore`, `Reminder`
+- `Week` (semaine ISO-8601), `AssignmentRun`, `AssignmentStrategy`
+- `TaskInstance`, `TaskCompletion`, `CompletionChangeLog`, `DailyFlexibleExecution`
+- `TaskComment`, `AssignmentExplanation`, `AssignmentMetricSnapshot`
+- `SystemSetting`, `AuditLog`
+
+Le détail (tables, clés, index, API REST) est dans [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+et [`docs/DOMAIN_MODEL.md`](docs/DOMAIN_MODEL.md).
+
+---
+
+# Moteur d'affectation (résumé)
+
+Score d'une tâche :
+
+```text
+Score = Pénibilité × MultiplicateurPriorité × (Durée / DuréeRéférence)
+```
+
+Pénalité anti-répétition :
+
+```text
+Pénalité = OccurrencesRécentes × PoidsPénalité × Score
+```
+
+Paramètres administrables (valeurs par défaut) :
+
+| Paramètre | Défaut |
+|-----------|--------|
+| Priorité Faible / Normale / Critique | 0.5 / 1.0 / 1.5 |
+| Durée de référence | 30 min |
+| Fenêtre d'équité | 8 semaines |
+| Poids de la pénalité | 0.25 |
+
+Détails dans [`docs/ASSIGNMENT_ENGINE.md`](docs/ASSIGNMENT_ENGINE.md).
 
 ---
 
@@ -332,7 +407,10 @@ PRODUCT_VISION.md
 ARCHITECTURE.md
 DOMAIN_MODEL.md
 USER_STORIES.md
+USE_CASES.md
 ASSIGNMENT_ENGINE.md
+BUSINESS_RULES.md
+RISKS_AND_EDGE_CASES.md
 DECISIONS.md
 BACKLOG.md
 ```

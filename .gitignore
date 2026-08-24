@@ -1,0 +1,48 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / VS
+.idea/
+.vs/
+*.userprefs
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# SQLite (base de dev locale)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-error.log*
+
+# Environnement
+.env
+.env.local
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
