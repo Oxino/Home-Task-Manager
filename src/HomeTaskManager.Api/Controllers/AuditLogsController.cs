@@ -9,11 +9,13 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetForEntity(
-        [FromQuery] string entityType,
-        [FromQuery] Guid entityId,
+        [FromQuery] string? entityType,
+        [FromQuery] Guid? entityId,
         CancellationToken cancellationToken)
     {
-        var entries = await getAuditLogsForEntityUseCase.ExecuteAsync(entityType, entityId, cancellationToken);
+        var entries = entityType is not null && entityId.HasValue
+            ? await getAuditLogsForEntityUseCase.ExecuteAsync(entityType, entityId.Value, cancellationToken)
+            : await getAuditLogsForEntityUseCase.ExecuteAllAsync(cancellationToken);
         return Ok(entries);
     }
 }

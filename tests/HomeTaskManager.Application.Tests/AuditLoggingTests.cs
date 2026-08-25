@@ -38,6 +38,9 @@ public sealed class InMemoryAuditLogRepository : IAuditLogRepository
     public Task<IReadOnlyList<AuditLog>> GetByEntityAsync(string entityType, Guid entityId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<AuditLog>>(
             _entries.Where(entry => entry.EntityType == entityType && entry.EntityId == entityId).ToList());
+
+    public Task<IReadOnlyList<AuditLog>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<AuditLog>>(_entries.OrderByDescending(entry => entry.PerformedAt).ToList());
 }
 
 public class AuditLoggingTests

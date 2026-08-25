@@ -5,4 +5,5 @@ namespace HomeTaskManager.Application.Abstractions.Repositories;
 public interface IAuditLogRepository
 {
     Task<IReadOnlyList<AuditLog>> GetByEntityAsync(string entityType, Guid entityId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AuditLog>> GetAllAsync(CancellationToken cancellationToken = default);
 }
