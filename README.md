@@ -62,9 +62,33 @@ L'API est attendue sur `http://localhost:5251` et l'interface Vite sur
 `http://localhost:5173`. Le proxy de développement relaie les appels `/api` vers l'API.
 L'URL peut être remplacée avec la variable `VITE_API_URL`.
 
+Le backend applique les migrations EF Core au démarrage en environnement de développement.
+En cas de reset local de base, vous pouvez aussi appliquer les migrations manuellement :
+
+```powershell
+dotnet ef database update -p src/HomeTaskManager.Infrastructure -s src/HomeTaskManager.Api
+```
+
 Le premier écran frontend permet de sélectionner un profil, de consulter la semaine active,
 de filtrer les instances, de modifier leur complétude et d'afficher la justification d'une
 affectation. Les données de démonstration ne sont utilisées que lorsque l'API est indisponible.
+
+L'interface inclut aussi un espace administration avec gestion des affectations/instances,
+notifications, commentaires (avec réactions), et une page analytics (`/analytics`).
+
+## État actuel
+
+- Backend: flux MVP complet (génération, affectation, complétude, clôture/report, audit,
+  rappels, notifications, analytics).
+- Frontend: parcours principal utilisateur/admin opérationnel, analytics UI responsive.
+- Qualité: tests unitaires Application et Domain verts ; build backend/frontend vert.
+
+## Reste à faire (priorisé)
+
+1. Web Push réel navigateur (abonnements, VAPID, opt-in utilisateur).
+2. Tests d'intégration API (`WebApplicationFactory`) et tests end-to-end frontend.
+3. Finalisation UX des écrans historiques/CRUD restants.
+4. Revue sécurité avant exposition réseau.
 
 ### Générer un historique de développement
 

@@ -172,6 +172,25 @@ function viewFromPath(pathname: string) {
   return viewRoutes[pathname] ?? "Semaine";
 }
 
+function extractTaskTitleFromNotification(message: string) {
+  const marker = " vous a été affectée";
+  const markerIndex = message.indexOf(marker);
+  if (markerIndex <= 0) return null;
+  const value = message.slice(0, markerIndex).trim();
+  return value.length > 0 ? value : null;
+}
+
+async function readApiError(response: Response, fallback: string) {
+  try {
+    const payload = await response.json();
+    if (payload && typeof payload.error === "string" && payload.error.trim()) {
+      return payload.error;
+    }
+  } catch {
+  }
+  return fallback;
+}
+
 const frequencyHelp: Record<string, string> = {
   DailyMandatory: "Une instance est créée pour chacun des 7 jours de la semaine.",
   DailyFlexible: "Une seule instance est créée : la tâche doit être réalisée au moins une fois dans la semaine, et peut l’être plusieurs fois.",
@@ -581,7 +600,7 @@ function PreferencesPanel({ api }: { api: string }) {
   return <section className="settings-panel preferences-panel"><span className="section-kicker">MON ESPACE</span><h2>Préférences</h2><p className="settings-intro">Choisis les types de notifications que tu souhaites recevoir lorsque le service de notification sera activé.</p><div className="preference-row"><div><b>Notifications du foyer</b><small>Rappels et événements liés à tes tâches.</small></div><button className={enabled ? "toggle enabled" : "toggle"} disabled={loading || saving} onClick={toggle} aria-pressed={enabled}><span /></button></div><p className="preference-status">{loading ? "Chargement..." : saving ? "Enregistrement..." : enabled ? "Activées" : "Désactivées"}</p></section>;
 }
 
-function NotificationsPanel({ api, onUnreadChange }: { api: string; onUnreadChange: (count: number) => void }) {
+function NotificationsPanel({ api, onUnreadChange, onOpenNotification }: { api: string; onUnreadChange: (count: number) => void; onOpenNotification: (notification: NotificationItem) => void }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false);
   const load = async () => { try { const response = await fetch(`${api}/api/notifications`); if (response.ok) { const items: NotificationItem[] = await response.json(); setNotifications(items); onUnreadChange(items.filter((item) => !item.isRead).length); } } finally { setLoading(false); } };
   useEffect(() => { void load(); }, [api]);
@@ -589,7 +608,7 @@ function NotificationsPanel({ api, onUnreadChange }: { api: string; onUnreadChan
   async function readAll() { setBusy(true); const response = await fetch(`${api}/api/notifications/read-all`, { method: "POST" }); if (response.ok) { setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))); onUnreadChange(0); } setBusy(false); }
   async function deleteRead() { setBusy(true); const response = await fetch(`${api}/api/notifications/read`, { method: "DELETE" }); if (response.ok) setNotifications((items) => { const remaining = items.filter((item) => !item.isRead); onUnreadChange(remaining.filter((item) => !item.isRead).length); return remaining; }); setBusy(false); }
   const unread = notifications.filter((notification) => !notification.isRead).length;
-  return <section className="notifications-panel"><div className="panel-heading"><div><span className="section-kicker">MON ESPACE</span><h2>Notifications</h2><p className="panel-subtitle">Retrouve les rappels et événements liés à tes tâches.</p></div><span className="notification-count">{unread} non lue{unread > 1 ? "s" : ""}</span></div><div className="notification-actions"><button className="secondary-button" disabled={busy || unread === 0} onClick={readAll}>Tout marquer comme lu</button><button className="danger-button" disabled={busy || notifications.every((item) => !item.isRead)} onClick={deleteRead}>Supprimer les lues</button></div>{loading ? <p className="muted">Chargement des notifications...</p> : notifications.length === 0 ? <div className="history-empty"><span>◷</span><h3>Boîte vide</h3><p>Les notifications apparaîtront ici.</p></div> : <div className="notification-list">{notifications.map((notification) => <article className={notification.isRead ? "notification read" : "notification"} key={notification.id}><span className="notification-mark">{notification.isRead ? "✓" : "•"}</span><div><h3>{notification.link ? <a href={notification.link}>{notification.title}</a> : notification.title}</h3><p>{notification.message}</p><time>{new Date(notification.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div><button className="secondary-button" onClick={() => setRead(notification)}>{notification.isRead ? "Non lue" : "Marquer lu"}</button></article>)}</div>}</section>;
+  return <section className="notifications-panel"><div className="panel-heading"><div><span className="section-kicker">MON ESPACE</span><h2>Notifications</h2><p className="panel-subtitle">Retrouve les rappels et événements liés à tes tâches.</p></div><span className="notification-count">{unread} non lue{unread > 1 ? "s" : ""}</span></div><div className="notification-actions"><button className="secondary-button" disabled={busy || unread === 0} onClick={readAll}>Tout marquer comme lu</button><button className="danger-button" disabled={busy || notifications.every((item) => !item.isRead)} onClick={deleteRead}>Supprimer les lues</button></div>{loading ? <p className="muted">Chargement des notifications...</p> : notifications.length === 0 ? <div className="history-empty"><span>◷</span><h3>Boîte vide</h3><p>Les notifications apparaîtront ici.</p></div> : <div className="notification-list">{notifications.map((notification) => <article className={notification.isRead ? "notification read" : "notification"} key={notification.id}><span className="notification-mark">{notification.isRead ? "✓" : "•"}</span><div><h3>{notification.link ? <a href={notification.link} onClick={(event) => { event.preventDefault(); onOpenNotification(notification); }}>{notification.title}</a> : notification.title}</h3><p>{notification.message}</p><time>{new Date(notification.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div><button className="secondary-button" onClick={() => setRead(notification)}>{notification.isRead ? "Non lue" : "Marquer lu"}</button></article>)}</div>}</section>;
 }
 
 function CommentsPanel({ api, instanceId, currentUser, users }: { api: string; instanceId: string; currentUser: User; users: User[] }) {
@@ -648,11 +667,14 @@ function App() {
   const [weekStatus, setWeekStatus] = useState<WeekStatus>("Active");
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
   const [apiError, setApiError] = useState(false);
+  const [apiMessage, setApiMessage] = useState("");
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [pendingNotificationTaskTitle, setPendingNotificationTaskTitle] = useState<string | null>(null);
   const api = import.meta.env.VITE_API_URL ?? "";
   const queryParameters = new URLSearchParams(locationSearch);
   const queryYear = Number(queryParameters.get("year"));
   const queryWeek = Number(queryParameters.get("week"));
+  const queryInstanceId = queryParameters.get("instanceId");
   const selectedWeek = Number.isInteger(queryYear) && Number.isInteger(queryWeek) && queryWeek > 0 ? { year: queryYear, week: queryWeek } : null;
   const week = selectedWeek ?? isoWeek(new Date(Date.now() + weekOffset * 7 * 86400000));
 
@@ -678,6 +700,7 @@ function App() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setApiMessage("");
       try {
         const currentResponse = await fetch(`${api}/api/users/current`);
         if (currentResponse.ok) setCurrentUser(await currentResponse.json());
@@ -686,18 +709,60 @@ function App() {
           fetch(`${api}/api/task-templates`),
           fetch(`${api}/api/weeks/${week.year}/${week.week}/instances`),
         ]);
-        if (responses.some((response) => !response.ok))
-          throw new Error("API unavailable");
         const [userResponse, templateResponse, instanceResponse] = responses;
+        if (!userResponse.ok || !templateResponse.ok) {
+          throw new Error(await readApiError(userResponse.ok ? templateResponse : userResponse, "API indisponible."));
+        }
+
+        const loadedUsers = await userResponse.json();
+        const loadedTemplates = await templateResponse.json();
+        setUsers(loadedUsers);
+        setTemplates(loadedTemplates);
+
+        if (instanceResponse.status === 401) {
+          setWeekStatus("Active");
+          setCurrentWeekId(null);
+          setInstances([]);
+          setApiError(false);
+          return;
+        }
+
+        if (!instanceResponse.ok) {
+          const message = await readApiError(instanceResponse, "Lecture de la semaine impossible.");
+          setWeekStatus("Active");
+          setCurrentWeekId(null);
+          setInstances([]);
+          setApiError(false);
+          setApiMessage(message);
+          return;
+        }
+
         const instanceData = await instanceResponse.json();
-        setWeekStatus(instanceData.week?.status ?? "Active");
-        setCurrentWeekId(instanceData.week?.id ?? null);
-        setUsers(await userResponse.json());
-        setTemplates(await templateResponse.json());
-        setInstances(instanceData.instances ?? instanceData);
+        const loadedInstances = instanceData?.instances ?? instanceData ?? [];
+
+        setWeekStatus(instanceData?.week?.status ?? "Active");
+        setCurrentWeekId(instanceData?.week?.id ?? null);
+        setInstances(loadedInstances);
+
+        const requestedInstanceId = queryInstanceId;
+        if (requestedInstanceId) {
+          const requested = loadedInstances.find((entry: Instance) => entry.id === requestedInstanceId) ?? null;
+          setSelected(requested);
+          if (!requested) setNotice("La tâche demandée n'est pas disponible pour cette semaine.");
+        }
+        else if (pendingNotificationTaskTitle) {
+          const relatedTemplate = loadedTemplates.find((entry: Template) => entry.title === pendingNotificationTaskTitle);
+          if (relatedTemplate) {
+            const relatedInstance = loadedInstances.find((entry: Instance) => entry.taskTemplateId === relatedTemplate.id) ?? null;
+            if (relatedInstance) setSelected(relatedInstance);
+          }
+          setPendingNotificationTaskTitle(null);
+        }
+
         setApiError(false);
-      } catch {
+      } catch (reason) {
         setApiError(true);
+        setApiMessage(reason instanceof Error ? reason.message : "API indisponible.");
         setWeekStatus("Active");
         setCurrentWeekId(null);
         setUsers(demoUsers);
@@ -708,7 +773,30 @@ function App() {
       }
     };
     load();
-  }, [api, week.year, week.week]);
+  }, [api, week.year, week.week, queryInstanceId, pendingNotificationTaskTitle]);
+
+  function openNotification(notification: NotificationItem) {
+    if (!notification.link) return;
+
+    const target = new URL(notification.link, window.location.origin);
+    const year = Number(target.searchParams.get("year"));
+    const weekNumber = Number(target.searchParams.get("week"));
+    const instanceId = target.searchParams.get("instanceId");
+
+    const search = Number.isInteger(year) && Number.isInteger(weekNumber) && weekNumber > 0
+      ? `?year=${year}&week=${weekNumber}${instanceId ? `&instanceId=${encodeURIComponent(instanceId)}` : ""}`
+      : "";
+
+    window.history.pushState({}, "", `/week${search}`);
+    setView("Semaine");
+    setLocationSearch(search);
+    setSelected(null);
+
+    if (!instanceId) {
+      const title = extractTaskTitleFromNotification(notification.message);
+      setPendingNotificationTaskTitle(title);
+    }
+  }
 
   useEffect(() => {
     if (!currentUser) return;
@@ -786,7 +874,7 @@ function App() {
     );
     setNotice(next ? "Tâche marquée comme terminée" : "Tâche rouverte");
     try {
-      await fetch(`${api}/api/task-instances/${item.id}/completion`, {
+      const response = await fetch(`${api}/api/task-instances/${item.id}/completion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -794,13 +882,16 @@ function App() {
           isCompleted: next,
         }),
       });
-    } catch {
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "La complétude n’a pas été enregistrée."));
+      }
+    } catch (reason) {
       setInstances((items) =>
         items.map((entry) =>
           entry.id === item.id ? { ...entry, isCompleted: item.isCompleted } : entry,
         ),
       );
-      setNotice("API indisponible : la complétude n’a pas été enregistrée");
+      setNotice(reason instanceof Error ? reason.message : "API indisponible : la complétude n’a pas été enregistrée");
     }
     window.setTimeout(() => setNotice(""), 2200);
   }
@@ -836,7 +927,7 @@ function App() {
           </p>
         </div>
         <div className="profile-panel">
-          {apiError && <div className="api-warning">API indisponible. Les données affichées sont locales et les modifications ne seront pas enregistrées.</div>}
+          {apiError && <div className="api-warning">API indisponible. {apiMessage || "Les données affichées sont locales et les modifications ne seront pas enregistrées."}</div>}
           <span className="section-kicker">ACCÈS FOYER</span>
           <h2>Qui êtes-vous ?</h2>
           {loading ? (
@@ -965,6 +1056,7 @@ function App() {
         </header>
         {notice && <div className="notice">✓ {notice}</div>}
         {apiError && <div className="api-warning page-warning">API indisponible. Démarre le serveur sur http://localhost:5251 pour enregistrer les modifications.</div>}
+        {!apiError && apiMessage && <div className="api-warning page-warning">{apiMessage}</div>}
         {view === "Semaine" ? (
           <>
             <section className="hero-banner">
@@ -1155,7 +1247,7 @@ function App() {
             </div>
           </>
         ) : view === "Notifications" ? (
-          <NotificationsPanel api={api} onUnreadChange={setUnreadNotifications} />
+          <NotificationsPanel api={api} onUnreadChange={setUnreadNotifications} onOpenNotification={openNotification} />
         ) : view === "Préférences" ? (
           <PreferencesPanel api={api} />
         ) : view === "Historique" ? (

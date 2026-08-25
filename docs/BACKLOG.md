@@ -57,9 +57,10 @@ Optimisation UX
 - Dashboard avec indicateurs de base
 - Mobile responsive
 
-> **État : réalisé en partie.** Le premier écran React couvre le tableau de bord de la semaine,
-> les indicateurs de complétude, les filtres de tâches, le détail d'affectation et une mise en
-> page responsive. Les vues historiques et les écrans CRUD complets restent à finaliser.
+> **État : MVP étendu en cours de stabilisation.** Le frontend couvre désormais le tableau de
+> bord, les vues d'administration principales, les notifications, les commentaires avancés
+> (threading + réactions) et un écran analytics responsive. Les vues historiques et certains
+> parcours CRUD restent à finaliser.
 
 ## Hors MVP
 
@@ -128,8 +129,8 @@ Optimisation UX
 - Service de notification abstrait pour notifications push et reminders.
 - Endpoints analytiques pour statistiques d'affectation et complétude (backend).
 
-L'envoi Web Push réel (intégration navigateur), les commentaires avancés et les interfaces
-analytiques (UI) restent à implémenter.
+L'envoi Web Push réel (intégration navigateur) et les tests end-to-end complets restent à
+implémenter. Les commentaires avancés et l'interface analytics sont implémentés.
 
 ---
 
@@ -165,4 +166,6 @@ analytiques (UI) restent à implémenter.
 
 -  Création d'un tache type 'fluide', sur laquel on est configurer sur quels jours de la semaine elle est active. Contrairement à la tache quotidienne flexible, qui elle est présente un fois dans la semaine mais peut etre répéter tous les jours, c'est a dire que quand elle est terminé une nouvelle instnace de cette tache est automatiquement créé, le principe est que l'utilisateur puisse faire cette tache au moins une fois dans la semaine, mais répétable a volonté. Elle est présente seulement 1 fois dans les taches a faire pour la date courante, si elle est complété, une nouvelle instance de la tache est créé et affectué, à faire pour l'utilisateur. Exemple : semaine 1, le lundi il fait la tache 1 (quotidienne flexible), elle apparait donc compltété le lundi, la tache 1 réapparait a nouveau mais la dead line est pour mardi. Mardi rien, la dead line passe automatiquemment a Mercredi. Mercredi rien sur la tache, la dead line passe automatiquement à jeudi. Jeudi la tache est complété, elle est marqué comme complété dans l'historique, une nouvelle tache 1 est créé avec la dead line pour Vendredi. A la fin de la semaine, cette tache ayant deja été complété au moins une fois dans la semaine, celle-ci est conscidéré comme complété, et donc, l'instances en cours non complété est supprimé. Par contre, si a la fin de la semaine, cette tache n'a jamais été complété, celles ci est reporter atomatiquement sur la semaine suivante.
 -  Amélioration de l'explication de **"pourquoi cette tache ta été attribué"**
--
+-  CHanger le system de navigation temporelle (avoir bt semaine courante, avoir un calendrier pour la navigation, voir les semaines qui ont des affectation)
+-  Differenter l'historique vs l'audit Log. Historique => seulement les actions de l'utilisateur courant (création d'une tache, complétion d'une tache, ajout d'un commentaire,  ). L'audit log pour l'admin, lui permet de voir toutes les actions, de tous les utilisateurs, y compris les actions non utilisateur (activation ou désactivation de tache, création participant, changement parametre moteur d'affectatuib, réaffectation de tache, génération des affectaiton etc... )
+-  Ouvrir un tache en double click 

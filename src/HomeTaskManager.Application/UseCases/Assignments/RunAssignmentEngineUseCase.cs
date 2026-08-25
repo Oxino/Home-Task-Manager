@@ -115,7 +115,7 @@ public sealed class RunAssignmentEngineUseCase(
                         assignment.AssignedUserId,
                         title,
                         message,
-                        $"/week?year={week.Year}&week={week.WeekNumber}"), cancellationToken);
+                        $"/week?year={week.Year}&week={week.WeekNumber}&instanceId={assignedInstance.Id}"), cancellationToken);
                     if (notificationService is not null)
                     {
                         await notificationService.SendAssignmentNotificationAsync(

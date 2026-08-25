@@ -32,4 +32,9 @@ public sealed class Notification
         IsRead = true;
         ReadAt ??= DateTime.UtcNow;
     }
+
+    public void SetLink(string? link)
+    {
+        Link = string.IsNullOrWhiteSpace(link) ? null : link.Trim();
+    }
 }

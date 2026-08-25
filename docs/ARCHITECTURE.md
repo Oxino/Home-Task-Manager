@@ -94,7 +94,8 @@ interfaces (inversion de dépendance).
 - Implémentations EF Core des repositories et de l'`IUnitOfWork`.
 - `DbContext`, configurations de mapping, migrations.
 - `SystemSettingProvider` (lecture/écriture des paramètres).
-- `NotificationService` (Web Push navigateur), architecture multi-canal extensible.
+- `NotificationService` (implémentation actuelle orientée logging), architecture multi-canal
+  extensible avec port `INotificationService` prêt pour Web Push navigateur.
 - `Scheduler` (génération hebdomadaire, déclenchement des rappels, clôture des semaines).
 - `SystemClock` (implémente `IClock`, fuseau horaire applicatif, BR-051).
 
@@ -109,7 +110,8 @@ interfaces (inversion de dépendance).
 
 - Application React + TypeScript construite avec Vite dans `src/HomeTaskManager.Web`.
 - Écrans de présentation : sélection de profil, tableau de bord hebdomadaire, liste filtrable
-  des instances, détail d'affectation et navigation administrateur.
+  des instances, détail d'affectation, commentaires avec réactions, navigation administrateur,
+  et vue analytics (`/analytics`).
 - Appels REST vers l'API ASP.NET via `fetch`, avec le profil courant transmis aux commandes qui
   le requièrent (`RequestingUserId` / `TriggeredByUserId`).
 - L'autorisation métier reste contrôlée par l'API ; l'état du profil côté client ne constitue
@@ -134,6 +136,10 @@ interfaces (inversion de dépendance).
 - La boîte de notifications personnelles est exposée par `GET /api/notifications`, avec les
   actions `PUT /api/notifications/{id}/read`, `POST /api/notifications/read-all` et
   `DELETE /api/notifications/read`. Chaque requête est filtrée par l’identité de session.
+- Les statistiques admin sont exposées par `GET /api/analytics/week/{weekId}`,
+  `GET /api/analytics/completion` et `GET /api/analytics/load-distribution`.
+- Les réactions de commentaires sont exposées par `POST /api/comments/{commentId}/reactions`,
+  `DELETE /api/comments/reactions/{reactionId}` et `GET /api/comments/{commentId}/reactions`.
 - Une affectation produite par le moteur crée une notification personnelle pour le participant
   retenu, avec un lien vers la semaine concernée.
 - Aucune règle métier complexe : l'interface présente les états et déclenche les cas d'usage

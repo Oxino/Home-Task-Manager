@@ -91,7 +91,7 @@
 - `AssignmentEngineSettingsController`.
 - Le moteur d'affectation lit désormais ses paramètres depuis la configuration persistée.
 
-### V10 — Journal d'audit générique *(version actuelle)*
+### V10 — Journal d'audit générique
 
 - Entité `AuditLog` (BR-011, BR-017, BR-033).
 - Port `IAuditLogger` (écriture) et `IAuditLogRepository` (lecture), constantes
@@ -104,7 +104,7 @@
   `WeatherForecastController`, et remplacement de la requête `/weatherforecast/` dans
   `HomeTaskManager.Api.http` par des requêtes sur les endpoints réels.
 
-### V11 — Première interface frontend *(version actuelle)*
+### V11 — Première interface frontend
 
 - Création du projet `src/HomeTaskManager.Web` avec React, TypeScript et Vite.
 - Écran de sélection de profil conforme à l'authentification locale (ADR-006).
@@ -151,9 +151,23 @@
 - Tests d'idempotence validés.
 - Backward compatibility maintenue sur les constructeurs optionnels.
 
+### V13 — Commentaires avancés, migrations EF officielles et finition UX analytics *(version actuelle)*
+
+- Ajout de la réaction sur commentaires : entité `Reaction`, repository, use cases
+  (`AddReactionUseCase`, `RemoveReactionUseCase`, `ListReactionsForCommentUseCase`) et
+  endpoints API `POST/DELETE/GET` sur `/api/comments/...`.
+- Support du threading de commentaires avec `ParentCommentId` sur `TaskComment`.
+- Migration de l'initialisation base de données vers EF Core migrations : suppression du
+  bootstrap SQL manuel au démarrage API, remplacement par `Database.Migrate()` en développement.
+- Génération de la migration initiale (`InitialCreate`) et snapshot EF Core.
+- Ajout d'un dashboard analytics frontend (`/analytics`) branché sur les endpoints admin,
+  avec vue responsive (KPI, tableaux, indicateurs de complétion, états vides/chargement).
+- Raffinement des tests `DailyFlexible` (permissions, semaine clôturée, multi-exécutions),
+  plus tests dédiés des réactions.
+
 ---
 
-## Etat actuel (fin V12)
+## Etat actuel (fin V13)
 
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
@@ -164,64 +178,53 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 ```
 
 - **70 tests unitaires** (Application), **19 tests** (Domain), tous verts.
-- Build complet de la solution sans erreur.
-- Le frontend React initial est disponible dans `src/HomeTaskManager.Web`.
-- Les ecrans analytiques (UI) et les tests end-to-end ne sont pas encore implementes.
-- Aucune migration EF Core n'a encore ete generee (le schema n'a pas ete materialise en base).
+- **76 tests unitaires** (Application), **19 tests** (Domain), tous verts.
+- Build complet backend et frontend (`npm run build`) sans erreur bloquante.
+- Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
+- Les commentaires avancés couvrent désormais le threading et les réactions.
+- Les migrations EF Core sont en place et appliquées au démarrage en environnement développement.
 
 ---
 
-## Ancien etat (fin V11)
+## Ancien état (fin V12)
 
-- **59 tests unitaires** (Domain + Application), tous verts.
-- Build complet de la solution sans erreur.
-- Le frontend React initial est disponible dans `src/HomeTaskManager.Web`.
-- Le scheduler d’envoi des rappels, les écrans analytiques et les tests end-to-end ne sont pas
-  encore implémentés.
-- Le moteur conserve désormais les 7 instances d’une tâche `DailyMandatory` chez le même
-  participant pour la semaine.
-- Aucune migration EF Core n'a encore été générée (le schéma n'a pas été matérialisé en base).
+- **70 tests unitaires** (Application), **19 tests** (Domain), tous verts.
+- Analytics backend disponible (use cases + controller), mais pas encore la vue frontend.
+- Pas encore de migration EF Core matérialisée ni activation au démarrage.
 
 ---
 
-## Reste à faire — version actuelle (V11 / finalisation backend MVP et frontend)
+## Reste à faire — version actuelle
 
-- [ ] Générer et valider la première migration EF Core (SQLite) et vérifier la création du schéma.
-- [ ] Tests d'intégration API (bout en bout, via `WebApplicationFactory`) en complément des tests
-      unitaires Application/Domain.
-- [x] Authentification/autorisation transverse initiale par session cookie et rôles admin.
-- [ ] Entité `TaskComment` (commentaires sur une instance de tâche — BR-013, R-18), absente du
-      Domain à ce jour.
-- [ ] `UserPreferences` complet (au minimum activation des notifications — R-21).
-- [ ] `Reminder` (rappels de tâches) : entité documentée (`ReminderTriggerType`,
-      `ReminderOffsetUnit`) mais non implémentée.
-- [x] Endpoints de gestion des utilisateurs, désactivation/réactivation et réaffectation
-  manuelle d'une instance.
-- [ ] Revue de sécurité (validation des entrées API, limites de taille, protection des endpoints
-      d'administration) avant toute exposition réseau.
+- [ ] Web Push réel navigateur (VAPID, abonnement client, persistance des subscriptions) ;
+  `INotificationService` est prêt, l'implémentation actuelle est de type logging.
+- [ ] Tests d'intégration API bout en bout (`WebApplicationFactory`) en complément des tests
+  unitaires Application/Domain.
+- [ ] Tests end-to-end frontend (desktop/mobile) sur les parcours critiques.
+- [ ] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
+  endpoints admin, politique CORS/cookies).
+- [ ] Finalisation UX des vues historiques/CRUD restantes côté frontend.
 
 ## Reste à faire — versions futures
 
-### V11 — Notifications (Phase 6 du BACKLOG)
+### V14 — Notifications avancées
 
-- `INotificationService` (port Application) et implémentation Web Push (navigateur).
-- Déclenchement des rappels (`Reminder`) via un scheduler (génération hebdomadaire, fin de
-  semaine, fin de journée — BR-051, fuseau horaire applicatif).
-- Préférences de notification par utilisateur.
+- Web Push multi-appareils, retry policy, et télémétrie de délivrabilité.
+- Préférences utilisateur plus fines (types d'événements, plages horaires).
 
-### V12 — Complément frontend (React + TypeScript)
+### V15 — Complément frontend
 
 - Écrans restants : gestion complète des tâches, administration des participants, paramètres et
   historique.
 - Appels API typés, aucune règle métier côté client (conforme `ARCHITECTURE.md` §2.2).
 - Justification d'affectation visible par l'utilisateur (UC-ENG-02, BR-033).
 
-### V13 — Optimisation UX (Phase 7 du BACKLOG)
+### V16 — Optimisation UX
 
 - Amélioration des vues historiques et des interactions CRUD.
 - Tests end-to-end desktop/mobile.
 
-### V14 — Déploiement
+### V17 — Déploiement
 
 - Bascule de SQLite vers PostgreSQL en production (ADR-019), validation des différences de types.
 - Conteneurisation Docker Compose (ADR-018 — non utilisé en développement, cible de déploiement
