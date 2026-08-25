@@ -54,8 +54,12 @@ Notifications
 
 Optimisation UX
 
-- Dashboard
+- Dashboard avec indicateurs de base
 - Mobile responsive
+
+> **État : réalisé en partie.** Le premier écran React couvre le tableau de bord de la semaine,
+> les indicateurs de complétude, les filtres de tâches, le détail d'affectation et une mise en
+> page responsive. Les vues historiques et les écrans CRUD complets restent à finaliser.
 
 ## Hors MVP
 
@@ -104,6 +108,20 @@ Optimisation UX
 - Toutes les possibilités d'un utilisateur.
 - Interface d'administration pour gérer l'ensemble des données de l'application.
 - Relancer une affectation de tâches.
+
+### Interface frontend livrée
+
+- Projet React + TypeScript + Vite dans `src/HomeTaskManager.Web`.
+- Sélection de profil sans email ni mot de passe.
+- Tableau de bord de la semaine active avec progression, tâches ouvertes/terminées et équilibre
+  de charge par participant.
+- Modification de la complétude d'une instance depuis le tableau de bord.
+- Affichage de la justification d'une affectation.
+- Navigation conditionnée par le rôle administrateur.
+- Responsive desktop et mobile.
+
+Les écrans de gestion complète des tâches, des participants, des paramètres du moteur et de
+l'historique restent à implémenter côté interface.
 
 ---
 

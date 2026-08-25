@@ -46,6 +46,26 @@ L'application doit être capable de répondre automatiquement à cette question.
 
 Ces fonctionnalités pourront être étudiées ultérieurement.
 
+## Développement local
+
+Le backend et le frontend se lancent séparément, sans Docker en développement (ADR-018).
+
+```powershell
+dotnet run --project src/HomeTaskManager.Api/HomeTaskManager.Api.csproj
+Push-Location src/HomeTaskManager.Web
+npm install
+npm run dev
+Pop-Location
+```
+
+L'API est attendue sur `http://localhost:5251` et l'interface Vite sur
+`http://localhost:5173`. Le proxy de développement relaie les appels `/api` vers l'API.
+L'URL peut être remplacée avec la variable `VITE_API_URL`.
+
+Le premier écran frontend permet de sélectionner un profil, de consulter la semaine active,
+de filtrer les instances, de modifier leur complétude et d'afficher la justification d'une
+affectation. Les données de démonstration ne sont utilisées que lorsque l'API est indisponible.
+
 ---
 
 # Utilisateurs

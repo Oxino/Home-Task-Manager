@@ -1,6 +1,19 @@
 @HomeTaskManager.Api_HostAddress = http://localhost:5251
 
-GET {{HomeTaskManager.Api_HostAddress}}/weatherforecast/
+### Users
+GET {{HomeTaskManager.Api_HostAddress}}/api/users
+Accept: application/json
+
+### Task templates
+GET {{HomeTaskManager.Api_HostAddress}}/api/task-templates
+Accept: application/json
+
+### Assignment engine settings
+GET {{HomeTaskManager.Api_HostAddress}}/api/settings/assignment-engine
+Accept: application/json
+
+### Audit logs
+GET {{HomeTaskManager.Api_HostAddress}}/api/audit-logs
 Accept: application/json
 
 ###

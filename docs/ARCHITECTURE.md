@@ -107,8 +107,19 @@ interfaces (inversion de dépendance).
 
 ### Frontend
 
-- Écrans (voir §7), composants, appels API typés.
-- Aucune règle métier complexe (uniquement présentation et validation de surface).
+- Application React + TypeScript construite avec Vite dans `src/HomeTaskManager.Web`.
+- Écrans de présentation : sélection de profil, tableau de bord hebdomadaire, liste filtrable
+  des instances, détail d'affectation et navigation administrateur.
+- Appels REST vers l'API ASP.NET via `fetch`, avec le profil courant transmis aux commandes qui
+  le requièrent (`RequestingUserId` / `TriggeredByUserId`).
+- L'autorisation métier reste contrôlée par l'API ; l'état du profil côté client ne constitue
+  pas une preuve d'autorisation.
+- En développement, Vite relaie `/api` vers `http://localhost:5251`. L'URL peut être remplacée
+  par `VITE_API_URL`.
+- Un jeu de données de démonstration est utilisé uniquement si l'API est indisponible ; il ne
+  constitue pas une source métier persistante.
+- Aucune règle métier complexe : l'interface présente les états et déclenche les cas d'usage
+  exposés par l'API.
 
 ## 2.3 Style applicatif
 

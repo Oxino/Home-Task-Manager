@@ -100,10 +100,25 @@
   exécution du moteur d'affectation, changement de complétude, clôture de semaine,
   modification des paramètres du moteur.
 - `AuditLogsController` (consultation par entité).
+- Nettoyage du code d'exemple du template : suppression de `WeatherForecast` et de
+  `WeatherForecastController`, et remplacement de la requête `/weatherforecast/` dans
+  `HomeTaskManager.Api.http` par des requêtes sur les endpoints réels.
+
+### V11 — Première interface frontend *(version actuelle)*
+
+- Création du projet `src/HomeTaskManager.Web` avec React, TypeScript et Vite.
+- Écran de sélection de profil conforme à l'authentification locale (ADR-006).
+- Tableau de bord de la semaine active avec indicateurs de complétude et équilibre de charge.
+- Liste filtrable des instances, affichage des tâches reportées et prioritaires, bascule de
+  complétude et détail de la justification d'affectation.
+- Navigation conditionnée au rôle administrateur et base responsive desktop/mobile.
+- Proxy de développement Vite vers l'API locale (`http://localhost:5251`) et jeu de données de
+  démonstration non persistant lorsque l'API est indisponible.
+- Build frontend vérifié avec `npm run build`.
 
 ---
 
-## État actuel (fin V10)
+## État actuel (fin V11)
 
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout :
 
@@ -114,12 +129,13 @@ Profils → Modèles de tâches → Génération de semaine → Moteur d'affecta
 
 - **62 tests unitaires** (Domain + Application), tous verts.
 - Build complet de la solution sans erreur.
-- Aucune interface utilisateur (frontend) n'existe encore.
+- Le frontend React initial est disponible dans `src/HomeTaskManager.Web`.
+- Les écrans historiques et les écrans CRUD d'administration ne sont pas encore complets.
 - Aucune migration EF Core n'a encore été générée (le schéma n'a pas été matérialisé en base).
 
 ---
 
-## Reste à faire — version actuelle (V10 / finalisation backend MVP)
+## Reste à faire — version actuelle (V11 / finalisation backend MVP et frontend)
 
 - [ ] Générer et valider la première migration EF Core (SQLite) et vérifier la création du schéma.
 - [ ] Tests d'intégration API (bout en bout, via `WebApplicationFactory`) en complément des tests
@@ -145,17 +161,17 @@ Profils → Modèles de tâches → Génération de semaine → Moteur d'affecta
   semaine, fin de journée — BR-051, fuseau horaire applicatif).
 - Préférences de notification par utilisateur.
 
-### V12 — Frontend (React + TypeScript)
+### V12 — Complément frontend (React + TypeScript)
 
-- Écrans : sélection de profil, tableau de bord semaine, gestion des tâches, administration.
+- Écrans restants : gestion complète des tâches, administration des participants, paramètres et
+  historique.
 - Appels API typés, aucune règle métier côté client (conforme `ARCHITECTURE.md` §2.2).
 - Justification d'affectation visible par l'utilisateur (UC-ENG-02, BR-033).
 
 ### V13 — Optimisation UX (Phase 7 du BACKLOG)
 
-- Dashboard avec indicateurs de base (nombre de tâches, complétées, restantes, % d'avancement —
-  BR-029/BR-030).
-- Responsive mobile.
+- Amélioration des vues historiques et des interactions CRUD.
+- Tests end-to-end desktop/mobile.
 
 ### V14 — Déploiement
 
