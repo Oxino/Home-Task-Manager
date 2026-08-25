@@ -37,7 +37,7 @@ public sealed class ProcessReminderNotificationsUseCase(
                 var triggerDate = reminder.TriggerType == ReminderTriggerType.EndOfDay ? instance.PlannedDate : instance.DueDate;
                 var triggerAt = triggerDate.ToDateTime(TimeOnly.MaxValue).Add(-ToTimeSpan(reminder.OffsetValue, reminder.OffsetUnit));
                 if (utcNow < triggerAt) continue;
-                var link = $"/week?year={instance.PlannedDate.Year}&week={ISOWeek.GetWeekOfYear(instance.PlannedDate.ToDateTime(TimeOnly.MinValue))}#instance-{instance.Id}-reminder-{reminder.Id}";
+                var link = $"/week?year={instance.PlannedDate.Year}&week={ISOWeek.GetWeekOfYear(instance.PlannedDate.ToDateTime(TimeOnly.MinValue))}&instanceId={instance.Id}";
                 if (await notificationRepository.ExistsByLinkAsync(assignedUserId, link, cancellationToken)) continue;
                 var preferences = await preferencesRepository.GetByUserIdAsync(assignedUserId, cancellationToken);
                 if (preferences?.NotificationsEnabled == false) continue;

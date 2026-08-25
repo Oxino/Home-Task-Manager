@@ -781,7 +781,8 @@ function App() {
     const target = new URL(notification.link, window.location.origin);
     const year = Number(target.searchParams.get("year"));
     const weekNumber = Number(target.searchParams.get("week"));
-    const instanceId = target.searchParams.get("instanceId");
+    const legacyInstanceId = target.hash.match(/^#instance-([0-9a-fA-F-]{36})/)?.[1];
+    const instanceId = target.searchParams.get("instanceId") ?? legacyInstanceId;
 
     const search = Number.isInteger(year) && Number.isInteger(weekNumber) && weekNumber > 0
       ? `?year=${year}&week=${weekNumber}${instanceId ? `&instanceId=${encodeURIComponent(instanceId)}` : ""}`

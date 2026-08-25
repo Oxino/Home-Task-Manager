@@ -29,6 +29,7 @@ public sealed class ProcessReminderNotificationsUseCaseTests
 
         created.Should().Be(1);
         createdAgain.Should().Be(0);
-        (await notifications.GetByUserIdAsync(user.Id)).Should().ContainSingle();
+        var createdNotification = (await notifications.GetByUserIdAsync(user.Id)).Should().ContainSingle().Subject;
+        createdNotification.Link.Should().Be($"/week?year={instance.PlannedDate.Year}&week=1&instanceId={instance.Id}");
     }
 }
