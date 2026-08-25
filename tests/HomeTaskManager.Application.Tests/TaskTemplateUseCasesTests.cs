@@ -20,8 +20,14 @@ public sealed class InMemoryTaskTemplateRepository : ITaskTemplateRepository
     public Task<IReadOnlyList<TaskTemplate>> GetActiveAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<TaskTemplate>>(_taskTemplates.Where(task => task.IsActive).ToList());
 
+    public Task<IReadOnlyList<TaskTemplate>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<TaskTemplate>>(_taskTemplates.ToList());
+
     public Task<bool> ExistsByTitleAsync(string title, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_taskTemplates.Any(task => task.Title == title));
+        Task.FromResult(_taskTemplates.Any(task => string.Equals(task.Title, title, StringComparison.OrdinalIgnoreCase)));
+
+    public Task<bool> ExistsByTitleAsync(string title, Guid excludingId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_taskTemplates.Any(task => task.Id != excludingId && string.Equals(task.Title, title, StringComparison.OrdinalIgnoreCase)));
 
     public Task<IReadOnlyList<TaskTemplate>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<TaskTemplate>>(_taskTemplates.Where(task => ids.Contains(task.Id)).ToList());
@@ -143,5 +149,23 @@ public class UpdateTaskTemplateUseCaseTests
         var updated = await useCase.ExecuteAsync(command);
 
         updated.Title.Should().Be("Aspirateur salon");
+    }
+
+    [Fact]
+    public async Task Cannot_rename_a_task_to_an_existing_title()
+    {
+        var userRepository = new InMemoryUserRepository();
+        var author = new User("Julie");
+        userRepository.Seed(author);
+        var firstTask = new TaskTemplate("Aspirateur", author.Id, 40, FrequencyType.Weekly);
+        var secondTask = new TaskTemplate("Vaisselle", author.Id, 30, FrequencyType.Weekly);
+        var repository = new InMemoryTaskTemplateRepository();
+        repository.Seed(firstTask);
+        repository.Seed(secondTask);
+        var useCase = new UpdateTaskTemplateUseCase(repository, userRepository, new NoOpAuditLogger(), new NoOpUnitOfWork());
+
+        var action = () => useCase.ExecuteAsync(new UpdateTaskTemplateCommand(secondTask.Id, author.Id, "Aspirateur", null, 30, TaskPriority.Normal, FrequencyType.Weekly, null));
+
+        await action.Should().ThrowAsync<DomainValidationException>();
     }
 }

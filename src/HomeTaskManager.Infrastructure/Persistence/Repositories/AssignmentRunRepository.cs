@@ -9,6 +9,9 @@ public sealed class AssignmentRunRepository(HomeTaskManagerDbContext dbContext) 
     public Task<bool> ExistsForWeekAsync(Guid weekId, CancellationToken cancellationToken = default) =>
         dbContext.AssignmentRuns.AnyAsync(run => run.WeekId == weekId, cancellationToken);
 
+    public async Task<IReadOnlyList<AssignmentRun>> GetByWeekAsync(Guid weekId, CancellationToken cancellationToken = default) =>
+        await dbContext.AssignmentRuns.Where(run => run.WeekId == weekId).OrderByDescending(run => run.GeneratedAt).ToListAsync(cancellationToken);
+
     public Task AddAsync(AssignmentRun assignmentRun, CancellationToken cancellationToken = default)
     {
         return dbContext.AssignmentRuns.AddAsync(assignmentRun, cancellationToken).AsTask();

@@ -18,6 +18,9 @@ public sealed class InMemoryAssignmentRunRepository : IAssignmentRunRepository
     public Task<bool> ExistsForWeekAsync(Guid weekId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_runs.Any(run => run.WeekId == weekId));
 
+    public Task<IReadOnlyList<AssignmentRun>> GetByWeekAsync(Guid weekId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<AssignmentRun>>(_runs.Where(run => run.WeekId == weekId).OrderByDescending(run => run.GeneratedAt).ToList());
+
     public Task AddAsync(AssignmentRun assignmentRun, CancellationToken cancellationToken = default)
     {
         _runs.Add(assignmentRun);

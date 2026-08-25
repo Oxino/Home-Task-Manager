@@ -66,6 +66,13 @@ Le premier écran frontend permet de sélectionner un profil, de consulter la se
 de filtrer les instances, de modifier leur complétude et d'afficher la justification d'une
 affectation. Les données de démonstration ne sont utilisées que lorsque l'API est indisponible.
 
+### Générer un historique de développement
+
+Après avoir sélectionné un profil administrateur, la page `/history` propose le bouton
+« Générer 20 semaines ». Cette action appelle l'endpoint réservé au développement
+`POST /api/development/seed-history` et génère les semaines et exécutions manquantes en
+réutilisant les cas d'usage métier. Elle est idempotente par semaine.
+
 ---
 
 # Utilisateurs

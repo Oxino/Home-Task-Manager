@@ -16,6 +16,8 @@ type Template = {
   frequencyType?: string;
   manualDifficultyScore?: number;
   estimatedDurationMinutes?: number;
+  createdByUserId?: string;
+  isActive?: boolean;
 };
 type Instance = {
   id: string;
@@ -23,13 +25,18 @@ type Instance = {
   dueDate: string;
   isCompleted: boolean;
   isCarryOver: boolean;
+  status?: string;
   assignedUserId?: string;
 };
 type AuditLog = { id: string; entityType: string; entityId: string; action: string; performedByUserId: string; oldValue?: string; newValue?: string; performedAt: string };
+type AssignmentRun = { id: string; weekId: string; strategyName: string; triggeredByUserId: string; isAutomatic: boolean; notes?: string; generatedAt: string };
+type TaskComment = { id: string; taskInstanceId: string; authorUserId: string; content: string; createdAt: string };
+type WeekStatus = "Active" | "Closed";
 
 type TaskFormProps = {
   api: string;
   user: User;
+  templates: Template[];
   onCreated: (template: Template) => void;
 };
 
@@ -37,14 +44,14 @@ const demoUsers: User[] = [
   {
     id: "julie",
     displayName: "Julie",
-    isAdmin: true,
+    isAdmin: false,
     isActive: true,
     availabilityPercentage: 100,
   },
   {
     id: "nicolas",
     displayName: "Nicolas",
-    isAdmin: false,
+    isAdmin: true,
     isActive: true,
     availabilityPercentage: 80,
   },
@@ -55,24 +62,28 @@ const demoTemplates: Template[] = [
     title: "Vider le lave-vaisselle",
     description: "Ranger la vaisselle propre avant le petit-déjeuner.",
     priority: "Normal",
+    createdByUserId: "julie",
   },
   {
     id: "plants",
     title: "Arroser les plantes",
     description: "Vérifier les plantes du salon et de la cuisine.",
     priority: "Low",
+    createdByUserId: "nicolas",
   },
   {
     id: "vacuum",
     title: "Aspirateur",
     description: "Passer l’aspirateur dans les pièces de vie.",
     priority: "Critical",
+    createdByUserId: "julie",
   },
   {
     id: "shopping",
     title: "Courses de la semaine",
     description: "Préparer et récupérer les courses.",
     priority: "Normal",
+    createdByUserId: "nicolas",
   },
 ];
 const demoInstances: Instance[] = [
@@ -136,6 +147,8 @@ function weekLabel(offset: number) {
 const viewRoutes: Record<string, string> = {
   "/week": "Semaine",
   "/history": "Historique",
+  "/assignments": "Affectations",
+  "/instances": "Instances",
   "/tasks": "Tâches",
   "/participants": "Participants",
   "/assignment-engine": "Moteur d’affectation",
@@ -145,7 +158,19 @@ function viewFromPath(pathname: string) {
   return viewRoutes[pathname] ?? "Semaine";
 }
 
-function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
+const frequencyHelp: Record<string, string> = {
+  DailyMandatory: "Une instance est créée pour chacun des 7 jours de la semaine.",
+  DailyFlexible: "Une seule instance est créée : la tâche doit être réalisée au moins une fois dans la semaine, et peut l’être plusieurs fois.",
+  Weekly: "Une instance est créée pour la semaine sélectionnée.",
+  Monthly: "Une instance est créée sur la semaine mensuelle définie par le moteur.",
+  OneTime: "Une seule instance est créée ; la tâche n’est pas récurrente.",
+};
+
+function FieldInfo({ text }: { text: string }) {
+  return <span className="field-info"><button type="button" aria-label="Afficher l’explication" className="info-button">i</button><span className="info-tooltip">{text}</span></span>;
+}
+
+function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -159,6 +184,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
     event.preventDefault();
     const score = Number(difficulty);
     if (!title.trim()) return setError("Le titre est obligatoire.");
+    if (templates.some((template) => template.title.trim().toLocaleLowerCase() === title.trim().toLocaleLowerCase())) return setError("Une tâche portant ce titre existe déjà.");
     if (!Number.isInteger(score) || score < 1 || score > 100)
       return setError("La pénibilité doit être comprise entre 1 et 100.");
     const payload = {
@@ -180,16 +206,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
         throw new Error((await response.json()).error ?? "Création impossible");
       onCreated(await response.json());
     } catch (reason) {
-      if (api)
-        return setError(
-          reason instanceof Error ? reason.message : "Création impossible.",
-        );
-      onCreated({
-        id: `local-${Date.now()}`,
-        title: payload.title,
-        description: payload.description ?? "",
-        priority,
-      });
+      return setError(reason instanceof Error ? reason.message : "API indisponible : la tâche n’a pas été enregistrée.");
     }
     setOpen(false);
     setTitle("");
@@ -220,6 +237,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
             <h2>Ajouter une tâche</h2>
             <label>
               Titre
+              <FieldInfo text="Le titre doit être unique, même pour une tâche inactive, et sera visible dans les affectations." />
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -228,6 +246,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
             </label>
             <label>
               Description
+              <FieldInfo text="Décris le résultat attendu pour que le participant puisse agir sans clarification." />
               <textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -237,6 +256,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
             <div className="form-grid">
               <label>
                 Priorité
+                <FieldInfo text="Pondère la charge : faible 0,5, normale 1, critique 1,5 par défaut. Ces valeurs sont réglables par l’administrateur." />
                 <select
                   value={priority}
                   onChange={(event) => setPriority(event.target.value)}
@@ -248,12 +268,13 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
               </label>
               <label>
                 Fréquence
+                <FieldInfo text={frequencyHelp[frequencyType]} />
                 <select
                   value={frequencyType}
                   onChange={(event) => setFrequencyType(event.target.value)}
                 >
-                  <option value="DailyMandatory">Quotidienne</option>
-                  <option value="DailyFlexible">Flexible</option>
+                  <option value="DailyMandatory">Quotidienne obligatoire</option>
+                  <option value="DailyFlexible">Quotidienne flexible</option>
                   <option value="Weekly">Hebdomadaire</option>
                   <option value="Monthly">Mensuelle</option>
                   <option value="OneTime">Ponctuelle</option>
@@ -261,6 +282,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
               </label>
               <label>
                 Pénibilité
+                <FieldInfo text="Score entier obligatoire compris entre 1 et 100. Plus il est élevé, plus la tâche pèse dans l’équilibrage." />
                 <input
                   type="number"
                   min="1"
@@ -271,6 +293,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
               </label>
               <label>
                 Durée (min)
+                <FieldInfo text="Durée estimée en minutes, minimum 1. Elle influence le score proportionnellement à la durée de référence." />
                 <input
                   type="number"
                   min="1"
@@ -290,7 +313,7 @@ function CreateTaskDialog({ api, user, onCreated }: TaskFormProps) {
   );
 }
 
-function EditTaskDialog({ api, user, template, onUpdated }: { api: string; user: User; template: Template; onUpdated: (template: Template) => void }) {
+function EditTaskDialog({ api, user, template, templates, onUpdated }: { api: string; user: User; template: Template; templates: Template[]; onUpdated: (template: Template) => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(template.title);
   const [description, setDescription] = useState(template.description ?? "");
@@ -304,6 +327,7 @@ function EditTaskDialog({ api, user, template, onUpdated }: { api: string; user:
     event.preventDefault();
     const score = Number(difficulty);
     if (!title.trim()) return setError("Le titre est obligatoire.");
+    if (templates.some((item) => item.id !== template.id && item.title.trim().toLocaleLowerCase() === title.trim().toLocaleLowerCase())) return setError("Une tâche portant ce titre existe déjà.");
     if (!Number.isInteger(score) || score < 1 || score > 100) return setError("La pénibilité doit être comprise entre 1 et 100.");
     const payload = { title: title.trim(), description: description.trim() || null, manualDifficultyScore: score, priority, frequencyType, estimatedDurationMinutes: Number(duration) || null, requestingUserId: user.id };
     try {
@@ -311,35 +335,49 @@ function EditTaskDialog({ api, user, template, onUpdated }: { api: string; user:
       if (!response.ok) throw new Error((await response.json()).error ?? "Modification impossible");
       onUpdated(await response.json());
     } catch (reason) {
-      if (api) return setError(reason instanceof Error ? reason.message : "Modification impossible.");
-      onUpdated({ ...template, title: payload.title, description: payload.description ?? "", priority, frequencyType, manualDifficultyScore: score, estimatedDurationMinutes: payload.estimatedDurationMinutes ?? undefined });
+      return setError(reason instanceof Error ? reason.message : "API indisponible : la modification n’a pas été enregistrée.");
     }
     setOpen(false); setError("");
   }
 
-  return <><button className="secondary-button" onClick={() => setOpen(true)}>Modifier</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">MODIFIER LE MODÈLE</span><h2>{template.title}</h2><label>Titre<input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus /></label><label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} /></label><div className="form-grid"><label>Priorité<select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="Low">Faible</option><option value="Normal">Normale</option><option value="Critical">Critique</option></select></label><label>Fréquence<select value={frequencyType} onChange={(event) => setFrequencyType(event.target.value)}><option value="DailyMandatory">Quotidienne</option><option value="DailyFlexible">Flexible</option><option value="Weekly">Hebdomadaire</option><option value="Monthly">Mensuelle</option><option value="OneTime">Ponctuelle</option></select></label><label>Pénibilité<input type="number" min="1" max="100" value={difficulty} onChange={(event) => setDifficulty(event.target.value)} /></label><label>Durée (min)<input type="number" min="1" value={duration} onChange={(event) => setDuration(event.target.value)} /></label></div>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Enregistrer</button></form></div>}</>;
+  return <><button className="secondary-button" onClick={() => setOpen(true)}>Modifier</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">MODIFIER LE MODÈLE</span><h2>{template.title}</h2><label>Titre<FieldInfo text="Le titre doit rester unique, même pour une tâche inactive." /><input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus /></label><label>Description<FieldInfo text="Décris le résultat attendu pour éviter les ambiguïtés." /><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} /></label><div className="form-grid"><label>Priorité<FieldInfo text="Pondère la charge : faible 0,5, normale 1, critique 1,5 par défaut." /><select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="Low">Faible</option><option value="Normal">Normale</option><option value="Critical">Critique</option></select></label><label>Fréquence<FieldInfo text={frequencyHelp[frequencyType]} /><select value={frequencyType} onChange={(event) => setFrequencyType(event.target.value)}><option value="DailyMandatory">Quotidienne obligatoire</option><option value="DailyFlexible">Quotidienne flexible</option><option value="Weekly">Hebdomadaire</option><option value="Monthly">Mensuelle</option><option value="OneTime">Ponctuelle</option></select></label><label>Pénibilité<FieldInfo text="Entier obligatoire compris entre 1 et 100." /><input type="number" min="1" max="100" value={difficulty} onChange={(event) => setDifficulty(event.target.value)} /></label><label>Durée (min)<FieldInfo text="Minimum 1 minute; influence le score de charge." /><input type="number" min="1" value={duration} onChange={(event) => setDuration(event.target.value)} /></label></div>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Enregistrer</button></form></div>}</>;
 }
 
 function TaskCatalog({
   templates,
+  users,
   user,
   api,
   onCreated,
   onUpdated,
 }: {
   templates: Template[];
+  users: User[];
   user: User;
   api: string;
   onCreated: (template: Template) => void;
   onUpdated: (template: Template) => void;
 }) {
+  const [allTemplates, setAllTemplates] = useState(templates);
   const [query, setQuery] = useState("");
-  const filtered = templates.filter((template) =>
+  useEffect(() => {
+    fetch(`${api}/api/task-templates/all`).then(async (response) => { if (response.ok) setAllTemplates(await response.json()) }).catch(() => undefined)
+  }, [api])
+  const filtered = allTemplates.filter((template) =>
     template.title.toLowerCase().includes(query.toLowerCase()),
   );
   function updateTemplate(updated: Template) {
+    setAllTemplates((items) => items.map((item) => item.id === updated.id ? updated : item));
     onUpdated(updated);
   }
+
+  async function setActive(template: Template) {
+    const response = await fetch(`${api}/api/task-templates/${template.id}/active`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !template.isActive }) });
+    if (!response.ok) return;
+    updateTemplate(await response.json());
+  }
+
+  const author = (id?: string) => users.find((entry) => entry.id === id)?.displayName ?? "Profil inconnu";
 
   return (
     <section className="catalog-panel">
@@ -348,7 +386,7 @@ function TaskCatalog({
           <span className="section-kicker">PILOTAGE</span>
           <h2>Modèles de tâches</h2>
         </div>
-        <CreateTaskDialog api={api} user={user} onCreated={onCreated} />
+        <CreateTaskDialog api={api} user={user} templates={allTemplates} onCreated={(created) => { setAllTemplates((items) => [...items, created]); onCreated(created) }} />
       </div>
       <div className="catalog-toolbar">
         <input
@@ -365,6 +403,7 @@ function TaskCatalog({
             <div>
               <h3>{template.title}</h3>
               <p>{template.description || "Aucune description"}</p>
+              <small className="catalog-author">Créée par {author(template.createdByUserId)}</small>
             </div>
             <div className="catalog-meta">
               <span
@@ -376,8 +415,9 @@ function TaskCatalog({
                     ? "FAIBLE"
                     : "NORMALE"}
               </span>
-              <small>Actif</small>
-              <EditTaskDialog api={api} user={user} template={template} onUpdated={updateTemplate} />
+              <small>{template.isActive === false ? "Inactif" : "Actif"}</small>
+              <EditTaskDialog api={api} user={user} template={template} templates={allTemplates} onUpdated={updateTemplate} />
+              <button className="secondary-button" onClick={() => setActive(template)}>{template.isActive === false ? "Réactiver" : "Désactiver"}</button>
             </div>
           </article>
         ))}
@@ -386,12 +426,23 @@ function TaskCatalog({
   );
 }
 
-function ProfileCatalog({ users, api, onCreated }: { users: User[]; api: string; onCreated: (user: User) => void }) {
+function EditProfileDialog({ user, users, api, onUpdated }: { user: User; users: User[]; api: string; onUpdated: (user: User) => void }) {
+  const [open, setOpen] = useState(false); const [name, setName] = useState(user.displayName); const [admin, setAdmin] = useState(user.isAdmin); const [availability, setAvailability] = useState(String(user.availabilityPercentage)); const [active, setActive] = useState(user.isActive); const [error, setError] = useState("");
+  async function submit(event: FormEvent) { event.preventDefault(); const percentage = Number(availability); if (!name.trim()) return setError("Le nom d’affichage est obligatoire."); if (users.some((entry) => entry.id !== user.id && entry.displayName.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase())) return setError("Ce nom d’affichage est déjà utilisé."); if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100) return setError("La disponibilité doit être comprise entre 0 et 100."); try { const response = await fetch(`${api}/api/users/${user.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: name.trim(), isAdmin: admin, availabilityPercentage: percentage, isActive: active }) }); if (!response.ok) throw new Error((await response.json()).error ?? "Modification impossible"); onUpdated(await response.json()); } catch (reason) { return setError(reason instanceof Error ? reason.message : "Modification impossible."); } setOpen(false); setError(""); }
+  return <><button className="secondary-button" onClick={() => setOpen(true)}>Modifier</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">MODIFIER LE PROFIL</span><h2>{user.displayName}</h2><label>Nom d’affichage<input value={name} onChange={(event) => setName(event.target.value)} autoFocus /></label><label>Disponibilité (%)<input type="number" min="0" max="100" value={availability} onChange={(event) => setAvailability(event.target.value)} /></label><label className="checkbox-label"><input type="checkbox" checked={admin} onChange={(event) => setAdmin(event.target.checked)} /> Administrateur</label><label className="checkbox-label"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} /> Profil actif</label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Enregistrer</button></form></div>}</>;
+}
+
+function ProfileCatalog({ users, api, onCreated, onUpdated }: { users: User[]; api: string; onCreated: (user: User) => void; onUpdated: (user: User) => void }) {
+  const [allUsers, setAllUsers] = useState(users)
   const [open, setOpen] = useState(false)
   const [displayName, setDisplayName] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
   const [availability, setAvailability] = useState("100")
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    fetch(`${api}/api/users/all`).then(async (response) => { if (response.ok) setAllUsers(await response.json()) }).catch(() => undefined)
+  }, [api])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -401,15 +452,16 @@ function ProfileCatalog({ users, api, onCreated }: { users: User[]; api: string;
     try {
       const response = await fetch(`${api}/api/users`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: displayName.trim(), isAdmin, availabilityPercentage: percentage }) })
       if (!response.ok) throw new Error((await response.json()).error ?? "Création impossible")
-      onCreated(await response.json())
+      const created = await response.json()
+      setAllUsers((items) => [...items, created])
+      onCreated(created)
     } catch (reason) {
-      if (api) return setError(reason instanceof Error ? reason.message : "Création impossible.")
-      onCreated({ id: `local-${Date.now()}`, displayName: displayName.trim(), isAdmin, isActive: true, availabilityPercentage: percentage })
+      return setError(reason instanceof Error ? reason.message : "API indisponible : le profil n’a pas été enregistré.")
     }
     setOpen(false); setDisplayName(""); setError("")
   }
 
-  return <section className="catalog-panel"><div className="panel-heading"><div><span className="section-kicker">PILOTAGE</span><h2>Participants</h2></div><button className="primary-button" onClick={() => setOpen(true)}>+ Nouveau profil</button></div><div className="profile-catalog-list">{users.map((user) => <article className="profile-catalog-item" key={user.id}><span className={`avatar ${user.isAdmin ? "" : "blue"}`}>{user.displayName[0]}</span><div><h3>{user.displayName}</h3><p>{user.isAdmin ? "Administrateur" : "Participant"}</p></div><div className="profile-catalog-meta"><b>{user.availabilityPercentage}%</b><small>{user.isActive ? "Actif" : "Inactif"}</small></div></article>)}</div>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">NOUVEAU PROFIL</span><h2>Ajouter un participant</h2><label>Nom d’affichage<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus /></label><label>Disponibilité (%)<input type="number" min="0" max="100" value={availability} onChange={(event) => setAvailability(event.target.value)} /></label><label className="checkbox-label"><input type="checkbox" checked={isAdmin} onChange={(event) => setIsAdmin(event.target.checked)} /> Administrateur</label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Créer le profil</button></form></div>}</section>
+  return <section className="catalog-panel"><div className="panel-heading"><div><span className="section-kicker">PILOTAGE</span><h2>Participants</h2></div><button className="primary-button" onClick={() => setOpen(true)}>+ Nouveau profil</button></div><div className="profile-catalog-list">{allUsers.map((entry) => <article className="profile-catalog-item" key={entry.id}><span className={`avatar ${entry.isAdmin ? "" : "blue"}`}>{entry.displayName[0]}</span><div><h3>{entry.displayName}</h3><p>{entry.isAdmin ? "Administrateur" : "Participant"}</p></div><div className="profile-catalog-meta"><b>{entry.availabilityPercentage}%</b><small>{entry.isActive ? "Actif" : "Inactif"}</small></div><EditProfileDialog user={entry} users={allUsers} api={api} onUpdated={(updated) => { setAllUsers((items) => items.map((item) => item.id === updated.id ? updated : item)); onUpdated(updated) }} /></article>)}</div>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">NOUVEAU PROFIL</span><h2>Ajouter un participant</h2><label>Nom d’affichage<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus /></label><label>Disponibilité (%)<input type="number" min="0" max="100" value={availability} onChange={(event) => setAvailability(event.target.value)} /></label><label className="checkbox-label"><input type="checkbox" checked={isAdmin} onChange={(event) => setIsAdmin(event.target.checked)} /> Administrateur</label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Créer le profil</button></form></div>}</section>
 }
 
 type EngineSettings = { lowPriorityMultiplier: number; normalPriorityMultiplier: number; criticalPriorityMultiplier: number; referenceDurationMinutes: number; equityWindowWeeks: number; repetitionPenaltyWeight: number }
@@ -436,24 +488,66 @@ function EngineSettingsPanel({ api, user, onSaved }: { api: string; user: User; 
       if (!response.ok) throw new Error((await response.json()).error ?? "Enregistrement impossible")
       setSettings(await response.json()); setSaved(true); onSaved()
     } catch (reason) {
-      if (api) return setError(reason instanceof Error ? reason.message : "Enregistrement impossible.")
-      setSaved(true); onSaved()
+      return setError(reason instanceof Error ? reason.message : "API indisponible : les paramètres n’ont pas été enregistrés.")
     }
   }
 
   return <form className="settings-panel" onSubmit={submit}><div className="panel-heading"><div><span className="section-kicker">CONFIGURATION ADMIN</span><h2>Moteur d’affectation</h2></div><button className="primary-button" type="submit">Enregistrer</button></div><p className="settings-intro">Ces paramètres pilotent le score des tâches et l’équilibre de la charge pour les prochaines affectations.</p><div className="settings-section"><span className="section-kicker">MULTIPLICATEURS DE PRIORITÉ</span><div className="settings-grid"><label>Faible<input type="number" min="0" step="0.05" value={settings.lowPriorityMultiplier} onChange={(event) => update("lowPriorityMultiplier", event.target.value)} /></label><label>Normale<input type="number" min="0" step="0.05" value={settings.normalPriorityMultiplier} onChange={(event) => update("normalPriorityMultiplier", event.target.value)} /></label><label>Critique<input type="number" min="0" step="0.05" value={settings.criticalPriorityMultiplier} onChange={(event) => update("criticalPriorityMultiplier", event.target.value)} /></label></div></div><div className="settings-section"><span className="section-kicker">ÉQUILIBRE HISTORIQUE</span><div className="settings-grid"><label>Durée de référence (minutes)<input type="number" min="1" value={settings.referenceDurationMinutes} onChange={(event) => update("referenceDurationMinutes", event.target.value)} /></label><label>Fenêtre d’équité (semaines)<input type="number" min="1" value={settings.equityWindowWeeks} onChange={(event) => update("equityWindowWeeks", event.target.value)} /></label><label>Pénalité anti-répétition<input type="number" min="0" step="0.05" value={settings.repetitionPenaltyWeight} onChange={(event) => update("repetitionPenaltyWeight", event.target.value)} /></label></div></div>{error && <p className="form-error">{error}</p>}{saved && <p className="settings-saved">✓ Paramètres enregistrés</p>}</form>
 }
 
-function HistoryPanel({ api, users }: { api: string; users: User[] }) {
+function HistoryPanel({ api, users, isAdmin, currentUserId }: { api: string; users: User[]; isAdmin: boolean; currentUserId: string }) {
   const [entries, setEntries] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   useEffect(() => {
     fetch(`${api}/api/audit-logs`).then(async (response) => { if (!response.ok) throw new Error("Lecture impossible"); setEntries(await response.json()); }).catch(() => undefined).finally(() => setLoading(false));
   }, [api]);
   const actor = (id: string) => users.find((user) => user.id === id)?.displayName ?? "Participant";
   const actionLabel = (action: string) => ({ Created: "créé", Updated: "modifié", Completed: "terminé", Reopened: "rouvert", AssignmentRun: "répartition lancée", WeekClosed: "semaine clôturée" }[action] ?? action.toLowerCase());
   const entityLabel = (type: string) => type === "TaskTemplate" ? "modèle de tâche" : type === "TaskInstance" ? "instance" : type.toLowerCase();
-  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>Historique d’activité</h2></div><span className="history-count">{entries.length} événements</span></div>{loading ? <p className="muted">Chargement de l’historique...</p> : entries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <div className="history-list">{entries.map((entry) => <article className="history-item" key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{entry.newValue && <small>{entry.newValue}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></article>)}</div>}</section>;
+  const visibleEntries = isAdmin ? entries : entries.filter((entry) => entry.performedByUserId === currentUserId);
+  async function seedHistory() {
+    setSeeding(true)
+    try {
+      const response = await fetch(`${api}/api/development/seed-history`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weeks: 20 }) })
+      if (!response.ok) throw new Error("Génération impossible")
+      const auditResponse = await fetch(`${api}/api/audit-logs`)
+      if (auditResponse.ok) setEntries(await auditResponse.json())
+    } finally { setSeeding(false) }
+  }
+  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Historique du foyer" : "Mon historique"}</h2></div><div className="history-actions">{isAdmin && <button className="secondary-button" disabled={seeding} onClick={seedHistory}>{seeding ? "Génération..." : "Générer 20 semaines"}</button>}<span className="history-count">{visibleEntries.length} événements</span></div></div>{loading ? <p className="muted">Chargement de l’historique...</p> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <div className="history-list">{visibleEntries.map((entry) => <article className="history-item" key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{entry.newValue && <small>{entry.newValue}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></article>)}</div>}</section>;
+}
+
+function CommentsPanel({ api, instanceId, currentUser, users }: { api: string; instanceId: string; currentUser: User; users: User[] }) {
+  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [content, setContent] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => { fetch(`${api}/api/task-instances/${instanceId}/comments`).then(async (response) => { if (response.ok) setComments(await response.json()) }).catch(() => undefined) }, [api, instanceId]);
+  async function submit(event: FormEvent) { event.preventDefault(); if (!content.trim()) return; try { const response = await fetch(`${api}/api/task-instances/${instanceId}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: content.trim() }) }); if (!response.ok) throw new Error("Commentaire impossible"); const comment = await response.json(); setComments((items) => [...items, comment]); setContent(""); setError(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Commentaire impossible"); } }
+  const author = (id: string) => users.find((user) => user.id === id)?.displayName ?? currentUser.displayName;
+  return <div className="comments-panel"><span className="section-kicker">ÉCHANGES</span><h3>Commentaires</h3>{comments.length === 0 ? <p className="comments-empty">Aucun commentaire pour le moment.</p> : <div className="comments-list">{comments.map((comment) => <div className="comment" key={comment.id}><b>{author(comment.authorUserId)}</b><p>{comment.content}</p><time>{new Date(comment.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div>)}</div>}<form className="comment-form" onSubmit={submit}><textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="Ajouter une précision..." rows={2} />{error && <small className="form-error">{error}</small>}<button className="secondary-button" type="submit">Ajouter</button></form></div>;
+}
+
+function AssignmentsPanel({ instances, templates, users, year, weekNumber, api, busyAction, onAction }: { instances: Instance[]; templates: Template[]; users: User[]; year: number; weekNumber: number; api: string; busyAction: string; onAction: (action: "generate" | "assign" | "close") => void }) {
+  const [runs, setRuns] = useState<AssignmentRun[]>([]);
+  useEffect(() => { fetch(`${api}/api/assignments/runs?year=${year}&weekNumber=${weekNumber}`).then(async (response) => { if (response.ok) setRuns(await response.json()) }).catch(() => undefined) }, [api, year, weekNumber]);
+  const template = (id: string) => templates.find((item) => item.id === id)
+  const user = (id?: string) => users.find((item) => item.id === id)?.displayName ?? "Non attribuée"
+  return <section className="assignments-panel"><div className="panel-heading"><div><span className="section-kicker">ADMINISTRATION</span><h2>Affectations de la semaine</h2><p className="panel-subtitle">Vue globale des instances attribuées à tous les participants.</p></div><div className="admin-actions"><button className="secondary-button" disabled={Boolean(busyAction)} onClick={() => onAction("generate")}>{busyAction === "generate" ? "Génération..." : "Générer les instances"}</button><button className="primary-button" disabled={Boolean(busyAction)} onClick={() => onAction("assign")}>{busyAction === "assign" ? "Affectation..." : "Lancer l’affectation"}</button><button className="danger-button" disabled={Boolean(busyAction)} onClick={() => onAction("close")}>{busyAction === "close" ? "Clôture..." : "Clôturer"}</button></div></div><div className="assignment-summary"><b>{instances.length}</b><span>instances cette semaine</span><b>{instances.filter((item) => item.isCompleted).length}</b><span>terminées</span><b>{new Set(instances.map((item) => item.assignedUserId).filter(Boolean)).size}</b><span>participants concernés</span></div><div className="run-history"><span className="section-kicker">EXÉCUTIONS DE LA SEMAINE</span>{runs.length === 0 ? <p className="muted">Aucune exécution enregistrée.</p> : runs.map((run, index) => <div className="run-row" key={run.id}><span className="run-number">{runs.length - index}</span><div><b>{run.strategyName}</b><small>{new Date(run.generatedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</small></div><span className="run-badge">{index === 0 ? "Dernière" : "Relance"}</span></div>)}</div><div className="assignment-list">{instances.map((item) => <article className="assignment-item" key={item.id}><span className={item.isCompleted ? "assignment-state done" : "assignment-state"}>{item.isCompleted ? "✓" : "○"}</span><div><h3>{template(item.taskTemplateId)?.title ?? "Tâche sans titre"}</h3><p>Échéance : {new Date(item.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}{item.isCarryOver ? " · Reportée" : ""}</p></div><strong>{user(item.assignedUserId)}</strong></article>)}</div></section>
+}
+
+function InstanceAdminPanel({ instances, templates, users, onReassigned, onCancelled }: { instances: Instance[]; templates: Template[]; users: User[]; onReassigned: (instanceId: string, assignedUserId: string) => Promise<void>; onCancelled: (instanceId: string) => Promise<void> }) {
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState("");
+  const template = (id: string) => templates.find((item) => item.id === id)?.title ?? "Tâche sans titre";
+  async function reassign(item: Instance) {
+    const assignedUserId = assignments[item.id] ?? item.assignedUserId;
+    if (!assignedUserId || assignedUserId === item.assignedUserId) return;
+    setBusy(item.id);
+    try { await onReassigned(item.id, assignedUserId); } finally { setBusy(""); }
+  }
+  async function cancel(item: Instance) { if (!window.confirm(`Annuler l’instance « ${template(item.taskTemplateId)} » ?`)) return; setBusy(item.id); try { await onCancelled(item.id); } finally { setBusy(""); } }
+  return <section className="assignments-panel"><div className="panel-heading"><div><span className="section-kicker">ADMINISTRATION</span><h2>Instances de tâches</h2><p className="panel-subtitle">Toutes les occurrences générées, leur état et leur propriétaire.</p></div><span className="history-count">{instances.length} instances</span></div><div className="instance-admin-list">{instances.map((item) => { const cancelled = item.status === "Cancelled"; return <article className="instance-admin-item" key={item.id}><div className={item.isCompleted ? "assignment-state done" : "assignment-state"}>{item.isCompleted ? "✓" : "○"}</div><div><h3>{template(item.taskTemplateId)}</h3><p>Échéance : {new Date(item.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}{item.isCarryOver ? " · Reportée" : ""}</p></div><select className="instance-owner-select" disabled={cancelled} aria-label={`Participant de ${template(item.taskTemplateId)}`} value={assignments[item.id] ?? item.assignedUserId ?? ""} onChange={(event) => setAssignments((current) => ({ ...current, [item.id]: event.target.value }))}><option value="">Non attribuée</option>{users.filter((entry) => entry.isActive).map((entry) => <option value={entry.id} key={entry.id}>{entry.displayName}</option>)}</select><button className="secondary-button" disabled={busy === item.id || cancelled} onClick={() => reassign(item)}>{busy === item.id ? "..." : "Réaffecter"}</button>{!item.isCompleted && !cancelled && <button className="danger-button" disabled={busy === item.id} onClick={() => cancel(item)}>Annuler</button>}<span className={item.isCompleted ? "instance-status done" : cancelled ? "instance-status cancelled" : "instance-status"}>{item.isCompleted ? "Terminée" : cancelled ? "Annulée" : "À faire"}</span></article>})}</div><div className="admin-note">Les réaffectations et annulations sont historisées et impossibles sur une semaine clôturée.</div></section>
 }
 
 function App() {
@@ -467,6 +561,9 @@ function App() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [busyAction, setBusyAction] = useState("");
+  const [weekStatus, setWeekStatus] = useState<WeekStatus>("Active");
+  const [apiError, setApiError] = useState(false);
   const week = isoWeek(new Date(Date.now() + weekOffset * 7 * 86400000));
   const api = import.meta.env.VITE_API_URL ?? "";
 
@@ -485,11 +582,15 @@ function App() {
   function selectProfile(user: User) {
     setCurrentUser(user);
     navigate("/week");
+    void fetch(`${api}/api/users/${user.id}/select`, { method: "POST" });
   }
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
       try {
+        const currentResponse = await fetch(`${api}/api/users/current`);
+        if (currentResponse.ok) setCurrentUser(await currentResponse.json());
         const responses = await Promise.all([
           fetch(`${api}/api/users`),
           fetch(`${api}/api/task-templates`),
@@ -499,10 +600,14 @@ function App() {
           throw new Error("API unavailable");
         const [userResponse, templateResponse, instanceResponse] = responses;
         const instanceData = await instanceResponse.json();
+        setWeekStatus(instanceData.week?.status ?? "Active");
         setUsers(await userResponse.json());
         setTemplates(await templateResponse.json());
         setInstances(instanceData.instances ?? instanceData);
+        setApiError(false);
       } catch {
+        setApiError(true);
+        setWeekStatus("Active");
         setUsers(demoUsers);
         setTemplates(demoTemplates);
         setInstances(demoInstances);
@@ -519,10 +624,29 @@ function App() {
     window.setTimeout(() => setNotice(""), 1600);
   }
 
+  async function runWeekAction(action: "generate" | "assign" | "close") {
+    if (action === "close" && !window.confirm("Clôturer cette semaine ? La complétude sera figée et les tâches non terminées seront reportées.")) return;
+    setBusyAction(action);
+    try {
+      const endpoint = action === "generate" ? `${api}/api/weeks/generate` : action === "assign" ? `${api}/api/assignments/run` : `${api}/api/weeks/${week.year}/${week.week}/close`;
+      const body = action === "generate" ? { year: week.year, weekNumber: week.week } : action === "assign" ? { year: week.year, weekNumber: week.week, triggeredByUserId: currentUser?.id } : { requestingUserId: currentUser?.id };
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!response.ok) throw new Error((await response.json()).error ?? "Action impossible");
+      const result = await response.json();
+      if (result.week?.status) setWeekStatus(result.week.status);
+      const refreshed = result.instances ?? result.createdInstances ?? result.carriedOverInstances;
+      if (Array.isArray(refreshed)) setInstances(refreshed);
+      setNotice(action === "generate" ? "Instances de la semaine générées" : action === "assign" ? "Affectation de la semaine terminée" : "Semaine clôturée, les tâches ouvertes sont reportées");
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Action impossible");
+    } finally {
+      setBusyAction("");
+      window.setTimeout(() => setNotice(""), 2400);
+    }
+  }
+
   const visible = useMemo(() => {
-    const mine = currentUser?.isAdmin
-      ? instances
-      : instances.filter((item) => item.assignedUserId === currentUser?.id);
+    const mine = instances.filter((item) => item.assignedUserId === currentUser?.id);
     return filter === "open"
       ? mine.filter((item) => !item.isCompleted)
       : filter === "done"
@@ -537,6 +661,7 @@ function App() {
   const user = (id?: string) => users.find((item) => item.id === id);
 
   async function toggle(item: Instance) {
+    if (weekStatus === "Closed") return;
     const next = !item.isCompleted;
     setInstances((items) =>
       items.map((entry) =>
@@ -557,9 +682,34 @@ function App() {
         }),
       });
     } catch {
-      /* local demo mode */
+      setInstances((items) =>
+        items.map((entry) =>
+          entry.id === item.id ? { ...entry, isCompleted: item.isCompleted } : entry,
+        ),
+      );
+      setNotice("API indisponible : la complétude n’a pas été enregistrée");
     }
     window.setTimeout(() => setNotice(""), 2200);
+  }
+
+  async function reassignInstance(instanceId: string, assignedUserId: string) {
+    try {
+      const response = await fetch(`${api}/api/task-instances/${instanceId}/assignment`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignedUserId }) });
+      if (!response.ok) throw new Error((await response.json()).error ?? "Réaffectation impossible");
+      const updated = await response.json();
+      setInstances((items) => items.map((item) => item.id === instanceId ? { ...item, assignedUserId: updated.assignedUserId } : item));
+      setNotice("Instance réaffectée");
+    } catch (reason) { setNotice(reason instanceof Error ? reason.message : "Réaffectation impossible"); }
+  }
+
+  async function cancelInstance(instanceId: string) {
+    try {
+      const response = await fetch(`${api}/api/task-instances/${instanceId}/cancel`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestingUserId: currentUser?.id }) });
+      if (!response.ok) throw new Error((await response.json()).error ?? "Annulation impossible");
+      const updated = await response.json();
+      setInstances((items) => items.map((item) => item.id === instanceId ? { ...item, status: updated.status } : item));
+      setNotice("Instance annulée");
+    } catch (reason) { setNotice(reason instanceof Error ? reason.message : "Annulation impossible"); }
   }
 
   if (!currentUser)
@@ -573,6 +723,7 @@ function App() {
           </p>
         </div>
         <div className="profile-panel">
+          {apiError && <div className="api-warning">API indisponible. Les données affichées sont locales et les modifications ne seront pas enregistrées.</div>}
           <span className="section-kicker">ACCÈS FOYER</span>
           <h2>Qui êtes-vous ?</h2>
           {loading ? (
@@ -613,6 +764,7 @@ function App() {
           </span>
         </div>
         <nav>
+          <div className="nav-label personal-label">MON ESPACE</div>
           <button
             className={view === "Semaine" ? "nav-item active" : "nav-item"}
             onClick={() => navigate("/week")}
@@ -627,7 +779,13 @@ function App() {
           </button>
           {currentUser.isAdmin && (
             <>
-              <div className="nav-label">PILOTAGE</div>
+              <div className="nav-label admin-label">ADMINISTRATION</div>
+              <button className={view === "Affectations" ? "nav-item active" : "nav-item"} onClick={() => navigate("/assignments")}>
+                ▦ <span>Affectations</span>
+              </button>
+              <button className={view === "Instances" ? "nav-item active" : "nav-item"} onClick={() => navigate("/instances")}>
+                ◫ <span>Instances</span>
+              </button>
               <button className={view === "Tâches" ? "nav-item active" : "nav-item"} onClick={() => navigate("/tasks")}>
                 □ <span>Tâches</span>
               </button>
@@ -656,7 +814,7 @@ function App() {
           </div>
           <button
             className="logout"
-            onClick={() => { setCurrentUser(null); navigate("/"); }}
+            onClick={() => { void fetch(`${api}/api/users/logout`, { method: "POST" }); setCurrentUser(null); navigate("/"); }}
             title="Changer de profil"
           >
             ↪
@@ -667,7 +825,7 @@ function App() {
         <header className="topbar">
           <div>
             <span className="breadcrumb">
-              TABLEAU DE BORD <i>/</i> SEMAINE ACTIVE
+              {view === "Semaine" || view === "Historique" ? "MON ESPACE" : "ADMINISTRATION"} <i>/</i> {view === "Semaine" ? "SEMAINE ACTIVE" : view.toUpperCase()}
             </span>
             <h1>{view}</h1>
           </div>
@@ -681,6 +839,7 @@ function App() {
           </div>
         </header>
         {notice && <div className="notice">✓ {notice}</div>}
+        {apiError && <div className="api-warning page-warning">API indisponible. Démarre le serveur sur http://localhost:5251 pour enregistrer les modifications.</div>}
         {view === "Semaine" ? (
           <>
             <section className="hero-banner">
@@ -693,6 +852,7 @@ function App() {
                   {instances.length - completed} tâches restent à faire. La
                   répartition est en place.
                 </p>
+                <span className={weekStatus === "Closed" ? "week-status closed" : "week-status"}>{weekStatus === "Closed" ? "Semaine clôturée · lecture seule" : "Semaine active"}</span>
               </div>
               <div
                 className="progress-ring"
@@ -745,12 +905,13 @@ function App() {
                   <div>
                     <span className="section-kicker">VUE OPÉRATIONNELLE</span>
                     <h2>
-                      {currentUser.isAdmin ? "Toutes les tâches" : "Mes tâches"}
+                      Mes tâches
                     </h2>
                   </div>
                   <CreateTaskDialog
                     api={api}
                     user={currentUser}
+                    templates={templates}
                     onCreated={(created) => {
                       setTemplates((items) => [...items, created]);
                       setNotice("Tâche créée pour les prochaines affectations");
@@ -780,7 +941,8 @@ function App() {
                       key={item.id}
                     >
                       <button
-                        className="check-button"
+                        className={weekStatus === "Closed" ? "check-button locked" : "check-button"}
+                        disabled={weekStatus === "Closed"}
                         onClick={() => toggle(item)}
                         aria-label="Modifier la complétude"
                       >
@@ -868,10 +1030,15 @@ function App() {
             </div>
           </>
         ) : view === "Historique" ? (
-          <HistoryPanel api={api} users={users} />
+          <HistoryPanel api={api} users={users} isAdmin={currentUser.isAdmin} currentUserId={currentUser.id} />
+        ) : view === "Affectations" ? (
+          <AssignmentsPanel instances={instances} templates={templates} users={users} year={week.year} weekNumber={week.week} api={api} busyAction={busyAction} onAction={runWeekAction} />
+        ) : view === "Instances" ? (
+          <InstanceAdminPanel instances={instances} templates={templates} users={users} onReassigned={reassignInstance} onCancelled={cancelInstance} />
         ) : view === "Tâches" ? (
           <TaskCatalog
             templates={templates}
+            users={users}
             user={currentUser}
             api={api}
             onCreated={(created) => {
@@ -892,6 +1059,10 @@ function App() {
             onCreated={(created) => {
               setUsers((items) => [...items, created])
               setNotice("Profil créé")
+            }}
+            onUpdated={(updated) => {
+              setUsers((items) => items.map((item) => item.id === updated.id ? updated : item))
+              setNotice("Profil mis à jour")
             }}
           />
         ) : (
@@ -928,6 +1099,7 @@ function App() {
                 </p>
               </div>
             </div>
+            <CommentsPanel api={api} instanceId={selected.id} currentUser={currentUser} users={users} />
             <button
               className="primary-button wide"
               onClick={() => toggle(selected)}

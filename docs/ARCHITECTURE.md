@@ -118,6 +118,13 @@ interfaces (inversion de dépendance).
   par `VITE_API_URL`.
 - Un jeu de données de démonstration est utilisé uniquement si l'API est indisponible ; il ne
   constitue pas une source métier persistante.
+- L'API expose en développement une commande réservée à un administrateur,
+  `POST /api/development/seed-history`, pour générer des semaines historiques de test. Cette
+  commande orchestre les use cases de génération et d'affectation, et ne remplace pas le
+  scheduler de production.
+- Les mutations admin d’instance sont exposées par `PUT /api/task-instances/{id}/assignment`
+  et `PUT /api/task-instances/{id}/cancel`. Les deux actions sont contrôlées par le rôle et
+  historisées.
 - Aucune règle métier complexe : l'interface présente les états et déclenche les cas d'usage
   exposés par l'API.
 
@@ -358,7 +365,7 @@ précédent et ses snapshots restent conservés (historique).
 | POST | `/api/task-instances/{id}/complete` | Marquer terminée | propriétaire |
 | POST | `/api/task-instances/{id}/uncomplete` | Retirer terminée (semaine active) | propriétaire |
 | POST | `/api/task-instances/{id}/executions` | Exécution flexible | propriétaire |
-| POST | `/api/task-instances/{id}/cancel` | Annuler | admin |
+| PUT | `/api/task-instances/{id}/cancel` | Annuler | admin |
 | GET/POST | `/api/task-instances/{id}/comments` | Commentaires | connecté |
 | GET | `/api/task-instances/{id}/explanation` | Justification d'affectation | connecté |
 
@@ -367,7 +374,7 @@ précédent et ses snapshots restent conservés (historique).
 | Méthode | Route | Description | Accès |
 |---------|-------|-------------|-------|
 | POST | `/api/assignments/run` | Lancer/relancer (écrase la semaine) | admin |
-| PUT | `/api/task-instances/{id}/assignee` | Réaffectation manuelle | admin |
+| PUT | `/api/task-instances/{id}/assignment` | Réaffectation manuelle | admin |
 | GET | `/api/assignments/runs?week=YYYY-Www` | Historique des exécutions | admin |
 | GET | `/api/strategies` | Stratégies disponibles | admin |
 | PUT | `/api/strategies/active` | Sélectionner la stratégie active | admin |
@@ -377,6 +384,8 @@ précédent et ses snapshots restent conservés (historique).
 | Méthode | Route | Description | Accès |
 |---------|-------|-------------|-------|
 | GET/PUT | `/api/settings` | Paramètres système (dont algo) | admin |
+| GET | `/api/users/all` | Tous les profils, actifs et inactifs | admin |
+| PUT | `/api/users/{id}` | Modifier/réactiver/désactiver un profil | admin |
 | GET | `/api/dashboard/me` | Indicateurs personnels | connecté |
 | GET | `/api/dashboard/admin` | Indicateurs globaux | admin |
 | GET | `/api/audit?entityType=&entityId=` | Journal d'audit | admin |

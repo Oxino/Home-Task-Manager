@@ -115,6 +115,17 @@
 - Proxy de développement Vite vers l'API locale (`http://localhost:5251`) et jeu de données de
   démonstration non persistant lorsque l'API est indisponible.
 - Build frontend vérifié avec `npm run build`.
+- Génération locale de 20 semaines historiques (ISO 16 à 35 de 2026) via l’endpoint de
+  développement `POST /api/development/seed-history`, avec vérification de l’idempotence.
+- Séparation de l’interface en espace personnel et administration : `/week`, `/history`,
+  `/assignments`, `/instances`, `/tasks`, `/participants` et `/assignment-engine`.
+- Ajout de la réaffectation et de l’annulation manuelles des instances, protégées admin et
+  historisées.
+- Ajout de la gestion des profils inactifs et de leur réactivation depuis `/participants`.
+- Ajout du cycle de vie des modèles de tâches : liste admin active/inactive et activation ou
+  désactivation logique via `PUT /api/task-templates/{id}/active`.
+- Ajout de l’annulation admin des instances via `PUT /api/task-instances/{id}/cancel`, avec
+  confirmation frontend et verrouillage des instances terminées ou de semaines clôturées.
 
 ---
 
@@ -127,10 +138,10 @@ Profils → Modèles de tâches → Génération de semaine → Moteur d'affecta
         → Complétude utilisateur → Clôture / report → Audit transversal
 ```
 
-- **62 tests unitaires** (Domain + Application), tous verts.
+- **55 tests unitaires** (Domain + Application), tous verts.
 - Build complet de la solution sans erreur.
 - Le frontend React initial est disponible dans `src/HomeTaskManager.Web`.
-- Les écrans historiques et les écrans CRUD d'administration ne sont pas encore complets.
+- Les commentaires, rappels, écrans analytiques et tests end-to-end ne sont pas encore implémentés.
 - Aucune migration EF Core n'a encore été générée (le schéma n'a pas été matérialisé en base).
 
 ---
@@ -140,15 +151,14 @@ Profils → Modèles de tâches → Génération de semaine → Moteur d'affecta
 - [ ] Générer et valider la première migration EF Core (SQLite) et vérifier la création du schéma.
 - [ ] Tests d'intégration API (bout en bout, via `WebApplicationFactory`) en complément des tests
       unitaires Application/Domain.
-- [ ] Authentification/autorisation transverse au niveau API (actuellement, `RequestingUserId`
-      est transmis dans le corps des requêtes ; pas de middleware de session/contexte utilisateur).
+- [x] Authentification/autorisation transverse initiale par session cookie et rôles admin.
 - [ ] Entité `TaskComment` (commentaires sur une instance de tâche — BR-013, R-18), absente du
       Domain à ce jour.
 - [ ] `UserPreferences` complet (au minimum activation des notifications — R-21).
 - [ ] `Reminder` (rappels de tâches) : entité documentée (`ReminderTriggerType`,
       `ReminderOffsetUnit`) mais non implémentée.
-- [ ] Endpoints de gestion des utilisateurs (désactivation/réactivation — UC-USR-03) et de
-      réaffectation manuelle d'une instance (UC-ENG-04), non couverts par un cas d'usage dédié.
+- [x] Endpoints de gestion des utilisateurs, désactivation/réactivation et réaffectation
+  manuelle d'une instance.
 - [ ] Revue de sécurité (validation des entrées API, limites de taille, protection des endpoints
       d'administration) avant toute exposition réseau.
 

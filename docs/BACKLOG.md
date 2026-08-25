@@ -119,9 +119,11 @@ Optimisation UX
 - Affichage de la justification d'une affectation.
 - Navigation conditionnée par le rôle administrateur.
 - Responsive desktop et mobile.
+- Vue admin globale des affectations de la semaine.
+- Vue admin des instances avec réaffectation et annulation contrôlées.
+- Gestion admin des profils actifs et inactifs, avec réactivation.
 
-Les écrans de gestion complète des tâches, des participants, des paramètres du moteur et de
-l'historique restent à implémenter côté interface.
+Les commentaires de tâche, les rappels et certaines vues analytiques restent à implémenter.
 
 ---
 

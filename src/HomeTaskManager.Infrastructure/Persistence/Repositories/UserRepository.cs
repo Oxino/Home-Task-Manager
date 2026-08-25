@@ -15,6 +15,11 @@ public sealed class UserRepository(HomeTaskManagerDbContext dbContext) : IUserRe
             .OrderBy(user => user.DisplayName)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await dbContext.Users
+            .OrderBy(user => user.DisplayName)
+            .ToListAsync(cancellationToken);
+
     public Task<bool> ExistsByDisplayNameAsync(string displayName, CancellationToken cancellationToken = default) =>
         dbContext.Users.AnyAsync(user => user.DisplayName == displayName, cancellationToken);
 

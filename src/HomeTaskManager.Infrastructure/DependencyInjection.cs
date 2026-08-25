@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditLogger, AuditLogger>();
+        services.AddScoped<ITaskCommentRepository, TaskCommentRepository>();
 
         return services;
     }

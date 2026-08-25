@@ -17,5 +17,8 @@ public static class AuditActions
     public const string Updated = "Updated";
     public const string Closed = "Closed";
     public const string CompletionChanged = "CompletionChanged";
+    public const string Reassigned = "Reassigned";
+    public const string Cancelled = "Cancelled";
+    public const string CommentAdded = "CommentAdded";
     public const string Executed = "Executed";
 }

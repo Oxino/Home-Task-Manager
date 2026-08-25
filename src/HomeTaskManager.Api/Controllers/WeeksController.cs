@@ -3,6 +3,8 @@ using HomeTaskManager.Application.Exceptions;
 using HomeTaskManager.Application.UseCases.Weeks;
 using HomeTaskManager.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using HomeTaskManager.Api;
 
 namespace HomeTaskManager.Api.Controllers;
 
@@ -48,6 +50,7 @@ public class WeeksController(
     }
 
     [HttpPost("{year:int}/{weekNumber:int}/close")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<CloseWeekResult>> Close(
         int year,
         int weekNumber,
@@ -56,7 +59,7 @@ public class WeeksController(
     {
         try
         {
-            var command = new CloseWeekCommand(year, weekNumber, request.RequestingUserId);
+            var command = new CloseWeekCommand(year, weekNumber, User.GetCurrentUserId());
             var result = await closeWeekUseCase.ExecuteAsync(command, cancellationToken);
             return Ok(result);
         }

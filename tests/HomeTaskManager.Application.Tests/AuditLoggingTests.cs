@@ -94,4 +94,19 @@ public class GetAuditLogsForEntityUseCaseTests
 
         entries.Should().ContainSingle().Which.EntityId.Should().Be(matchingEntityId);
     }
+
+    [Fact]
+    public async Task Returns_all_entries_in_reverse_chronological_order()
+    {
+        var repository = new InMemoryAuditLogRepository();
+        var actor = Guid.NewGuid();
+        repository.Seed(new AuditLog("TaskTemplate", Guid.NewGuid(), "Created", actor, null, "Title=Older"));
+        repository.Seed(new AuditLog("User", Guid.NewGuid(), "Created", actor, null, "DisplayName=Newer"));
+        var useCase = new GetAuditLogsForEntityUseCase(repository);
+
+        var entries = await useCase.ExecuteAllAsync();
+
+        entries.Should().HaveCount(2);
+        entries[0].NewValue.Should().Be("DisplayName=Newer");
+    }
 }

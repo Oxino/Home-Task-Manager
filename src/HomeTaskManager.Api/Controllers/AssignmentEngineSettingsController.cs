@@ -3,6 +3,8 @@ using HomeTaskManager.Application.Exceptions;
 using HomeTaskManager.Application.UseCases.Settings;
 using HomeTaskManager.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using HomeTaskManager.Api;
 
 namespace HomeTaskManager.Api.Controllers;
 
@@ -20,6 +22,7 @@ public class AssignmentEngineSettingsController(
     }
 
     [HttpPut]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<AssignmentEngineSettingsDto>> Update(
         UpdateAssignmentEngineSettingsRequest request,
         CancellationToken cancellationToken)
@@ -27,7 +30,7 @@ public class AssignmentEngineSettingsController(
         try
         {
             var command = new UpdateAssignmentEngineSettingsCommand(
-                request.RequestingUserId,
+                User.GetCurrentUserId(),
                 request.LowPriorityMultiplier,
                 request.NormalPriorityMultiplier,
                 request.CriticalPriorityMultiplier,

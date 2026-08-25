@@ -18,6 +18,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<TaskComment> TaskComments => Set<TaskComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,6 +77,13 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
             entity.HasIndex(entry => entry.PerformedAt);
             entity.Property(entry => entry.EntityType).HasMaxLength(100).IsRequired();
             entity.Property(entry => entry.Action).HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<TaskComment>(entity =>
+        {
+            entity.HasKey(comment => comment.Id);
+            entity.HasIndex(comment => new { comment.TaskInstanceId, comment.CreatedAt });
+            entity.Property(comment => comment.Content).HasMaxLength(2000).IsRequired();
         });
     }
 }

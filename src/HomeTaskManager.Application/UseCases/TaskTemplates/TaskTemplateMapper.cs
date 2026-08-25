@@ -2,7 +2,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.UseCases.TaskTemplates;
 
-internal static class TaskTemplateMapper
+public static class TaskTemplateMapper
 {
     public static TaskTemplateDto ToDto(TaskTemplate taskTemplate) => new(
         taskTemplate.Id,

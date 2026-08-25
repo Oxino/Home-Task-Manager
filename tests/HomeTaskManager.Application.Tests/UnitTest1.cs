@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using HomeTaskManager.Application.Abstractions;
 using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Application.UseCases.Users;
@@ -18,6 +18,9 @@ public sealed class InMemoryUserRepository : IUserRepository
 
     public Task<IReadOnlyList<User>> GetActiveAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<User>>(_users.Where(user => user.IsActive).ToList());
+
+    public Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<User>>(_users.ToList());
 
     public Task<bool> ExistsByDisplayNameAsync(string displayName, CancellationToken cancellationToken = default) =>
         Task.FromResult(_users.Any(user => user.DisplayName == displayName));

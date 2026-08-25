@@ -115,4 +115,15 @@ public sealed class TaskInstance
         AssignedUserId = userId;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void Reassign(Guid userId)
+    {
+        if (Status == TaskInstanceStatus.Cancelled)
+        {
+            throw new DomainValidationException("A cancelled task instance cannot be assigned.");
+        }
+
+        AssignedUserId = userId;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

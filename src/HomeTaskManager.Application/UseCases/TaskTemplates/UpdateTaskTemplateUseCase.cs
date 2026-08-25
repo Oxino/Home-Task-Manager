@@ -41,6 +41,12 @@ public sealed class UpdateTaskTemplateUseCase(
             throw new ForbiddenOperationException("Only the author or an administrator can modify this task.");
         }
 
+        if (!string.Equals(taskTemplate.Title, command.Title, StringComparison.OrdinalIgnoreCase) &&
+            await taskTemplateRepository.ExistsByTitleAsync(command.Title, taskTemplate.Id, cancellationToken))
+        {
+            throw new DomainValidationException($"A task named '{command.Title}' already exists.");
+        }
+
         var oldValue = $"Title={taskTemplate.Title}; Priority={taskTemplate.Priority}";
 
         taskTemplate.Rename(command.Title);

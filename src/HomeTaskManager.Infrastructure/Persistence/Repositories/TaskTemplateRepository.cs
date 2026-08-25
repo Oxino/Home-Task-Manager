@@ -15,8 +15,14 @@ public sealed class TaskTemplateRepository(HomeTaskManagerDbContext dbContext) :
             .OrderBy(task => task.Title)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<TaskTemplate>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await dbContext.TaskTemplates.OrderBy(task => task.Title).ToListAsync(cancellationToken);
+
     public Task<bool> ExistsByTitleAsync(string title, CancellationToken cancellationToken = default) =>
-        dbContext.TaskTemplates.AnyAsync(task => task.Title == title, cancellationToken);
+        dbContext.TaskTemplates.AnyAsync(task => task.Title.ToLower() == title.ToLower(), cancellationToken);
+
+    public Task<bool> ExistsByTitleAsync(string title, Guid excludingId, CancellationToken cancellationToken = default) =>
+        dbContext.TaskTemplates.AnyAsync(task => task.Id != excludingId && task.Title.ToLower() == title.ToLower(), cancellationToken);
 
     public async Task<IReadOnlyList<TaskTemplate>> GetByIdsAsync(
         IEnumerable<Guid> ids,

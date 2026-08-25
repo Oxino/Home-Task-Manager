@@ -17,15 +17,20 @@ public static class DependencyInjection
         services.AddScoped<ICreateUserUseCase, CreateUserUseCase>();
         services.AddScoped<IListActiveProfilesUseCase, ListActiveProfilesUseCase>();
         services.AddScoped<ISelectProfileUseCase, SelectProfileUseCase>();
+        services.AddScoped<IUpdateUserUseCase, UpdateUserUseCase>();
 
         services.AddScoped<ICreateTaskTemplateUseCase, CreateTaskTemplateUseCase>();
         services.AddScoped<IListActiveTaskTemplatesUseCase, ListActiveTaskTemplatesUseCase>();
         services.AddScoped<IUpdateTaskTemplateUseCase, UpdateTaskTemplateUseCase>();
+        services.AddScoped<ISetTaskTemplateActiveUseCase, SetTaskTemplateActiveUseCase>();
+        services.AddScoped<ITaskCommentUseCase, TaskCommentUseCase>();
 
         services.AddScoped<IGenerateWeekInstancesUseCase, GenerateWeekInstancesUseCase>();
         services.AddScoped<IGetWeekInstancesUseCase, GetWeekInstancesUseCase>();
         services.AddScoped<ICloseWeekUseCase, CloseWeekUseCase>();
         services.AddScoped<ISetTaskInstanceCompletionUseCase, SetTaskInstanceCompletionUseCase>();
+        services.AddScoped<IReassignTaskInstanceUseCase, ReassignTaskInstanceUseCase>();
+        services.AddScoped<ICancelTaskInstanceUseCase, CancelTaskInstanceUseCase>();
 
         // V1 default strategy per PRODUCT_VISION; RandomStrategy remains available as an alternate registration.
         services.AddScoped<IAssignmentStrategy, IntelligentV1Strategy>();
