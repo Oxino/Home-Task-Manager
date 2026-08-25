@@ -23,6 +23,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
     public DbSet<Reminder> Reminders => Set<Reminder>();
     public DbSet<DailyFlexibleExecution> DailyFlexibleExecutions => Set<DailyFlexibleExecution>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Reaction> Reactions => Set<Reaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,7 +88,9 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         {
             entity.HasKey(comment => comment.Id);
             entity.HasIndex(comment => new { comment.TaskInstanceId, comment.CreatedAt });
+            entity.HasIndex(comment => comment.ParentCommentId);
             entity.Property(comment => comment.Content).HasMaxLength(2000).IsRequired();
+            entity.Property(comment => comment.ParentCommentId);
         });
 
         modelBuilder.Entity<UserPreferences>(entity =>
@@ -117,6 +120,14 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
             entity.Property(notification => notification.Title).HasMaxLength(200).IsRequired();
             entity.Property(notification => notification.Message).HasMaxLength(2000).IsRequired();
             entity.Property(notification => notification.Link).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Reaction>(entity =>
+        {
+            entity.HasKey(reaction => reaction.Id);
+            entity.HasIndex(reaction => reaction.CommentId);
+            entity.HasIndex(reaction => new { reaction.CommentId, reaction.UserId, reaction.ReactionType }).IsUnique();
+            entity.Property(reaction => reaction.ReactionType).HasMaxLength(50).IsRequired();
         });
     }
 }

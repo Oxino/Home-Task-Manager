@@ -21,7 +21,8 @@ public sealed class ProcessReminderNotificationsUseCaseTests
         var reminders = new InMemoryReminderRepository(); await reminders.AddAsync(new Reminder(template.Id, ReminderTriggerType.EndOfWeek, 0, ReminderOffsetUnit.Hour));
         var notifications = new InMemoryNotificationRepository();
         var preferences = new InMemoryUserPreferencesRepository();
-        var useCase = new ProcessReminderNotificationsUseCase(reminders, templates, instances, preferences, notifications, new NoOpUnitOfWork());
+        var notificationService = new InMemoryNotificationService();
+        var useCase = new ProcessReminderNotificationsUseCase(reminders, templates, instances, preferences, notifications, notificationService, new NoOpUnitOfWork());
 
         var created = await useCase.ExecuteAsync(week.EndDate.ToDateTime(TimeOnly.MaxValue));
         var createdAgain = await useCase.ExecuteAsync(week.EndDate.ToDateTime(TimeOnly.MaxValue).AddMinutes(1));

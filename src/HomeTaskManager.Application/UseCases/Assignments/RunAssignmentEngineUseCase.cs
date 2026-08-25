@@ -32,7 +32,8 @@ public sealed class RunAssignmentEngineUseCase(
     IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
     INotificationRepository? notificationRepository = null,
-    IUserPreferencesRepository? userPreferencesRepository = null) : IRunAssignmentEngineUseCase
+    IUserPreferencesRepository? userPreferencesRepository = null,
+    INotificationService? notificationService = null) : IRunAssignmentEngineUseCase
 {
     public async Task<RunAssignmentEngineResult> ExecuteAsync(
         RunAssignmentEngineCommand command,
@@ -108,11 +109,21 @@ public sealed class RunAssignmentEngineUseCase(
                     notifiedAssignments.Add((assignment.AssignedUserId, assignedInstance.TaskTemplateId)) &&
                     templatesById.TryGetValue(assignedInstance.TaskTemplateId, out var assignedTemplate))
                 {
+                    var title = "Nouvelle tâche affectée";
+                    var message = $"{assignedTemplate.Title} vous a été affectée pour la semaine {week.WeekNumber}.";
                     await notificationRepository.AddAsync(new Notification(
                         assignment.AssignedUserId,
-                        "Nouvelle tâche affectée",
-                        $"{assignedTemplate.Title} vous a été affectée pour la semaine {week.WeekNumber}.",
+                        title,
+                        message,
                         $"/week?year={week.Year}&week={week.WeekNumber}"), cancellationToken);
+                    if (notificationService is not null)
+                    {
+                        await notificationService.SendAssignmentNotificationAsync(
+                            assignment.AssignedUserId,
+                            assignedTemplate.Title,
+                            $"Semaine {week.WeekNumber} de {week.Year}",
+                            cancellationToken);
+                    }
                 }
             }
         }

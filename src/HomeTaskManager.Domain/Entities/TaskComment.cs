@@ -6,13 +6,14 @@ public sealed class TaskComment
 {
     private TaskComment() { }
 
-    public TaskComment(Guid taskInstanceId, Guid authorUserId, string content)
+    public TaskComment(Guid taskInstanceId, Guid authorUserId, string content, Guid? parentCommentId = null)
     {
         if (string.IsNullOrWhiteSpace(content)) throw new DomainValidationException("A comment requires content.");
         Id = Guid.NewGuid();
         TaskInstanceId = taskInstanceId;
         AuthorUserId = authorUserId;
         Content = content.Trim();
+        ParentCommentId = parentCommentId;
         CreatedAt = DateTime.UtcNow;
     }
 
@@ -20,5 +21,6 @@ public sealed class TaskComment
     public Guid TaskInstanceId { get; private set; }
     public Guid AuthorUserId { get; private set; }
     public string Content { get; private set; } = string.Empty;
+    public Guid? ParentCommentId { get; private set; }
     public DateTime CreatedAt { get; private set; }
 }

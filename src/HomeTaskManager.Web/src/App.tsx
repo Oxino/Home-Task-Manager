@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import "./App.css";
+  import { useEffect, useMemo, useState, type FormEvent } from "react";
+  import "./App.css";
+  import { AnalyticsPanel } from "./components/AnalyticsPanel";
 
 type User = {
   id: string;
@@ -162,6 +163,7 @@ const viewRoutes: Record<string, string> = {
   "/assignments": "Affectations",
   "/instances": "Instances",
   "/tasks": "Tâches",
+  "/analytics": "Statistiques",
   "/participants": "Participants",
   "/assignment-engine": "Moteur d’affectation",
 };
@@ -644,6 +646,7 @@ function App() {
   const [locationSearch, setLocationSearch] = useState(() => window.location.search);
   const [busyAction, setBusyAction] = useState("");
   const [weekStatus, setWeekStatus] = useState<WeekStatus>("Active");
+  const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
   const [apiError, setApiError] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const api = import.meta.env.VITE_API_URL ?? "";
@@ -688,6 +691,7 @@ function App() {
         const [userResponse, templateResponse, instanceResponse] = responses;
         const instanceData = await instanceResponse.json();
         setWeekStatus(instanceData.week?.status ?? "Active");
+        setCurrentWeekId(instanceData.week?.id ?? null);
         setUsers(await userResponse.json());
         setTemplates(await templateResponse.json());
         setInstances(instanceData.instances ?? instanceData);
@@ -695,6 +699,7 @@ function App() {
       } catch {
         setApiError(true);
         setWeekStatus("Active");
+        setCurrentWeekId(null);
         setUsers(demoUsers);
         setTemplates(demoTemplates);
         setInstances(demoInstances);
@@ -914,6 +919,12 @@ function App() {
                 onClick={() => navigate("/assignment-engine")}
               >
                 ✦ <span>Moteur d’affectation</span>
+              </button>
+              <button
+                className={view === "Statistiques" ? "nav-item active" : "nav-item"}
+                onClick={() => navigate("/analytics")}
+              >
+                📊 <span>Statistiques</span>
               </button>
             </>
           )}
@@ -1183,6 +1194,8 @@ function App() {
               setNotice("Profil mis à jour")
             }}
           />
+        ) : view === "Statistiques" ? (
+          <AnalyticsPanel api={api} weekId={currentWeekId} week={week} />
         ) : (
           <section className="empty-view">
             <span className="section-kicker">{view.toUpperCase()}</span>

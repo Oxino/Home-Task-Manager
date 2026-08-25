@@ -124,8 +124,12 @@ Optimisation UX
 - Gestion admin des profils actifs et inactifs, avec réactivation.
 - Configuration des rappels par modèle de tâche.
 - Boîte de notifications personnelle : lecture, non-lues/lues et nettoyage des notifications lues.
+- Génération automatique des notifications par les rappels (via scheduler périodique).
+- Service de notification abstrait pour notifications push et reminders.
+- Endpoints analytiques pour statistiques d'affectation et complétude (backend).
 
-L’envoi Web Push, les commentaires avancés et certaines vues analytiques restent à implémenter.
+L'envoi Web Push réel (intégration navigateur), les commentaires avancés et les interfaces
+analytiques (UI) restent à implémenter.
 
 ---
 

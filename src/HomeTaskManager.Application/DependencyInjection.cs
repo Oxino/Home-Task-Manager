@@ -1,3 +1,4 @@
+using HomeTaskManager.Application.UseCases.Analytics;
 using HomeTaskManager.Application.UseCases.Assignments;
 using HomeTaskManager.Application.UseCases.Audit;
 using HomeTaskManager.Application.UseCases.Settings;
@@ -37,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<ISetTaskInstanceCompletionUseCase, SetTaskInstanceCompletionUseCase>();
         services.AddScoped<IReassignTaskInstanceUseCase, ReassignTaskInstanceUseCase>();
         services.AddScoped<ICancelTaskInstanceUseCase, CancelTaskInstanceUseCase>();
+        services.AddScoped<IAddReactionUseCase, AddReactionUseCase>();
+        services.AddScoped<IRemoveReactionUseCase, RemoveReactionUseCase>();
+        services.AddScoped<IListReactionsForCommentUseCase, ListReactionsForCommentUseCase>();
 
         // V1 default strategy per PRODUCT_VISION; RandomStrategy remains available as an alternate registration.
         services.AddScoped<IAssignmentStrategy, IntelligentV1Strategy>();
@@ -46,6 +50,10 @@ public static class DependencyInjection
         services.AddScoped<IRunAssignmentEngineUseCase, RunAssignmentEngineUseCase>();
 
         services.AddScoped<IGetAuditLogsForEntityUseCase, GetAuditLogsForEntityUseCase>();
+
+        services.AddScoped<IGetWeekStatisticsUseCase, GetWeekStatisticsUseCase>();
+        services.AddScoped<IGetCompletionStatisticsUseCase, GetCompletionStatisticsUseCase>();
+        services.AddScoped<IGetUserLoadDistributionUseCase, GetUserLoadDistributionUseCase>();
 
         return services;
     }

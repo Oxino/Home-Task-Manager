@@ -17,6 +17,7 @@ public sealed class ProcessReminderNotificationsUseCase(
     ITaskInstanceRepository taskInstanceRepository,
     IUserPreferencesRepository preferencesRepository,
     INotificationRepository notificationRepository,
+    INotificationService notificationService,
     IUnitOfWork unitOfWork) : IProcessReminderNotificationsUseCase
 {
     public async Task<int> ExecuteAsync(DateTime utcNow, CancellationToken cancellationToken = default)
@@ -40,7 +41,10 @@ public sealed class ProcessReminderNotificationsUseCase(
                 if (await notificationRepository.ExistsByLinkAsync(assignedUserId, link, cancellationToken)) continue;
                 var preferences = await preferencesRepository.GetByUserIdAsync(assignedUserId, cancellationToken);
                 if (preferences?.NotificationsEnabled == false) continue;
-                await notificationRepository.AddAsync(new Notification(assignedUserId, $"Rappel : {template.Title}", $"Cette tâche arrive à échéance le {instance.DueDate:dd/MM/yyyy}.", link), cancellationToken);
+                var title = $"Rappel : {template.Title}";
+                var message = $"Cette tâche arrive à échéance le {instance.DueDate:dd/MM/yyyy}.";
+                await notificationRepository.AddAsync(new Notification(assignedUserId, title, message, link), cancellationToken);
+                await notificationService.SendReminderNotificationAsync(assignedUserId, title, message, cancellationToken);
                 created++;
             }
         }

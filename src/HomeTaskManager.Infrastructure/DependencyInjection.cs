@@ -2,6 +2,7 @@ using HomeTaskManager.Application.Abstractions;
 using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Infrastructure.Persistence;
 using HomeTaskManager.Infrastructure.Persistence.Repositories;
+using HomeTaskManager.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,10 @@ public static class DependencyInjection
         services.AddScoped<IReminderRepository, ReminderRepository>();
         services.AddScoped<IDailyFlexibleExecutionRepository, DailyFlexibleExecutionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IReactionRepository, ReactionRepository>();
+
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddSingleton<IClock, SystemClock>();
 
         return services;
     }

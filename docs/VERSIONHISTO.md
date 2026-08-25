@@ -138,16 +138,40 @@
   et `ReminderNotificationBackgroundService`, avec respect des préférences utilisateur et
   déduplication des notifications par instance et rappel.
 
+### V12 — Services et Analytics
+
+- Abstraction `INotificationService` pour envoyer les notifications (push et reminders).
+- Intégration du service de notification dans le processor des rappels et le moteur d'affectation.
+- `SystemClock` (implémentation concrète de `IClock`) enregistrée comme Singleton.
+- Trois use cases d'analytics :
+  - `GetWeekStatisticsUseCase` : charge par participant et semaine.
+  - `GetCompletionStatisticsUseCase` : taux de complétude sur 28 jours.
+  - `GetUserLoadDistributionUseCase` : distribution de charge sur 20 semaines historiques.
+- `AnalyticsController` : trois endpoints admin pour les statistiques.
+- Tests d'idempotence validés.
+- Backward compatibility maintenue sur les constructeurs optionnels.
+
 ---
 
-## État actuel (fin V11)
+## Etat actuel (fin V12)
 
-Le backend couvre l'intégralité du flux MVP documenté de bout en bout :
+Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
 ```text
-Profils → Modèles de tâches → Génération de semaine → Moteur d'affectation
-        → Complétude utilisateur → Clôture / report → Audit transversal
+Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
+        → Completude utilisateur → Cloture / report → Audit transversal
+        → Notifications & Analytics
 ```
+
+- **70 tests unitaires** (Application), **19 tests** (Domain), tous verts.
+- Build complet de la solution sans erreur.
+- Le frontend React initial est disponible dans `src/HomeTaskManager.Web`.
+- Les ecrans analytiques (UI) et les tests end-to-end ne sont pas encore implementes.
+- Aucune migration EF Core n'a encore ete generee (le schema n'a pas ete materialise en base).
+
+---
+
+## Ancien etat (fin V11)
 
 - **59 tests unitaires** (Domain + Application), tous verts.
 - Build complet de la solution sans erreur.
