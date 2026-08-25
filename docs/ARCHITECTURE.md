@@ -125,6 +125,17 @@ interfaces (inversion de dépendance).
 - Les mutations admin d’instance sont exposées par `PUT /api/task-instances/{id}/assignment`
   et `PUT /api/task-instances/{id}/cancel`. Les deux actions sont contrôlées par le rôle et
   historisées.
+- L’endpoint `GET /api/audit-logs` est authentifié : un participant reçoit uniquement les
+  événements qu’il a effectués ; un administrateur peut consulter l’historique global.
+- Les rappels sont configurés au niveau du modèle via `GET/POST /api/task-templates/{id}/reminders`.
+  Leur stockage est persistant ; `ProcessReminderNotificationsUseCase` est exécuté par un
+  `BackgroundService` périodique et crée des notifications idempotentes pour les rappels échus.
+  L’envoi Web Push reste séparé.
+- La boîte de notifications personnelles est exposée par `GET /api/notifications`, avec les
+  actions `PUT /api/notifications/{id}/read`, `POST /api/notifications/read-all` et
+  `DELETE /api/notifications/read`. Chaque requête est filtrée par l’identité de session.
+- Une affectation produite par le moteur crée une notification personnelle pour le participant
+  retenu, avec un lien vers la semaine concernée.
 - Aucune règle métier complexe : l'interface présente les états et déclenche les cas d'usage
   exposés par l'API.
 

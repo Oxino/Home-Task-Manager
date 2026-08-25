@@ -11,6 +11,10 @@ La charge doit être équilibrée :
 - sur la semaine courante
 - sur l'historique
 
+Une tâche quotidienne obligatoire constitue une responsabilité hebdomadaire unique : ses 7
+instances sont affectées au même participant pour la semaine. L'équilibrage se fait entre les
+tâches, pas entre les jours d'une même tâche.
+
 ## Version initiale
 
 INTELLIGENT_V1

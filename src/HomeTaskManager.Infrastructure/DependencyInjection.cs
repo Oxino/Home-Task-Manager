@@ -37,6 +37,10 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditLogger, AuditLogger>();
         services.AddScoped<ITaskCommentRepository, TaskCommentRepository>();
+        services.AddScoped<IUserPreferencesRepository, UserPreferencesRepository>();
+        services.AddScoped<IReminderRepository, ReminderRepository>();
+        services.AddScoped<IDailyFlexibleExecutionRepository, DailyFlexibleExecutionRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
 
         return services;
     }

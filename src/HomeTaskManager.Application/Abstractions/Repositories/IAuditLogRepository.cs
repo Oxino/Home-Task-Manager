@@ -6,4 +6,5 @@ public interface IAuditLogRepository
 {
     Task<IReadOnlyList<AuditLog>> GetByEntityAsync(string entityType, Guid entityId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditLog>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AuditLog>> GetByPerformerAsync(Guid performerId, CancellationToken cancellationToken = default);
 }

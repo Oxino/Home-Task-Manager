@@ -431,7 +431,8 @@ Une tâche possède une fréquence.
 > **Clarification (voir RISKS_AND_EDGE_CASES R-26)** : la liste ci-dessous est alignée sur
 > l'enum `FrequencyType` du `DOMAIN_MODEL`, qui fait référence.
 
-- Quotidienne obligatoire (`DailyMandatory`) — une occurrence par jour.
+- Quotidienne obligatoire (`DailyMandatory`) — une occurrence par jour, les 7 instances de la
+  semaine restant affectées au même participant.
 - Quotidienne flexible (`DailyFlexible`) — au moins une occurrence par semaine, plusieurs possibles.
 - Hebdomadaire (`Weekly`) — une occurrence par semaine.
 - Mensuelle (`Monthly`) — une occurrence par mois.

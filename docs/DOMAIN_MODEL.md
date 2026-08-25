@@ -433,6 +433,31 @@ Activation/désactivation indépendante des notifications par utilisateur (BR-04
 
 ---
 
+# Notification
+
+Notification personnelle affichée dans la boîte de réception d'un participant.
+
+## Notification
+
+| Champ | Type | Obligatoire |
+|---------|---------|---------|
+| Id | Guid | Oui |
+| UserId | Guid | Oui |
+| Title | string | Oui |
+| Message | string | Oui |
+| Link | string | Non |
+| IsRead | bool | Oui |
+| ReadAt | DateTime | Non |
+| CreatedAt | DateTime | Oui |
+
+## Notes
+
+Les notifications sont cloisonnées par utilisateur. Un participant peut les lire, les marquer
+comme lues et supprimer les notifications déjà lues. La génération automatique par les rappels
+et l'envoi Web Push sont des responsabilités séparées du scheduler.
+
+---
+
 # Entités complémentaires (issues de l'analyse de cohérence)
 
 > Ces entités comblent des lacunes identifiées dans `RISKS_AND_EDGE_CASES.md`.

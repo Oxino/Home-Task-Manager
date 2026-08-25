@@ -19,6 +19,10 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
 
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
+    public DbSet<UserPreferences> UserPreferences => Set<UserPreferences>();
+    public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<DailyFlexibleExecution> DailyFlexibleExecutions => Set<DailyFlexibleExecution>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +88,35 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
             entity.HasKey(comment => comment.Id);
             entity.HasIndex(comment => new { comment.TaskInstanceId, comment.CreatedAt });
             entity.Property(comment => comment.Content).HasMaxLength(2000).IsRequired();
+        });
+
+        modelBuilder.Entity<UserPreferences>(entity =>
+        {
+            entity.HasKey(preferences => preferences.Id);
+            entity.HasIndex(preferences => preferences.UserId).IsUnique();
+        });
+
+        modelBuilder.Entity<Reminder>(entity =>
+        {
+            entity.HasKey(reminder => reminder.Id);
+            entity.HasIndex(reminder => reminder.TaskTemplateId);
+            entity.Property(reminder => reminder.CreatedAt).IsRequired();
+            entity.Property(reminder => reminder.UpdatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<DailyFlexibleExecution>(entity =>
+        {
+            entity.HasKey(execution => execution.Id);
+            entity.HasIndex(execution => new { execution.TaskInstanceId, execution.ExecutionDate });
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(notification => notification.Id);
+            entity.HasIndex(notification => new { notification.UserId, notification.CreatedAt });
+            entity.Property(notification => notification.Title).HasMaxLength(200).IsRequired();
+            entity.Property(notification => notification.Message).HasMaxLength(2000).IsRequired();
+            entity.Property(notification => notification.Link).HasMaxLength(500);
         });
     }
 }

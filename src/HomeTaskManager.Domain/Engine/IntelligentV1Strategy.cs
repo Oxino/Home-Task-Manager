@@ -1,5 +1,7 @@
 namespace HomeTaskManager.Domain.Engine;
 
+using HomeTaskManager.Domain.Enums;
+
 /// <summary>
 /// V1 engine (ASSIGNMENT_ENGINE.md): balances score-weighted charge against availability,
 /// penalizes recent repetitions, and breaks ties deterministically (BR-048).
@@ -25,6 +27,7 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
             p => context.HistoryByUserId.TryGetValue(p.Id, out var history) ? history.TotalAssignedCount : 0);
 
         var assignments = new List<TaskAssignment>();
+        var dailyMandatoryAssignments = new Dictionary<Guid, Guid>();
 
         foreach (var instance in context.TaskInstances.OrderBy(i => i.PlannedDate).ThenBy(i => i.Id))
         {
@@ -34,6 +37,16 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
             }
 
             var taskScore = TaskScoreCalculator.Calculate(template, settings);
+
+            // A mandatory daily task is a weekly responsibility: all seven instances stay with one participant.
+            if (template.FrequencyType == FrequencyType.DailyMandatory &&
+                dailyMandatoryAssignments.TryGetValue(template.Id, out var dailyOwnerId))
+            {
+                assignments.Add(new TaskAssignment(instance.Id, dailyOwnerId));
+                runningScore[dailyOwnerId] += taskScore;
+                runningAssignedCount[dailyOwnerId] += 1;
+                continue;
+            }
 
             var candidate = eligibleParticipants
                 .Select(participant => new
@@ -56,6 +69,10 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                 .Participant;
 
             assignments.Add(new TaskAssignment(instance.Id, candidate.Id));
+            if (template.FrequencyType == FrequencyType.DailyMandatory)
+            {
+                dailyMandatoryAssignments[template.Id] = candidate.Id;
+            }
             runningScore[candidate.Id] += taskScore;
             runningAssignedCount[candidate.Id] += 1;
         }

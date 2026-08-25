@@ -1,0 +1,14 @@
+using HomeTaskManager.Application.Abstractions.Repositories;
+using HomeTaskManager.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
+
+public sealed class NotificationRepository(HomeTaskManagerDbContext dbContext) : INotificationRepository
+{
+    public async Task<IReadOnlyList<Notification>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => await dbContext.Notifications.Where(notification => notification.UserId == userId).OrderByDescending(notification => notification.CreatedAt).ToListAsync(cancellationToken);
+    public Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => dbContext.Notifications.SingleOrDefaultAsync(notification => notification.Id == id, cancellationToken);
+    public Task AddAsync(Notification notification, CancellationToken cancellationToken = default) => dbContext.Notifications.AddAsync(notification, cancellationToken).AsTask();
+    public Task<bool> ExistsByLinkAsync(Guid userId, string link, CancellationToken cancellationToken = default) => dbContext.Notifications.AnyAsync(notification => notification.UserId == userId && notification.Link == link, cancellationToken);
+    public async Task DeleteReadByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => await dbContext.Notifications.Where(notification => notification.UserId == userId && notification.IsRead).ExecuteDeleteAsync(cancellationToken);
+}

@@ -35,10 +35,12 @@ public class RunAssignmentEngineUseCaseTests
         InMemoryWeekRepository weekRepository,
         InMemoryTaskInstanceRepository instanceRepository,
         IAssignmentStrategy? strategy = null,
-        InMemoryTaskTemplateRepository? templateRepository = null) =>
+        InMemoryTaskTemplateRepository? templateRepository = null,
+        INotificationRepository? notificationRepository = null,
+        IUserPreferencesRepository? userPreferencesRepository = null) =>
         new(weekRepository, userRepository, templateRepository ?? new InMemoryTaskTemplateRepository(), instanceRepository,
             new InMemoryAssignmentRunRepository(), strategy ?? new RandomStrategy(new Random(1)),
-            new AssignmentEngineSettingsProvider(new InMemorySystemSettingRepository()), new NoOpAuditLogger(), new NoOpUnitOfWork());
+            new AssignmentEngineSettingsProvider(new InMemorySystemSettingRepository()), new NoOpAuditLogger(), new NoOpUnitOfWork(), notificationRepository, userPreferencesRepository);
 
     private static async Task<(Week Week, TaskInstance Instance)> SeedGeneratedWeekAsync(
         InMemoryWeekRepository weekRepository, InMemoryTaskInstanceRepository instanceRepository)
@@ -66,6 +68,57 @@ public class RunAssignmentEngineUseCaseTests
         var result = await useCase.ExecuteAsync(new RunAssignmentEngineCommand(2026, 1, admin.Id));
 
         result.Instances.Should().ContainSingle().Which.AssignedUserId.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Assignment_creates_a_notification_for_the_assigned_participant()
+    {
+        var userRepository = new InMemoryUserRepository();
+        var admin = new User("Nicolas", isAdmin: true);
+        var participant = new User("Julie");
+        userRepository.Seed(admin);
+        userRepository.Seed(participant);
+        var weekRepository = new InMemoryWeekRepository();
+        var instanceRepository = new InMemoryTaskInstanceRepository();
+        var templateRepository = new InMemoryTaskTemplateRepository();
+        var template = new TaskTemplate("Aspirateur", participant.Id, 40, FrequencyType.Weekly);
+        templateRepository.Seed(template);
+        var week = new Week(new WeekKey(2026, 1));
+        await weekRepository.AddAsync(week);
+        await instanceRepository.AddRangeAsync([new TaskInstance(template.Id, null, week, null, week.StartDate, week.EndDate)]);
+        var notificationRepository = new InMemoryNotificationRepository();
+        var useCase = CreateUseCase(userRepository, weekRepository, instanceRepository, templateRepository: templateRepository, notificationRepository: notificationRepository);
+
+        var result = await useCase.ExecuteAsync(new RunAssignmentEngineCommand(2026, 1, admin.Id));
+
+        var assignedUserId = result.Instances.Single().AssignedUserId!.Value;
+        (await notificationRepository.GetByUserIdAsync(assignedUserId)).Should().ContainSingle().Which.Title.Should().Be("Nouvelle tâche affectée");
+    }
+
+    [Fact]
+    public async Task Daily_mandatory_assignment_creates_one_notification_for_the_week()
+    {
+        var userRepository = new InMemoryUserRepository();
+        var admin = new User("Nicolas", isAdmin: true);
+        var participant = new User("Julie");
+        userRepository.Seed(admin);
+        userRepository.Seed(participant);
+        var weekRepository = new InMemoryWeekRepository();
+        var instanceRepository = new InMemoryTaskInstanceRepository();
+        var templateRepository = new InMemoryTaskTemplateRepository();
+        var template = new TaskTemplate("Vaisselle quotidienne", participant.Id, 40, FrequencyType.DailyMandatory);
+        templateRepository.Seed(template);
+        var week = new Week(new WeekKey(2026, 1));
+        await weekRepository.AddAsync(week);
+        var instances = Enumerable.Range(0, 7).Select(day => new TaskInstance(template.Id, null, week, null, week.StartDate.AddDays(day), week.StartDate.AddDays(day)));
+        await instanceRepository.AddRangeAsync(instances);
+        var notificationRepository = new InMemoryNotificationRepository();
+        var useCase = CreateUseCase(userRepository, weekRepository, instanceRepository, new IntelligentV1Strategy(), templateRepository, notificationRepository);
+
+        await useCase.ExecuteAsync(new RunAssignmentEngineCommand(2026, 1, admin.Id));
+
+        var assignedUserId = (await instanceRepository.GetByWeekAsync(week.Id)).First().AssignedUserId!.Value;
+        (await notificationRepository.GetByUserIdAsync(assignedUserId)).Should().ContainSingle();
     }
 
     [Fact]

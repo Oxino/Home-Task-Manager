@@ -19,4 +19,10 @@ public sealed class AuditLogRepository(HomeTaskManagerDbContext dbContext) : IAu
         await dbContext.AuditLogs
             .OrderByDescending(entry => entry.PerformedAt)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<AuditLog>> GetByPerformerAsync(Guid performerId, CancellationToken cancellationToken = default) =>
+        await dbContext.AuditLogs
+            .Where(entry => entry.PerformedByUserId == performerId)
+            .OrderByDescending(entry => entry.PerformedAt)
+            .ToListAsync(cancellationToken);
 }

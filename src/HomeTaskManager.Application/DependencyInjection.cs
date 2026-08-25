@@ -5,6 +5,7 @@ using HomeTaskManager.Application.UseCases.TaskInstances;
 using HomeTaskManager.Application.UseCases.TaskTemplates;
 using HomeTaskManager.Application.UseCases.Users;
 using HomeTaskManager.Application.UseCases.Weeks;
+using HomeTaskManager.Application.UseCases.Notifications;
 using HomeTaskManager.Domain.Engine;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +25,11 @@ public static class DependencyInjection
         services.AddScoped<IUpdateTaskTemplateUseCase, UpdateTaskTemplateUseCase>();
         services.AddScoped<ISetTaskTemplateActiveUseCase, SetTaskTemplateActiveUseCase>();
         services.AddScoped<ITaskCommentUseCase, TaskCommentUseCase>();
+        services.AddScoped<IUserPreferencesUseCase, UserPreferencesUseCase>();
+        services.AddScoped<IReminderUseCase, ReminderUseCase>();
+        services.AddScoped<IExecuteDailyFlexibleTaskUseCase, ExecuteDailyFlexibleTaskUseCase>();
+        services.AddScoped<INotificationUseCase, NotificationUseCase>();
+        services.AddScoped<IProcessReminderNotificationsUseCase, ProcessReminderNotificationsUseCase>();
 
         services.AddScoped<IGenerateWeekInstancesUseCase, GenerateWeekInstancesUseCase>();
         services.AddScoped<IGetWeekInstancesUseCase, GetWeekInstancesUseCase>();

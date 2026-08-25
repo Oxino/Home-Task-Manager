@@ -16,7 +16,8 @@ public class TaskTemplatesController(
     IListActiveTaskTemplatesUseCase listActiveTaskTemplatesUseCase,
     IUpdateTaskTemplateUseCase updateTaskTemplateUseCase,
     ISetTaskTemplateActiveUseCase setTaskTemplateActiveUseCase,
-    ITaskTemplateRepository taskTemplateRepository) : ControllerBase
+    ITaskTemplateRepository taskTemplateRepository,
+    IReminderUseCase reminderUseCase) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<TaskTemplateDto>>> GetActiveTaskTemplates(CancellationToken cancellationToken)
@@ -94,6 +95,33 @@ public class TaskTemplatesController(
         {
             return Ok(await setTaskTemplateActiveUseCase.ExecuteAsync(new SetTaskTemplateActiveCommand(id, User.GetCurrentUserId(), request.IsActive), cancellationToken));
         }
+        catch (ForbiddenOperationException exception) { return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message }); }
+        catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
+    }
+
+    [HttpGet("{id:guid}/reminders")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<ReminderDto>>> GetReminders(Guid id, CancellationToken cancellationToken)
+    {
+        try { return Ok(await reminderUseCase.ListAsync(id, User.GetCurrentUserId(), cancellationToken)); }
+        catch (ForbiddenOperationException exception) { return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message }); }
+        catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
+    }
+
+    [HttpPost("{id:guid}/reminders")]
+    [Authorize]
+    public async Task<ActionResult<ReminderDto>> AddReminder(Guid id, AddReminderRequest request, CancellationToken cancellationToken)
+    {
+        try { return Ok(await reminderUseCase.AddAsync(new AddReminderCommand(id, User.GetCurrentUserId(), request.TriggerType, request.OffsetValue, request.OffsetUnit), cancellationToken)); }
+        catch (ForbiddenOperationException exception) { return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message }); }
+        catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
+    }
+
+    [HttpPut("{id:guid}/reminders/{reminderId:guid}/active")]
+    [Authorize]
+    public async Task<ActionResult<ReminderDto>> SetReminderEnabled(Guid id, Guid reminderId, SetReminderEnabledRequest request, CancellationToken cancellationToken)
+    {
+        try { return Ok(await reminderUseCase.SetEnabledAsync(new SetReminderEnabledCommand(reminderId, User.GetCurrentUserId(), request.IsEnabled), cancellationToken)); }
         catch (ForbiddenOperationException exception) { return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message }); }
         catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
     }

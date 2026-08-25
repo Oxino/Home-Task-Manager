@@ -30,7 +30,9 @@ public sealed class RunAssignmentEngineUseCase(
     IAssignmentStrategy assignmentStrategy,
     IAssignmentEngineSettingsProvider settingsProvider,
     IAuditLogger auditLogger,
-    IUnitOfWork unitOfWork) : IRunAssignmentEngineUseCase
+    IUnitOfWork unitOfWork,
+    INotificationRepository? notificationRepository = null,
+    IUserPreferencesRepository? userPreferencesRepository = null) : IRunAssignmentEngineUseCase
 {
     public async Task<RunAssignmentEngineResult> ExecuteAsync(
         RunAssignmentEngineCommand command,
@@ -93,10 +95,25 @@ public sealed class RunAssignmentEngineUseCase(
             var context = new AssignmentContext(week, activeParticipants, assignableInstances, templatesById, historyByUserId, settings);
             var result = assignmentStrategy.Assign(context);
             var instancesById = assignableInstances.ToDictionary(instance => instance.Id);
+            var notifiedAssignments = new HashSet<(Guid UserId, Guid TaskTemplateId)>();
 
             foreach (var assignment in result.Assignments)
             {
-                instancesById[assignment.TaskInstanceId].Assign(run.Id, assignment.AssignedUserId);
+                var assignedInstance = instancesById[assignment.TaskInstanceId];
+                assignedInstance.Assign(run.Id, assignment.AssignedUserId);
+                var notificationsEnabled = userPreferencesRepository is null ||
+                    (await userPreferencesRepository.GetByUserIdAsync(assignment.AssignedUserId, cancellationToken))?.NotificationsEnabled != false;
+                if (notificationRepository is not null &&
+                    notificationsEnabled &&
+                    notifiedAssignments.Add((assignment.AssignedUserId, assignedInstance.TaskTemplateId)) &&
+                    templatesById.TryGetValue(assignedInstance.TaskTemplateId, out var assignedTemplate))
+                {
+                    await notificationRepository.AddAsync(new Notification(
+                        assignment.AssignedUserId,
+                        "Nouvelle tâche affectée",
+                        $"{assignedTemplate.Title} vous a été affectée pour la semaine {week.WeekNumber}.",
+                        $"/week?year={week.Year}&week={week.WeekNumber}"), cancellationToken);
+                }
             }
         }
 

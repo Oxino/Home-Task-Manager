@@ -50,7 +50,7 @@ public class IntelligentV1StrategyTests
     }
 
     [Fact]
-    public void Balances_load_across_multiple_tasks_in_the_same_run()
+    public void Keeps_all_instances_of_a_daily_mandatory_task_with_one_participant()
     {
         var week = new Week(new WeekKey(2026, 10));
         var julie = new User("Julie");
@@ -65,7 +65,7 @@ public class IntelligentV1StrategyTests
 
         var result = new IntelligentV1Strategy().Assign(context);
 
-        result.Assignments.GroupBy(a => a.AssignedUserId).Should().HaveCount(2)
-            .And.OnlyContain(group => group.Count() == 2);
+        result.Assignments.Should().HaveCount(4);
+        result.Assignments.Select(a => a.AssignedUserId).Distinct().Should().ContainSingle();
     }
 }

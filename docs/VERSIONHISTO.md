@@ -126,6 +126,17 @@
   désactivation logique via `PUT /api/task-templates/{id}/active`.
 - Ajout de l’annulation admin des instances via `PUT /api/task-instances/{id}/cancel`, avec
   confirmation frontend et verrouillage des instances terminées ou de semaines clôturées.
+- Cloisonnement serveur de l’historique : les participants ne reçoivent que leurs propres
+  événements d’audit, tandis que l’admin conserve la vue globale.
+- Ajout de la configuration persistante des rappels par modèle de tâche, avec les routes
+  `GET/POST /api/task-templates/{id}/reminders` et le panneau frontend associé.
+- Ajout d’une boîte de notifications personnelle avec distinction lu/non lu, marquage individuel,
+  marquage global et suppression des notifications lues.
+- Les affectations du moteur alimentent désormais cette boîte avec une notification par
+  participant affecté.
+- Ajout du traitement automatique des rappels échus via `ProcessReminderNotificationsUseCase`
+  et `ReminderNotificationBackgroundService`, avec respect des préférences utilisateur et
+  déduplication des notifications par instance et rappel.
 
 ---
 
@@ -138,10 +149,13 @@ Profils → Modèles de tâches → Génération de semaine → Moteur d'affecta
         → Complétude utilisateur → Clôture / report → Audit transversal
 ```
 
-- **55 tests unitaires** (Domain + Application), tous verts.
+- **59 tests unitaires** (Domain + Application), tous verts.
 - Build complet de la solution sans erreur.
 - Le frontend React initial est disponible dans `src/HomeTaskManager.Web`.
-- Les commentaires, rappels, écrans analytiques et tests end-to-end ne sont pas encore implémentés.
+- Le scheduler d’envoi des rappels, les écrans analytiques et les tests end-to-end ne sont pas
+  encore implémentés.
+- Le moteur conserve désormais les 7 instances d’une tâche `DailyMandatory` chez le même
+  participant pour la semaine.
 - Aucune migration EF Core n'a encore été générée (le schéma n'a pas été matérialisé en base).
 
 ---

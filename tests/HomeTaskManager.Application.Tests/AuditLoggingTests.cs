@@ -41,6 +41,9 @@ public sealed class InMemoryAuditLogRepository : IAuditLogRepository
 
     public Task<IReadOnlyList<AuditLog>> GetAllAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<AuditLog>>(_entries.OrderByDescending(entry => entry.PerformedAt).ToList());
+
+    public Task<IReadOnlyList<AuditLog>> GetByPerformerAsync(Guid performerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<AuditLog>>(_entries.Where(entry => entry.PerformedByUserId == performerId).OrderByDescending(entry => entry.PerformedAt).ToList());
 }
 
 public class AuditLoggingTests
@@ -108,5 +111,19 @@ public class GetAuditLogsForEntityUseCaseTests
 
         entries.Should().HaveCount(2);
         entries[0].NewValue.Should().Be("DisplayName=Newer");
+    }
+
+    [Fact]
+    public async Task Returns_only_entries_performed_by_the_requested_user()
+    {
+        var repository = new InMemoryAuditLogRepository();
+        var actor = Guid.NewGuid();
+        repository.Seed(new AuditLog("User", Guid.NewGuid(), "Updated", actor, null, "own"));
+        repository.Seed(new AuditLog("User", Guid.NewGuid(), "Updated", Guid.NewGuid(), null, "other"));
+        var useCase = new GetAuditLogsForEntityUseCase(repository);
+
+        var entries = await useCase.ExecuteForPerformerAsync(actor);
+
+        entries.Should().ContainSingle().Which.NewValue.Should().Be("own");
     }
 }

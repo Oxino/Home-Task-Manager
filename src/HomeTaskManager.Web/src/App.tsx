@@ -31,6 +31,9 @@ type Instance = {
 type AuditLog = { id: string; entityType: string; entityId: string; action: string; performedByUserId: string; oldValue?: string; newValue?: string; performedAt: string };
 type AssignmentRun = { id: string; weekId: string; strategyName: string; triggeredByUserId: string; isAutomatic: boolean; notes?: string; generatedAt: string };
 type TaskComment = { id: string; taskInstanceId: string; authorUserId: string; content: string; createdAt: string };
+type NotificationItem = { id: string; title: string; message: string; link?: string; isRead: boolean; createdAt: string };
+type FlexibleExecution = { id: string; executionDate: string; createdAt: string };
+type WeekSummary = { year: number; week: number; total: number; completed: number; startDate: string; endDate: string };
 type WeekStatus = "Active" | "Closed";
 
 type TaskFormProps = {
@@ -134,6 +137,13 @@ function isoWeek(date = new Date()) {
   };
 }
 
+function weekStart(year: number, week: number) {
+  const januaryFourth = new Date(year, 0, 4);
+  const monday = new Date(januaryFourth);
+  monday.setDate(januaryFourth.getDate() - (januaryFourth.getDay() || 7) + 1 + (week - 1) * 7);
+  return monday;
+}
+
 function weekLabel(offset: number) {
   const monday = new Date();
   monday.setHours(0, 0, 0, 0);
@@ -147,6 +157,8 @@ function weekLabel(offset: number) {
 const viewRoutes: Record<string, string> = {
   "/week": "Semaine",
   "/history": "Historique",
+  "/preferences": "Préférences",
+  "/notifications": "Notifications",
   "/assignments": "Affectations",
   "/instances": "Instances",
   "/tasks": "Tâches",
@@ -165,9 +177,21 @@ const frequencyHelp: Record<string, string> = {
   Monthly: "Une instance est créée sur la semaine mensuelle définie par le moteur.",
   OneTime: "Une seule instance est créée ; la tâche n’est pas récurrente.",
 };
+const priorityOrder: Record<string, number> = { Critical: 0, Normal: 1, Low: 2 };
+const priorityLabels: Record<string, string> = { Critical: "Critique", Normal: "Normale", Low: "Faible" };
+const frequencyLabels: Record<string, string> = { DailyMandatory: "Quotidienne obligatoire", DailyFlexible: "Quotidienne flexible", Weekly: "Hebdomadaire", Monthly: "Mensuelle", OneTime: "Ponctuelle" };
 
 function FieldInfo({ text }: { text: string }) {
   return <span className="field-info"><button type="button" aria-label="Afficher l’explication" className="info-button">i</button><span className="info-tooltip">{text}</span></span>;
+}
+
+function ReminderDialog({ api, template, initialOpen = false }: { api: string; template: Template; initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen); const [reminders, setReminders] = useState<{ id: string; triggerType: string; offsetValue: number; offsetUnit: string; isEnabled: boolean }[]>([]); const [trigger, setTrigger] = useState("EndOfDay"); const [offset, setOffset] = useState("0"); const [unit, setUnit] = useState("Hour"); const [error, setError] = useState("");
+  async function load() { const response = await fetch(`${api}/api/task-templates/${template.id}/reminders`); if (response.ok) setReminders(await response.json()); }
+  useEffect(() => { if (initialOpen) void load(); }, [initialOpen, template.id]);
+  async function add(event: FormEvent) { event.preventDefault(); const value = Number(offset); if (!Number.isInteger(value) || value < 0) return setError("Le décalage doit être un entier positif ou nul."); try { const response = await fetch(`${api}/api/task-templates/${template.id}/reminders`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ triggerType: trigger, offsetValue: value, offsetUnit: unit }) }); if (!response.ok) throw new Error("Rappel impossible"); const reminder = await response.json(); setReminders((items) => [...items, reminder]); setError(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Rappel impossible"); } }
+  async function toggle(reminder: typeof reminders[number]) { const response = await fetch(`${api}/api/task-templates/${template.id}/reminders/${reminder.id}/active`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isEnabled: !reminder.isEnabled }) }); if (!response.ok) return setError("Le rappel n’a pas pu être modifié."); const updated = await response.json(); setReminders((items) => items.map((item) => item.id === updated.id ? updated : item)); }
+  return <><button className="secondary-button" onClick={() => { setOpen(true); void load(); }}>Rappels</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><section className="task-modal form-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">RAPPELS</span><h2>{template.title}</h2><div className="reminder-list">{reminders.length === 0 ? <p className="muted">Aucun rappel configuré.</p> : reminders.map((reminder) => <div className={reminder.isEnabled ? "reminder-row" : "reminder-row disabled"} key={reminder.id}><div><b>{reminder.triggerType === "EndOfDay" ? "Fin de journée" : "Fin de semaine"}</b><span>{reminder.offsetValue} {reminder.offsetUnit === "Hour" ? "heure(s)" : "jour(s)"} avant</span></div><button className="secondary-button" onClick={() => toggle(reminder)}>{reminder.isEnabled ? "Désactiver" : "Réactiver"}</button></div>)}</div><form onSubmit={add} className="reminder-form"><label>Moment<select value={trigger} onChange={(event) => setTrigger(event.target.value)}><option value="EndOfDay">Fin de journée</option><option value="EndOfWeek">Fin de semaine</option></select></label><label>Décalage<input type="number" min="0" value={offset} onChange={(event) => setOffset(event.target.value)} /></label><label>Unité<select value={unit} onChange={(event) => setUnit(event.target.value)}><option value="Hour">Heures</option><option value="Day">Jours</option></select></label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Ajouter le rappel</button></form></section></div>}</>
 }
 
 function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
@@ -178,6 +202,10 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   const [frequencyType, setFrequencyType] = useState("Weekly");
   const [difficulty, setDifficulty] = useState("50");
   const [duration, setDuration] = useState("30");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTrigger, setReminderTrigger] = useState("EndOfWeek");
+  const [reminderOffset, setReminderOffset] = useState("0");
+  const [reminderUnit, setReminderUnit] = useState("Hour");
   const [error, setError] = useState("");
 
   async function submit(event: FormEvent) {
@@ -204,7 +232,12 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
       });
       if (!response.ok)
         throw new Error((await response.json()).error ?? "Création impossible");
-      onCreated(await response.json());
+      const created = await response.json();
+      if (reminderEnabled) {
+        const reminderResponse = await fetch(`${api}/api/task-templates/${created.id}/reminders`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ triggerType: reminderTrigger, offsetValue: Number(reminderOffset), offsetUnit: reminderUnit }) });
+        if (!reminderResponse.ok) throw new Error("La tâche est créée, mais le rappel n’a pas pu être enregistré.");
+      }
+      onCreated(created);
     } catch (reason) {
       return setError(reason instanceof Error ? reason.message : "API indisponible : la tâche n’a pas été enregistrée.");
     }
@@ -302,6 +335,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
                 />
               </label>
             </div>
+            <div className="inline-reminder"><label className="checkbox-label"><input type="checkbox" checked={reminderEnabled} onChange={(event) => setReminderEnabled(event.target.checked)} /> Ajouter un rappel</label>{reminderEnabled && <div className="reminder-form"><label>Moment<select value={reminderTrigger} onChange={(event) => setReminderTrigger(event.target.value)}><option value="EndOfDay">Fin de journée</option><option value="EndOfWeek">Fin de semaine</option></select></label><label>Délai<input type="number" min="0" value={reminderOffset} onChange={(event) => setReminderOffset(event.target.value)} /></label><label>Unité<select value={reminderUnit} onChange={(event) => setReminderUnit(event.target.value)}><option value="Hour">Heures</option><option value="Day">Jours</option></select></label></div>}</div>
             {error && <p className="form-error">{error}</p>}
             <button className="primary-button wide" type="submit">
               Créer la tâche
@@ -313,7 +347,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   );
 }
 
-function EditTaskDialog({ api, user, template, templates, onUpdated }: { api: string; user: User; template: Template; templates: Template[]; onUpdated: (template: Template) => void }) {
+function EditTaskDialog({ api, user, template, templates, authorName, onUpdated }: { api: string; user: User; template: Template; templates: Template[]; authorName?: string; onUpdated: (template: Template) => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(template.title);
   const [description, setDescription] = useState(template.description ?? "");
@@ -321,6 +355,7 @@ function EditTaskDialog({ api, user, template, templates, onUpdated }: { api: st
   const [frequencyType, setFrequencyType] = useState(template.frequencyType || "Weekly");
   const [difficulty, setDifficulty] = useState(String(template.manualDifficultyScore ?? 50));
   const [duration, setDuration] = useState(String(template.estimatedDurationMinutes ?? 30));
+  const [remindersOpen, setRemindersOpen] = useState(false);
   const [error, setError] = useState("");
 
   async function submit(event: FormEvent) {
@@ -340,7 +375,7 @@ function EditTaskDialog({ api, user, template, templates, onUpdated }: { api: st
     setOpen(false); setError("");
   }
 
-  return <><button className="secondary-button" onClick={() => setOpen(true)}>Modifier</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">MODIFIER LE MODÈLE</span><h2>{template.title}</h2><label>Titre<FieldInfo text="Le titre doit rester unique, même pour une tâche inactive." /><input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus /></label><label>Description<FieldInfo text="Décris le résultat attendu pour éviter les ambiguïtés." /><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} /></label><div className="form-grid"><label>Priorité<FieldInfo text="Pondère la charge : faible 0,5, normale 1, critique 1,5 par défaut." /><select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="Low">Faible</option><option value="Normal">Normale</option><option value="Critical">Critique</option></select></label><label>Fréquence<FieldInfo text={frequencyHelp[frequencyType]} /><select value={frequencyType} onChange={(event) => setFrequencyType(event.target.value)}><option value="DailyMandatory">Quotidienne obligatoire</option><option value="DailyFlexible">Quotidienne flexible</option><option value="Weekly">Hebdomadaire</option><option value="Monthly">Mensuelle</option><option value="OneTime">Ponctuelle</option></select></label><label>Pénibilité<FieldInfo text="Entier obligatoire compris entre 1 et 100." /><input type="number" min="1" max="100" value={difficulty} onChange={(event) => setDifficulty(event.target.value)} /></label><label>Durée (min)<FieldInfo text="Minimum 1 minute; influence le score de charge." /><input type="number" min="1" value={duration} onChange={(event) => setDuration(event.target.value)} /></label></div>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Enregistrer</button></form></div>}</>;
+  return <><button className="secondary-button" onClick={() => setOpen(true)}>Modifier</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">MODIFIER LE MODÈLE</span><h2>{template.title}</h2>{authorName && <p className="edit-author">Créée par {authorName}</p>}<label>Titre<FieldInfo text="Le titre doit rester unique, même pour une tâche inactive." /><input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus /></label><label>Description<FieldInfo text="Décris le résultat attendu pour éviter les ambiguïtés." /><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} /></label><div className="form-grid"><label>Priorité<FieldInfo text="Pondère la charge : faible 0,5, normale 1, critique 1,5 par défaut." /><select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="Low">Faible</option><option value="Normal">Normale</option><option value="Critical">Critique</option></select></label><label>Fréquence<FieldInfo text={frequencyHelp[frequencyType]} /><select value={frequencyType} onChange={(event) => setFrequencyType(event.target.value)}><option value="DailyMandatory">Quotidienne obligatoire</option><option value="DailyFlexible">Quotidienne flexible</option><option value="Weekly">Hebdomadaire</option><option value="Monthly">Mensuelle</option><option value="OneTime">Ponctuelle</option></select></label><label>Pénibilité<FieldInfo text="Entier obligatoire compris entre 1 et 100." /><input type="number" min="1" max="100" value={difficulty} onChange={(event) => setDifficulty(event.target.value)} /></label><label>Durée (min)<FieldInfo text="Minimum 1 minute; influence le score de charge." /><input type="number" min="1" value={duration} onChange={(event) => setDuration(event.target.value)} /></label></div><div className="edit-reminder"><button type="button" className="secondary-button" onClick={() => setRemindersOpen(true)}>Gérer les rappels</button>{remindersOpen && <ReminderDialog key="edit-reminders" api={api} template={template} initialOpen />}</div>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Enregistrer</button></form></div>}</>;
 }
 
 function TaskCatalog({
@@ -403,7 +438,6 @@ function TaskCatalog({
             <div>
               <h3>{template.title}</h3>
               <p>{template.description || "Aucune description"}</p>
-              <small className="catalog-author">Créée par {author(template.createdByUserId)}</small>
             </div>
             <div className="catalog-meta">
               <span
@@ -416,7 +450,8 @@ function TaskCatalog({
                     : "NORMALE"}
               </span>
               <small>{template.isActive === false ? "Inactif" : "Actif"}</small>
-              <EditTaskDialog api={api} user={user} template={template} templates={allTemplates} onUpdated={updateTemplate} />
+              <EditTaskDialog api={api} user={user} template={template} templates={allTemplates} authorName={author(template.createdByUserId)} onUpdated={updateTemplate} />
+              <ReminderDialog api={api} template={template} />
               <button className="secondary-button" onClick={() => setActive(template)}>{template.isActive === false ? "Réactiver" : "Désactiver"}</button>
             </div>
           </article>
@@ -497,11 +532,28 @@ function EngineSettingsPanel({ api, user, onSaved }: { api: string; user: User; 
 
 function HistoryPanel({ api, users, isAdmin, currentUserId }: { api: string; users: User[]; isAdmin: boolean; currentUserId: string }) {
   const [entries, setEntries] = useState<AuditLog[]>([]);
+  const [weeks, setWeeks] = useState<WeekSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   useEffect(() => {
     fetch(`${api}/api/audit-logs`).then(async (response) => { if (!response.ok) throw new Error("Lecture impossible"); setEntries(await response.json()); }).catch(() => undefined).finally(() => setLoading(false));
   }, [api]);
+  useEffect(() => {
+    const loadWeeks = async () => {
+      const requests = Array.from({ length: 20 }, (_, index) => {
+        const date = new Date(); date.setDate(date.getDate() - (index + 1) * 7);
+        const key = isoWeek(date);
+        return fetch(`${api}/api/weeks/${key.year}/${key.week}/instances`).then(async (response) => {
+          if (!response.ok) return null;
+          const result = await response.json();
+          const instances = result.instances ?? [];
+          return { year: key.year, week: key.week, total: instances.length, completed: instances.filter((item: Instance) => item.isCompleted).length, startDate: result.week?.startDate, endDate: result.week?.endDate } as WeekSummary;
+        }).catch(() => null);
+      });
+      setWeeks((await Promise.all(requests)).filter((week): week is WeekSummary => week !== null));
+    };
+    loadWeeks();
+  }, [api, currentUserId]);
   const actor = (id: string) => users.find((user) => user.id === id)?.displayName ?? "Participant";
   const actionLabel = (action: string) => ({ Created: "créé", Updated: "modifié", Completed: "terminé", Reopened: "rouvert", AssignmentRun: "répartition lancée", WeekClosed: "semaine clôturée" }[action] ?? action.toLowerCase());
   const entityLabel = (type: string) => type === "TaskTemplate" ? "modèle de tâche" : type === "TaskInstance" ? "instance" : type.toLowerCase();
@@ -515,7 +567,27 @@ function HistoryPanel({ api, users, isAdmin, currentUserId }: { api: string; use
       if (auditResponse.ok) setEntries(await auditResponse.json())
     } finally { setSeeding(false) }
   }
-  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Historique du foyer" : "Mon historique"}</h2></div><div className="history-actions">{isAdmin && <button className="secondary-button" disabled={seeding} onClick={seedHistory}>{seeding ? "Génération..." : "Générer 20 semaines"}</button>}<span className="history-count">{visibleEntries.length} événements</span></div></div>{loading ? <p className="muted">Chargement de l’historique...</p> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <div className="history-list">{visibleEntries.map((entry) => <article className="history-item" key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{entry.newValue && <small>{entry.newValue}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></article>)}</div>}</section>;
+  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Historique du foyer" : "Mon historique"}</h2></div><div className="history-actions">{isAdmin && <button className="secondary-button" disabled={seeding} onClick={seedHistory}>{seeding ? "Génération..." : "Générer 20 semaines"}</button>}<span className="history-count">{visibleEntries.length} événements</span></div></div><div className="week-history"><span className="section-kicker">20 DERNIÈRES SEMAINES</span><div className="week-history-grid">{weeks.map((period) => <button className="week-history-card" key={`${period.year}-${period.week}`} onClick={() => { window.history.pushState({}, "", `/week?year=${period.year}&week=${period.week}`); window.dispatchEvent(new PopStateEvent("popstate")); }}><b>S{period.week}</b><small>{period.total} tâches</small><strong>{period.total ? Math.round(period.completed / period.total * 100) : 0}%</strong><i style={{ width: `${period.total ? period.completed / period.total * 100 : 0}%` }} /></button>)}</div></div>{loading ? <p className="muted">Chargement de l’historique...</p> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <div className="history-list">{visibleEntries.map((entry) => <article className="history-item" key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{entry.newValue && <small>{entry.newValue}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></article>)}</div>}</section>;
+}
+
+function PreferencesPanel({ api }: { api: string }) {
+  const [enabled, setEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { fetch(`${api}/api/users/preferences`).then(async (response) => { if (response.ok) setEnabled((await response.json()).notificationsEnabled) }).finally(() => setLoading(false)) }, [api]);
+  async function toggle() { const next = !enabled; setEnabled(next); setSaving(true); try { const response = await fetch(`${api}/api/users/preferences`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notificationsEnabled: next }) }); if (!response.ok) setEnabled(!next); } catch { setEnabled(!next); } finally { setSaving(false); } }
+  return <section className="settings-panel preferences-panel"><span className="section-kicker">MON ESPACE</span><h2>Préférences</h2><p className="settings-intro">Choisis les types de notifications que tu souhaites recevoir lorsque le service de notification sera activé.</p><div className="preference-row"><div><b>Notifications du foyer</b><small>Rappels et événements liés à tes tâches.</small></div><button className={enabled ? "toggle enabled" : "toggle"} disabled={loading || saving} onClick={toggle} aria-pressed={enabled}><span /></button></div><p className="preference-status">{loading ? "Chargement..." : saving ? "Enregistrement..." : enabled ? "Activées" : "Désactivées"}</p></section>;
+}
+
+function NotificationsPanel({ api, onUnreadChange }: { api: string; onUnreadChange: (count: number) => void }) {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false);
+  const load = async () => { try { const response = await fetch(`${api}/api/notifications`); if (response.ok) { const items: NotificationItem[] = await response.json(); setNotifications(items); onUnreadChange(items.filter((item) => !item.isRead).length); } } finally { setLoading(false); } };
+  useEffect(() => { void load(); }, [api]);
+  async function setRead(notification: NotificationItem) { const response = await fetch(`${api}/api/notifications/${notification.id}/read`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(!notification.isRead) }); if (response.ok) { const updated = await response.json(); setNotifications((items) => { const next = items.map((item) => item.id === updated.id ? updated : item); onUnreadChange(next.filter((item) => !item.isRead).length); return next; }); } }
+  async function readAll() { setBusy(true); const response = await fetch(`${api}/api/notifications/read-all`, { method: "POST" }); if (response.ok) { setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))); onUnreadChange(0); } setBusy(false); }
+  async function deleteRead() { setBusy(true); const response = await fetch(`${api}/api/notifications/read`, { method: "DELETE" }); if (response.ok) setNotifications((items) => { const remaining = items.filter((item) => !item.isRead); onUnreadChange(remaining.filter((item) => !item.isRead).length); return remaining; }); setBusy(false); }
+  const unread = notifications.filter((notification) => !notification.isRead).length;
+  return <section className="notifications-panel"><div className="panel-heading"><div><span className="section-kicker">MON ESPACE</span><h2>Notifications</h2><p className="panel-subtitle">Retrouve les rappels et événements liés à tes tâches.</p></div><span className="notification-count">{unread} non lue{unread > 1 ? "s" : ""}</span></div><div className="notification-actions"><button className="secondary-button" disabled={busy || unread === 0} onClick={readAll}>Tout marquer comme lu</button><button className="danger-button" disabled={busy || notifications.every((item) => !item.isRead)} onClick={deleteRead}>Supprimer les lues</button></div>{loading ? <p className="muted">Chargement des notifications...</p> : notifications.length === 0 ? <div className="history-empty"><span>◷</span><h3>Boîte vide</h3><p>Les notifications apparaîtront ici.</p></div> : <div className="notification-list">{notifications.map((notification) => <article className={notification.isRead ? "notification read" : "notification"} key={notification.id}><span className="notification-mark">{notification.isRead ? "✓" : "•"}</span><div><h3>{notification.link ? <a href={notification.link}>{notification.title}</a> : notification.title}</h3><p>{notification.message}</p><time>{new Date(notification.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div><button className="secondary-button" onClick={() => setRead(notification)}>{notification.isRead ? "Non lue" : "Marquer lu"}</button></article>)}</div>}</section>;
 }
 
 function CommentsPanel({ api, instanceId, currentUser, users }: { api: string; instanceId: string; currentUser: User; users: User[] }) {
@@ -526,6 +598,14 @@ function CommentsPanel({ api, instanceId, currentUser, users }: { api: string; i
   async function submit(event: FormEvent) { event.preventDefault(); if (!content.trim()) return; try { const response = await fetch(`${api}/api/task-instances/${instanceId}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: content.trim() }) }); if (!response.ok) throw new Error("Commentaire impossible"); const comment = await response.json(); setComments((items) => [...items, comment]); setContent(""); setError(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Commentaire impossible"); } }
   const author = (id: string) => users.find((user) => user.id === id)?.displayName ?? currentUser.displayName;
   return <div className="comments-panel"><span className="section-kicker">ÉCHANGES</span><h3>Commentaires</h3>{comments.length === 0 ? <p className="comments-empty">Aucun commentaire pour le moment.</p> : <div className="comments-list">{comments.map((comment) => <div className="comment" key={comment.id}><b>{author(comment.authorUserId)}</b><p>{comment.content}</p><time>{new Date(comment.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div>)}</div>}<form className="comment-form" onSubmit={submit}><textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="Ajouter une précision..." rows={2} />{error && <small className="form-error">{error}</small>}<button className="secondary-button" type="submit">Ajouter</button></form></div>;
+}
+
+function FlexibleExecutionPanel({ api, instance, onCompleted }: { api: string; instance: Instance; onCompleted: () => void }) {
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [executions, setExecutions] = useState<FlexibleExecution[]>([]);
+  const [error, setError] = useState("");
+  async function execute(event: FormEvent) { event.preventDefault(); try { const response = await fetch(`${api}/api/task-instances/${instance.id}/executions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ executionDate: date }) }); if (!response.ok) throw new Error((await response.json()).error ?? "Exécution impossible"); const execution = await response.json(); setExecutions((items) => [...items, execution]); setError(""); onCompleted(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Exécution impossible"); } }
+  return <div className="flexible-panel"><div><span className="section-kicker">TÂCHE FLEXIBLE</span><h3>Déclarer une exécution</h3><p>Une seule exécution suffit pour atteindre l’objectif hebdomadaire. Tu peux en enregistrer plusieurs.</p></div><form onSubmit={execute}><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /><button className="secondary-button" type="submit">Enregistrer</button></form>{error && <p className="form-error">{error}</p>}{executions.length > 0 && <small className="execution-count">{executions.length} exécution(s) ajoutée(s) pendant cette ouverture.</small>}</div>;
 }
 
 function AssignmentsPanel({ instances, templates, users, year, weekNumber, api, busyAction, onAction }: { instances: Instance[]; templates: Template[]; users: User[]; year: number; weekNumber: number; api: string; busyAction: string; onAction: (action: "generate" | "assign" | "close") => void }) {
@@ -561,14 +641,20 @@ function App() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [locationSearch, setLocationSearch] = useState(() => window.location.search);
   const [busyAction, setBusyAction] = useState("");
   const [weekStatus, setWeekStatus] = useState<WeekStatus>("Active");
   const [apiError, setApiError] = useState(false);
-  const week = isoWeek(new Date(Date.now() + weekOffset * 7 * 86400000));
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const api = import.meta.env.VITE_API_URL ?? "";
+  const queryParameters = new URLSearchParams(locationSearch);
+  const queryYear = Number(queryParameters.get("year"));
+  const queryWeek = Number(queryParameters.get("week"));
+  const selectedWeek = Number.isInteger(queryYear) && Number.isInteger(queryWeek) && queryWeek > 0 ? { year: queryYear, week: queryWeek } : null;
+  const week = selectedWeek ?? isoWeek(new Date(Date.now() + weekOffset * 7 * 86400000));
 
   useEffect(() => {
-    const onPopState = () => setView(viewFromPath(window.location.pathname));
+    const onPopState = () => { setView(viewFromPath(window.location.pathname)); setLocationSearch(window.location.search); };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
@@ -576,6 +662,7 @@ function App() {
   function navigate(path: string) {
     window.history.pushState({}, "", path);
     setView(viewFromPath(path));
+    setLocationSearch(new URL(path, window.location.origin).search);
     setSelected(null);
   }
 
@@ -618,8 +705,23 @@ function App() {
     load();
   }, [api, week.year, week.week]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    const refreshNotifications = async () => {
+      const response = await fetch(`${api}/api/notifications`);
+      if (response.ok) {
+        const notifications: NotificationItem[] = await response.json();
+        setUnreadNotifications(notifications.filter((notification) => !notification.isRead).length);
+      }
+    };
+    void refreshNotifications();
+    const timer = window.setInterval(refreshNotifications, 30000);
+    return () => window.clearInterval(timer);
+  }, [api, currentUser]);
+
   function changeWeek(offset: number) {
     setWeekOffset((current) => current + offset);
+    navigate("/week");
     setNotice("Chargement de la semaine sélectionnée");
     window.setTimeout(() => setNotice(""), 1600);
   }
@@ -645,19 +747,25 @@ function App() {
     }
   }
 
+  const template = (id: string) => templates.find((item) => item.id === id);
   const visible = useMemo(() => {
     const mine = instances.filter((item) => item.assignedUserId === currentUser?.id);
-    return filter === "open"
+    const filtered = filter === "open"
       ? mine.filter((item) => !item.isCompleted)
       : filter === "done"
         ? mine.filter((item) => item.isCompleted)
         : mine;
-  }, [currentUser, filter, instances]);
-  const completed = instances.filter((item) => item.isCompleted).length;
-  const progress = instances.length
-    ? Math.round((completed / instances.length) * 100)
+    return [...filtered].sort((left, right) => {
+      const dueDateOrder = left.dueDate.localeCompare(right.dueDate);
+      if (dueDateOrder !== 0) return dueDateOrder;
+      return (priorityOrder[template(left.taskTemplateId)?.priority ?? "Normal"] ?? 1) - (priorityOrder[template(right.taskTemplateId)?.priority ?? "Normal"] ?? 1);
+    });
+  }, [currentUser, filter, instances, templates]);
+  const personalInstances = instances.filter((item) => item.assignedUserId === currentUser?.id);
+  const completed = personalInstances.filter((item) => item.isCompleted).length;
+  const progress = personalInstances.length
+    ? Math.round((completed / personalInstances.length) * 100)
     : 0;
-  const template = (id: string) => templates.find((item) => item.id === id);
   const user = (id?: string) => users.find((item) => item.id === id);
 
   async function toggle(item: Instance) {
@@ -777,6 +885,12 @@ function App() {
           >
             ↗ <span>Historique</span>
           </button>
+          <button className={view === "Préférences" ? "nav-item active" : "nav-item"} onClick={() => navigate("/preferences")}>
+            ⚙ <span>Préférences</span>
+          </button>
+          <button className={view === "Notifications" ? "nav-item active" : "nav-item"} onClick={() => navigate("/notifications")}>
+            ◉ <span>Notifications</span>{unreadNotifications > 0 && <b className="notification-badge">{unreadNotifications > 99 ? "99+" : unreadNotifications}</b>}
+          </button>
           {currentUser.isAdmin && (
             <>
               <div className="nav-label admin-label">ADMINISTRATION</div>
@@ -833,7 +947,7 @@ function App() {
             <button aria-label="Semaine précédente" onClick={() => changeWeek(-1)}>←</button>
             <span>
               <b>Semaine {week.week}</b>
-              <small>{weekLabel(weekOffset)}</small>
+              <small>{selectedWeek ? `${weekStart(week.year, week.week).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} - ${new Date(weekStart(week.year, week.week).getTime() + 6 * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}` : weekLabel(weekOffset)}</small>
             </span>
             <button aria-label="Semaine suivante" onClick={() => changeWeek(1)}>→</button>
           </div>
@@ -849,7 +963,7 @@ function App() {
                 </span>
                 <h2>On avance, une tâche après l’autre.</h2>
                 <p>
-                  {instances.length - completed} tâches restent à faire. La
+                  {personalInstances.length - completed} tâches restent à faire. La
                   répartition est en place.
                 </p>
                 <span className={weekStatus === "Closed" ? "week-status closed" : "week-status"}>{weekStatus === "Closed" ? "Semaine clôturée · lecture seule" : "Semaine active"}</span>
@@ -880,14 +994,14 @@ function App() {
               <div className="stat">
                 <span className="stat-icon yellow">○</span>
                 <span>
-                  <b>{instances.length - completed}</b>
+                  <b>{personalInstances.length - completed}</b>
                   <small>À faire</small>
                 </span>
               </div>
               <div className="stat">
                 <span className="stat-icon teal">↗</span>
                 <span>
-                  <b>{users.length}</b>
+                  <b>{users.filter((user) => user.isActive).length}</b>
                   <small>Participants actifs</small>
                 </span>
               </div>
@@ -1029,6 +1143,10 @@ function App() {
               </aside>
             </div>
           </>
+        ) : view === "Notifications" ? (
+          <NotificationsPanel api={api} onUnreadChange={setUnreadNotifications} />
+        ) : view === "Préférences" ? (
+          <PreferencesPanel api={api} />
         ) : view === "Historique" ? (
           <HistoryPanel api={api} users={users} isAdmin={currentUser.isAdmin} currentUserId={currentUser.id} />
         ) : view === "Affectations" ? (
@@ -1088,6 +1206,8 @@ function App() {
             <span className="section-kicker">DÉTAIL DE L’AFFECTATION</span>
             <h2>{template(selected.taskTemplateId)?.title}</h2>
             <p>{template(selected.taskTemplateId)?.description}</p>
+            <div className="task-properties"><div><span>Priorité</span><b>{priorityLabels[template(selected.taskTemplateId)?.priority ?? "Normal"]}</b></div><div><span>Fréquence</span><b>{frequencyLabels[template(selected.taskTemplateId)?.frequencyType ?? "Weekly"]}</b></div><div><span>Pénibilité</span><b>{template(selected.taskTemplateId)?.manualDifficultyScore ?? "Non renseignée"}/100</b></div><div><span>Durée estimée</span><b>{template(selected.taskTemplateId)?.estimatedDurationMinutes ? `${template(selected.taskTemplateId)?.estimatedDurationMinutes} min` : "Non renseignée"}</b></div><div><span>Échéance</span><b>{new Date(selected.dueDate).toLocaleDateString("fr-FR", { dateStyle: "long" })}</b></div><div><span>État</span><b>{selected.isCompleted ? "Terminée" : selected.status === "Cancelled" ? "Annulée" : "À faire"}</b></div></div>
+            {template(selected.taskTemplateId) && (currentUser.isAdmin || template(selected.taskTemplateId)?.createdByUserId === currentUser.id) && <EditTaskDialog api={api} user={currentUser} template={template(selected.taskTemplateId)!} templates={templates} authorName={users.find((entry) => entry.id === template(selected.taskTemplateId)?.createdByUserId)?.displayName} onUpdated={(updated) => { setTemplates((items) => items.map((item) => item.id === updated.id ? updated : item)); setNotice("Tâche mise à jour") }} />}
             <div className="explanation">
               <span>✦</span>
               <div>
@@ -1099,6 +1219,7 @@ function App() {
                 </p>
               </div>
             </div>
+            {template(selected.taskTemplateId)?.frequencyType === "DailyFlexible" && <FlexibleExecutionPanel api={api} instance={selected} onCompleted={() => { setInstances((items) => items.map((item) => item.id === selected.id ? { ...item, isCompleted: true, status: "Completed" } : item)); setSelected((item) => item ? { ...item, isCompleted: true, status: "Completed" } : item); setNotice("Exécution enregistrée") }} />}
             <CommentsPanel api={api} instanceId={selected.id} currentUser={currentUser} users={users} />
             <button
               className="primary-button wide"

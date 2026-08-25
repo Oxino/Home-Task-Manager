@@ -33,6 +33,7 @@ public class WeeksController(
     }
 
     [HttpGet("{year:int}/{weekNumber:int}/instances")]
+    [Authorize]
     public async Task<ActionResult<GetWeekInstancesResult>> GetInstances(
         int year,
         int weekNumber,
@@ -41,6 +42,11 @@ public class WeeksController(
         try
         {
             var result = await getWeekInstancesUseCase.ExecuteAsync(year, weekNumber, cancellationToken);
+            if (!User.IsInRole("Admin"))
+            {
+                var currentUserId = User.GetCurrentUserId();
+                result = result with { Instances = result.Instances.Where(instance => instance.AssignedUserId == currentUserId).ToList() };
+            }
             return Ok(result);
         }
         catch (DomainValidationException exception)

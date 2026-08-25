@@ -11,7 +11,7 @@ namespace HomeTaskManager.Api.Controllers;
 
 [ApiController]
 [Route("api/task-instances")]
-public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskInstanceCompletionUseCase, IReassignTaskInstanceUseCase reassignTaskInstanceUseCase, ICancelTaskInstanceUseCase cancelTaskInstanceUseCase, ITaskCommentUseCase taskCommentUseCase) : ControllerBase
+public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskInstanceCompletionUseCase, IReassignTaskInstanceUseCase reassignTaskInstanceUseCase, ICancelTaskInstanceUseCase cancelTaskInstanceUseCase, ITaskCommentUseCase taskCommentUseCase, IExecuteDailyFlexibleTaskUseCase executeDailyFlexibleTaskUseCase) : ControllerBase
 {
     [HttpPut("{id:guid}/completion")]
     [Authorize]
@@ -82,6 +82,15 @@ public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskIn
     public async Task<ActionResult<TaskCommentDto>> AddComment(Guid id, AddTaskCommentRequest request, CancellationToken cancellationToken)
     {
         try { return Ok(await taskCommentUseCase.AddAsync(new AddTaskCommentCommand(id, User.GetCurrentUserId(), request.Content), cancellationToken)); }
+        catch (ForbiddenOperationException exception) { return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message }); }
+        catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
+    }
+
+    [HttpPost("{id:guid}/executions")]
+    [Authorize]
+    public async Task<ActionResult<DailyFlexibleExecutionDto>> ExecuteFlexible(Guid id, ExecuteDailyFlexibleTaskRequest request, CancellationToken cancellationToken)
+    {
+        try { return Ok(await executeDailyFlexibleTaskUseCase.ExecuteAsync(new ExecuteDailyFlexibleTaskCommand(id, User.GetCurrentUserId(), request.ExecutionDate), cancellationToken)); }
         catch (ForbiddenOperationException exception) { return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message }); }
         catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
     }
