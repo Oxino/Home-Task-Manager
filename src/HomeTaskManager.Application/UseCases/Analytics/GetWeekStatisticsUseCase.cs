@@ -31,9 +31,9 @@ public sealed class GetWeekStatisticsUseCase(
         var userById = users.ToDictionary(u => u.Id);
 
         var participantLoads = new Dictionary<Guid, ParticipantLoadDto>();
-        foreach (var instance in instances.Where(i => i.AssignedUserId.HasValue))
+        foreach (var instance in instances)
         {
-            var userId = instance.AssignedUserId.Value;
+            if (instance.AssignedUserId is not Guid userId) continue;
             if (!userById.TryGetValue(userId, out var user)) continue;
             if (!templateById.TryGetValue(instance.TaskTemplateId, out var template)) continue;
 

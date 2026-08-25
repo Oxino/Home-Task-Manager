@@ -27,9 +27,9 @@ public sealed class GetUserLoadDistributionUseCase(
 
         var userLoads = new Dictionary<Guid, Dictionary<(int, int), (int, int)>>();
 
-        foreach (var instance in instances.Where(i => i.AssignedUserId.HasValue))
+        foreach (var instance in instances)
         {
-            var userId = instance.AssignedUserId.Value;
+            if (instance.AssignedUserId is not Guid userId) continue;
             if (!userById.ContainsKey(userId)) continue;
 
             if (!userLoads.ContainsKey(userId)) userLoads[userId] = new();

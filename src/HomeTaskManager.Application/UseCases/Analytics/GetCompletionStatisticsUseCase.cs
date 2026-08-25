@@ -23,9 +23,9 @@ public sealed class GetCompletionStatisticsUseCase(
         var userById = users.ToDictionary(u => u.Id);
         var completionStats = new Dictionary<Guid, (int completed, int total)>();
 
-        foreach (var instance in instances.Where(i => i.AssignedUserId.HasValue))
+        foreach (var instance in instances)
         {
-            var userId = instance.AssignedUserId.Value;
+            if (instance.AssignedUserId is not Guid userId) continue;
             if (!completionStats.ContainsKey(userId)) completionStats[userId] = (0, 0);
 
             var (completed, total) = completionStats[userId];
