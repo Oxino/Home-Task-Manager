@@ -33,7 +33,7 @@ type UserLoad = {
 type LoadDistribution = {
   userLoads?: UserLoad[];
 };
-type ActivityEntry = { performedAt: string };
+type ActivityEntry = { performedAt: string; action: string };
 
 function safeNumber(value: number | null | undefined, digits = 1) {
   if (typeof value !== "number" || Number.isNaN(value)) return "0.0";
@@ -81,8 +81,8 @@ export function AnalyticsPanel({ api, weekId, week }: { api: string; weekId: str
     const from = new Date(activityMonth.getFullYear(), activityMonth.getMonth(), 1);
     const to = new Date(activityMonth.getFullYear(), activityMonth.getMonth() + 1, 1);
     setActivityLoading(true);
-    fetch(`${api}/api/audit-logs?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
-      .then(async (response) => { if (response.ok) setActivityEntries(await response.json()); else setActivityEntries([]); })
+    fetch(`${api}/api/audit-logs?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}&action=CompletionChanged`)
+      .then(async (response) => { if (response.ok) { const entries: ActivityEntry[] = await response.json(); setActivityEntries(entries.filter((entry) => entry.action === "CompletionChanged")); } else setActivityEntries([]); })
       .catch(() => setActivityEntries([]))
       .finally(() => setActivityLoading(false));
   }, [api, activityMonth]);

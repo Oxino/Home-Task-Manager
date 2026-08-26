@@ -16,12 +16,13 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
         [FromQuery] Guid? entityId,
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
+        [FromQuery] string? action,
         CancellationToken cancellationToken)
     {
         var entries = !User.IsInRole("Admin")
             ? await getAuditLogsForEntityUseCase.ExecuteForPerformerAsync(User.GetCurrentUserId(), cancellationToken)
             : from.HasValue && to.HasValue && User.IsInRole("Admin")
-            ? await getAuditLogsForEntityUseCase.ExecuteForPeriodAsync(from.Value, to.Value, cancellationToken)
+            ? await getAuditLogsForEntityUseCase.ExecuteForPeriodAsync(from.Value, to.Value, action, cancellationToken)
             : entityType is not null && entityId.HasValue
             ? await getAuditLogsForEntityUseCase.ExecuteAsync(entityType, entityId.Value, cancellationToken)
             : await getAuditLogsForEntityUseCase.ExecuteAllAsync(cancellationToken);
