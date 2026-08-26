@@ -699,6 +699,11 @@ function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState(() => viewFromPath(window.location.pathname));
   const [filter, setFilter] = useState("all");
+  const [taskTitleFilter, setTaskTitleFilter] = useState("");
+  const [taskTypeFilter, setTaskTypeFilter] = useState("all");
+  const [dueDateFilter, setDueDateFilter] = useState("");
+  const [overdueOnly, setOverdueOnly] = useState(false);
+  const [taskSort, setTaskSort] = useState("dueDate");
   const [selected, setSelected] = useState<Instance | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
@@ -904,17 +909,28 @@ function App() {
   const template = (id: string) => templates.find((item) => item.id === id);
   const visible = useMemo(() => {
     const mine = instances.filter((item) => item.assignedUserId === currentUser?.id);
+    const today = new Date().toISOString().slice(0, 10);
     const filtered = filter === "open"
       ? mine.filter((item) => !item.isCompleted)
       : filter === "done"
         ? mine.filter((item) => item.isCompleted)
         : mine;
-    return [...filtered].sort((left, right) => {
+    const refined = filtered.filter((item) => {
+      const task = template(item.taskTemplateId);
+      const isOverdue = !item.isCompleted && item.dueDate < today;
+      return (!taskTitleFilter || task?.title.toLocaleLowerCase().includes(taskTitleFilter.toLocaleLowerCase()))
+        && (taskTypeFilter === "all" || task?.frequencyType === taskTypeFilter)
+        && (!dueDateFilter || item.dueDate === dueDateFilter)
+        && (!overdueOnly || isOverdue);
+    });
+    return [...refined].sort((left, right) => {
       const dueDateOrder = left.dueDate.localeCompare(right.dueDate);
+      if (taskSort === "title") return (template(left.taskTemplateId)?.title ?? "").localeCompare(template(right.taskTemplateId)?.title ?? "");
+      if (taskSort === "priority") return (priorityOrder[template(left.taskTemplateId)?.priority ?? "Normal"] ?? 1) - (priorityOrder[template(right.taskTemplateId)?.priority ?? "Normal"] ?? 1);
       if (dueDateOrder !== 0) return dueDateOrder;
       return (priorityOrder[template(left.taskTemplateId)?.priority ?? "Normal"] ?? 1) - (priorityOrder[template(right.taskTemplateId)?.priority ?? "Normal"] ?? 1);
     });
-  }, [currentUser, filter, instances, templates]);
+  }, [currentUser, dueDateFilter, filter, instances, overdueOnly, taskSort, taskTitleFilter, taskTypeFilter, templates]);
   const personalInstances = instances.filter((item) => item.assignedUserId === currentUser?.id);
   const completed = personalInstances.filter((item) => item.isCompleted).length;
   const progress = personalInstances.length
@@ -1195,15 +1211,6 @@ function App() {
                       Mes tâches
                     </h2>
                   </div>
-                  <CreateTaskDialog
-                    api={api}
-                    user={currentUser}
-                    templates={templates}
-                    onCreated={(created) => {
-                      setTemplates((items) => [...items, created]);
-                      setNotice("Tâche créée pour les prochaines affectations");
-                    }}
-                  />
                 </div>
                 <div className="filter-row">
                   {[
@@ -1219,12 +1226,24 @@ function App() {
                       {label}
                     </button>
                   ))}
+                  <input className="task-filter-input" type="search" value={taskTitleFilter} onChange={(event) => setTaskTitleFilter(event.target.value)} placeholder="Titre" aria-label="Filtrer par titre" />
+                  <select className="task-filter-select" value={taskTypeFilter} onChange={(event) => setTaskTypeFilter(event.target.value)} aria-label="Filtrer par type de tâche">
+                    <option value="all">Tous les types</option>
+                    {Object.entries(frequencyLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+                  </select>
+                  <input className="task-filter-date" type="date" value={dueDateFilter} onChange={(event) => setDueDateFilter(event.target.value)} aria-label="Filtrer par date d’échéance" />
+                  <label className="overdue-filter"><input type="checkbox" checked={overdueOnly} onChange={(event) => setOverdueOnly(event.target.checked)} /> En retard</label>
+                  <select className="task-filter-select" value={taskSort} onChange={(event) => setTaskSort(event.target.value)} aria-label="Trier les tâches">
+                    <option value="dueDate">Trier: échéance</option>
+                    <option value="title">Trier: titre</option>
+                    <option value="priority">Trier: priorité</option>
+                  </select>
                   <span className="task-count">{visible.length} éléments</span>
                 </div>
                 <div className="task-list">
                   {visible.map((item) => (
                     <article
-                      className={item.isCompleted ? "task completed" : "task"}
+                      className={`${item.isCompleted ? "task completed" : "task"}${!item.isCompleted && item.dueDate < new Date().toISOString().slice(0, 10) ? " overdue" : ""}${item.isCarryOver ? " carry-over" : ""}`}
                       key={item.id}
                     >
                       <button
@@ -1244,6 +1263,7 @@ function App() {
                           {item.isCarryOver && (
                             <span className="tag carry">REPORTÉE</span>
                           )}
+                          {!item.isCompleted && item.dueDate < new Date().toISOString().slice(0, 10) && <span className="tag overdue-tag">EN RETARD</span>}
                           {template(item.taskTemplateId)?.priority ===
                             "Critical" && (
                             <span className="tag critical">CRITIQUE</span>
