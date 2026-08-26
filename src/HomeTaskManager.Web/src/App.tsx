@@ -1238,6 +1238,22 @@ function App() {
                     <option value="title">Trier: titre</option>
                     <option value="priority">Trier: priorité</option>
                   </select>
+                  <button
+                    className="secondary-button filter-reset"
+                    type="button"
+                    onClick={() => {
+                      setFilter("all");
+                      setTaskTitleFilter("");
+                      setTaskTypeFilter("all");
+                      setDueDateFilter("");
+                      setOverdueOnly(false);
+                      setTaskSort("dueDate");
+                    }}
+                    aria-label="Réinitialiser les filtres et le tri"
+                    title="Réinitialiser les filtres et le tri"
+                  >
+                    Réinitialiser
+                  </button>
                   <span className="task-count">{visible.length} éléments</span>
                 </div>
                 <div className="task-list">
