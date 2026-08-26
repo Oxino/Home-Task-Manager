@@ -18,6 +18,7 @@
   font: inherit;
   font-size: 10px;
 }
+.calendar-day-cell{position:relative;min-height:31px}.calendar-day-cell .calendar-day{width:100%;height:100%;background:transparent}.calendar-day-cell.active .calendar-day{border-color:#b9d5ca;background:var(--mint);color:var(--teal);font-weight:700;cursor:pointer}.calendar-day-cell.active .calendar-day:hover{background:#cce8dc}.calendar-day-popover{position:absolute;z-index:3;left:50%;bottom:calc(100% + 7px);min-width:150px;padding:9px 10px;border:1px solid #cfe0d8;border-radius:4px;background:var(--ink);color:white;box-shadow:0 7px 18px #203c3630;transform:translateX(-50%);font-size:10px;white-space:nowrap}.calendar-day-popover span{display:block}.calendar-day-popover span+span{margin-top:5px}.calendar-day-popover:after{content:"";position:absolute;left:50%;bottom:-5px;width:9px;height:9px;background:var(--ink);transform:translateX(-50%) rotate(45deg)}
 .calendar-skeleton {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
