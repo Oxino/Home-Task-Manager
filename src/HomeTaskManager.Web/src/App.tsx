@@ -725,9 +725,10 @@ function App() {
   }, []);
 
   function navigate(path: string) {
+    const target = new URL(path, window.location.origin);
     window.history.pushState({}, "", path);
-    setView(viewFromPath(path));
-    setLocationSearch(new URL(path, window.location.origin).search);
+    setView(viewFromPath(target.pathname));
+    setLocationSearch(target.search);
     setSelected(null);
   }
 
