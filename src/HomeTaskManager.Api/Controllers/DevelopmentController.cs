@@ -145,6 +145,8 @@ public sealed class DevelopmentController(
             });
         }
 
+        await EnsureAdminCarryOverScenarioAsync(generatedWeeks, admin1.Id, cancellationToken);
+
         // Add a cancellation sample on the latest (still active) week.
         var latestWeekId = generatedWeeks[^1].WeekId;
         var cancellable = await dbContext.TaskInstances
@@ -168,6 +170,71 @@ public sealed class DevelopmentController(
             reminders = templates.Count,
             weeks = applied
         });
+    }
+
+    [HttpPost("ensure-admin-carry-over")]
+    [AllowAnonymous]
+    public async Task<ActionResult<object>> EnsureAdminCarryOver(CancellationToken cancellationToken)
+    {
+        if (!environment.IsDevelopment()) return Forbid();
+
+        var admin = await dbContext.Users.FirstOrDefaultAsync(entry => entry.DisplayName == "admin1" && entry.IsAdmin, cancellationToken);
+        if (admin is null) return NotFound(new { error = "admin1 not found." });
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var currentKey = new WeekKey(ISOWeek.GetYear(today.ToDateTime(TimeOnly.MinValue)), ISOWeek.GetWeekOfYear(today.ToDateTime(TimeOnly.MinValue)));
+        var currentWeek = await dbContext.Weeks.SingleOrDefaultAsync(entry => entry.Year == currentKey.Year && entry.WeekNumber == currentKey.WeekNumber, cancellationToken);
+        if (currentWeek is null) return BadRequest(new { error = "The current week has not been generated yet." });
+
+        var previousKey = WeekKey.FromDate(currentKey.StartDate.AddDays(-7));
+        var previousWeek = await dbContext.Weeks.SingleOrDefaultAsync(entry => entry.Year == previousKey.Year && entry.WeekNumber == previousKey.WeekNumber, cancellationToken);
+        if (previousWeek is null) return BadRequest(new { error = "The previous week has not been generated yet." });
+
+        var result = await EnsureAdminCarryOverScenarioAsync(
+            [(previousWeek.Year, previousWeek.WeekNumber, previousWeek.Id), (currentWeek.Year, currentWeek.WeekNumber, currentWeek.Id)],
+            admin.Id,
+            cancellationToken);
+        return Ok(result);
+    }
+
+    private async Task<object> EnsureAdminCarryOverScenarioAsync(
+        IReadOnlyList<(int Year, int WeekNumber, Guid WeekId)> generatedWeeks,
+        Guid adminId,
+        CancellationToken cancellationToken)
+    {
+        if (generatedWeeks.Count < 2) return new { created = false, reason = "At least two weeks are required." };
+
+        var previous = generatedWeeks[^2];
+        var current = generatedWeeks[^1];
+        var template = await dbContext.TaskTemplates.FirstOrDefaultAsync(entry => entry.Title == "Tâche reportée admin1", cancellationToken);
+        if (template is null)
+        {
+            template = new TaskTemplate("Tâche reportée admin1", adminId, 30, FrequencyType.Weekly, TaskPriority.Normal, "Scénario de report pour admin1", 30);
+            dbContext.TaskTemplates.Add(template);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var previousInstance = await dbContext.TaskInstances.FirstOrDefaultAsync(entry => entry.WeekId == previous.WeekId && entry.TaskTemplateId == template.Id, cancellationToken);
+        if (previousInstance is null)
+        {
+            var previousWeek = await dbContext.Weeks.SingleAsync(entry => entry.Id == previous.WeekId, cancellationToken);
+            previousInstance = new TaskInstance(template.Id, null, previousWeek, adminId, previousWeek.StartDate, previousWeek.EndDate);
+            dbContext.TaskInstances.Add(previousInstance);
+        }
+
+        var carryOver = await dbContext.TaskInstances.FirstOrDefaultAsync(entry => entry.WeekId == current.WeekId && entry.TaskTemplateId == template.Id && entry.IsCarryOver, cancellationToken);
+        if (carryOver is null)
+        {
+            var currentWeek = await dbContext.Weeks.SingleAsync(entry => entry.Id == current.WeekId, cancellationToken);
+            var plannedDate = currentWeek.StartDate;
+            while (await dbContext.TaskInstances.AnyAsync(entry => entry.WeekId == currentWeek.Id && entry.TaskTemplateId == template.Id && entry.PlannedDate == plannedDate, cancellationToken))
+                plannedDate = plannedDate.AddDays(1);
+            carryOver = new TaskInstance(template.Id, null, currentWeek, adminId, plannedDate, plannedDate, true, previousInstance.Id);
+            dbContext.TaskInstances.Add(carryOver);
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return new { created = true, templateId = template.Id, previousInstanceId = previousInstance.Id, carryOverInstanceId = carryOver.Id, adminId };
     }
 
     [HttpPost("backfill-notification-instance-links")]
