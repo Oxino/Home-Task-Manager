@@ -615,7 +615,7 @@ identifiée selon la norme ISO-8601 (`Year` + `WeekNumber`).
 
 ## Description
 
-Une tâche non terminée en fin de période est reportée sur la période suivante.
+Une tâche non terminée en fin de période est reportée sur la période suivante une seule fois.
 
 ## Règle
 
@@ -623,6 +623,11 @@ Une tâche non terminée en fin de période est reportée sur la période suivan
   (`ParentTaskInstanceId`).
 - Elle reste affectée au même propriétaire (ADR-005), sauf exception BR-042.
 - Une instance `Cancelled` n'est jamais reportée.
+- Une instance déjà reportée (`IsCarryOver = true`) qui reste non terminée à la fin de sa
+  nouvelle période n'est pas reportée une seconde fois.
+- Cette instance reste conservée dans l'historique, mais elle devient inactive pour la suite :
+  elle ne participe plus aux affectations ni aux calculs de charge, de poids ou d'équité du
+  moteur.
 
 ---
 

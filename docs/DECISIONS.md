@@ -56,7 +56,9 @@ d'équité du moteur (BR-053) reste une fenêtre de calcul glissante et n'impliq
 
 Décision :
 
-Les tâches reportées restent affectées au même utilisateur.
+Les tâches reportées restent affectées au même utilisateur et ne peuvent être reportées qu'une
+seule fois. Une tâche déjà reportée et toujours non terminée est conservée dans l'historique,
+mais exclue des futures affectations et des calculs de charge du moteur.
 
 Justification :
 

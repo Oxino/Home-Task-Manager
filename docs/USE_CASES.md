@@ -200,12 +200,15 @@ Chaque cas d'usage documente :
 - **Acteur** : Système
 - **Déclencheur** : fin de période avec instances non terminées.
 - **Scénario nominal** :
-  1. L'instance non terminée est reportée sur la période suivante.
+    1. L'instance non terminée est reportée sur la période suivante si elle n'a encore jamais été
+      reportée.
   2. La nouvelle instance porte `IsCarryOver = true` et `ParentTaskInstanceId`.
   3. La tâche **reste affectée au même participant** (ADR-005, BR-non défini → BR-039).
 - **Cas limites** :
   - Propriétaire devenu inactif/absent : voir R-05.
   - Report d'une instance `DailyMandatory` (quotidienne) : comportement à définir, R-07.
+  - Instance déjà reportée et toujours non terminée : elle reste dans l'historique et est exclue
+    des futures affectations et des calculs du moteur ; aucun second report n'est créé.
 - **Règles** : ADR-005, BR-039.
 
 ---
