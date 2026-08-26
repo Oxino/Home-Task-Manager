@@ -446,11 +446,13 @@ function TaskCatalog({
   const [allTemplates, setAllTemplates] = useState(templates);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
   useEffect(() => {
     fetch(`${api}/api/task-templates/all`).then(async (response) => { if (response.ok) setAllTemplates(await response.json()) }).catch(() => undefined).finally(() => setLoading(false))
   }, [api])
   const filtered = allTemplates.filter((template) =>
-    template.title.toLowerCase().includes(query.toLowerCase()),
+    template.title.toLowerCase().includes(query.toLowerCase()) &&
+    (statusFilter === "all" || (statusFilter === "active" ? template.isActive !== false : template.isActive === false)),
   );
   function updateTemplate(updated: Template) {
     setAllTemplates((items) => items.map((item) => item.id === updated.id ? updated : item));
@@ -483,7 +485,12 @@ function TaskCatalog({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <span>{filtered.length} modèles actifs</span>
+        <select aria-label="Filtrer les modèles par état" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
+          <option value="active">Actifs</option>
+          <option value="inactive">Archivés</option>
+          <option value="all">Tous les états</option>
+        </select>
+        <span>{filtered.length} modèle{filtered.length > 1 ? "s" : ""}</span>
       </div>
       <div className="catalog-list">
         {filtered.map((template) => {
