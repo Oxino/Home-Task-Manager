@@ -584,6 +584,26 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   const [reminderUnit, setReminderUnit] = useState("Hour");
   const [error, setError] = useState("");
 
+  function resetForm() {
+    setTitle("");
+    setDescription("");
+    setPriority("Normal");
+    setFrequencyType("Weekly");
+    setActiveWeekDays([1]);
+    setDifficulty("50");
+    setDuration("30");
+    setReminderEnabled(false);
+    setReminderTrigger("EndOfWeek");
+    setReminderOffset("0");
+    setReminderUnit("Hour");
+    setError("");
+  }
+
+  function closeForm() {
+    resetForm();
+    setOpen(false);
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const score = Number(difficulty);
@@ -643,19 +663,16 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
           : "API indisponible : la tâche n’a pas été enregistrée.",
       );
     }
-    setOpen(false);
-    setTitle("");
-    setDescription("");
-    setError("");
+    closeForm();
   }
 
   return (
     <>
-      <button className="primary-button" onClick={() => setOpen(true)}>
+      <button className="primary-button" onClick={() => { resetForm(); setOpen(true); }}>
         + Nouvelle tâche
       </button>
       {open && (
-        <div className="modal-backdrop" onClick={() => setOpen(false)}>
+        <div className="modal-backdrop" onClick={closeForm}>
           <form
             className="task-modal form-modal"
             onSubmit={submit}
@@ -664,7 +681,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
             <button
               type="button"
               className="modal-close"
-              onClick={() => setOpen(false)}
+              onClick={closeForm}
             >
               ×
             </button>
@@ -869,6 +886,26 @@ function EditTaskDialog({
   const [remindersOpen, setRemindersOpen] = useState(initialRemindersOpen);
   const [error, setError] = useState("");
 
+  function resetForm() {
+    setTitle(template.title);
+    setDescription(template.description ?? "");
+    setPriority(template.priority || "Normal");
+    setFrequencyType(template.frequencyType || "Weekly");
+    setWeeklyScheduleType(template.weeklyScheduleType || "EndOfWeek");
+    setActiveWeekDays(template.activeWeekDays?.length ? template.activeWeekDays : [1]);
+    setMonthlyScheduleType(template.monthlyScheduleType || "StartOfMonth");
+    setMonthlyDay(String(template.monthlyDay ?? 1));
+    setDifficulty(String(template.manualDifficultyScore ?? 50));
+    setDuration(String(template.estimatedDurationMinutes ?? 30));
+    setRemindersOpen(false);
+    setError("");
+  }
+
+  function closeForm() {
+    resetForm();
+    setOpen(false);
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const score = Number(difficulty);
@@ -915,17 +952,16 @@ function EditTaskDialog({
           : "API indisponible : la modification n’a pas été enregistrée.",
       );
     }
-    setOpen(false);
-    setError("");
+    closeForm();
   }
 
   return (
     <>
-      <button className="secondary-button" onClick={() => setOpen(true)}>
+      <button className="secondary-button" onClick={() => { resetForm(); setOpen(true); }}>
         Modifier
       </button>
       {open && (
-        <div className="modal-backdrop" onClick={() => setOpen(false)}>
+        <div className="modal-backdrop" onClick={closeForm}>
           <form
             className="task-modal form-modal"
             onSubmit={submit}
@@ -934,7 +970,7 @@ function EditTaskDialog({
             <button
               type="button"
               className="modal-close"
-              onClick={() => setOpen(false)}
+              onClick={closeForm}
             >
               ×
             </button>
