@@ -1289,6 +1289,8 @@ function App() {
                     <article
                       className={`${item.isCompleted ? "task completed" : "task"}${!item.isCompleted && item.dueDate < new Date().toISOString().slice(0, 10) ? " overdue" : ""}${item.isCarryOver ? " carry-over" : ""}`}
                       key={item.id}
+                      onDoubleClick={(event) => { if (event.target instanceof HTMLElement && event.target.closest("button")) return; setSelected(item); }}
+                      title="Double-cliquer pour ouvrir le détail"
                     >
                       <button
                         className={weekStatus === "Closed" ? "check-button locked" : "check-button"}
