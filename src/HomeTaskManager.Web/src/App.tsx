@@ -1816,15 +1816,26 @@ function HistoryPanel({
   }, [weeks]);
   const actor = (id: string) =>
     users.find((user) => user.id === id)?.displayName ?? "Participant";
-  const actionLabel = (action: string) =>
-    ({
+  const actionLabel = (entry: AuditLog) => {
+    if (entry.action === "CompletionChanged") return entry.newValue?.includes("IsCompleted=True") ? "terminé" : "rouvert";
+    return ({
       Created: "créé",
-      Updated: "modifié",
-      Completed: "terminé",
-      Reopened: "rouvert",
-      AssignmentRun: "répartition lancée",
-      WeekClosed: "semaine clôturée",
-    })[action] ?? action.toLowerCase();
+      Updated: entry.entityType === "TaskTemplate" ? "modifié" : "mis à jour",
+      CommentAdded: "commenté",
+      Reassigned: "réaffecté",
+      Cancelled: "annulé",
+      Executed: "répartition lancée",
+      Closed: "semaine clôturée",
+    })[entry.action] ?? entry.action.toLowerCase();
+  };
+  const actionCategory = (entry: AuditLog): "user" | "admin" => {
+    if (entry.action === "CompletionChanged" || entry.action === "CommentAdded") return "user";
+    if (entry.action === "Reassigned" || entry.action === "Cancelled" || entry.action === "Executed" || entry.action === "Closed") return "admin";
+    if (entry.entityType === "User" || entry.entityType === "AssignmentEngineSettings") return "admin";
+    if (entry.action === "Created" && entry.entityType === "TaskTemplate") return "user";
+    if (entry.action === "Updated" && entry.entityType === "TaskTemplate") return entry.newValue?.includes("IsActive") ? "admin" : "user";
+    return "user";
+  };
   const entityLabel = (type: string) =>
     type === "TaskTemplate"
       ? "modèle de tâche"
@@ -1837,10 +1848,7 @@ function HistoryPanel({
       : entries.filter((entry) => entry.performedByUserId === currentUserId)
   ).filter((entry) => {
     if (!isAdmin || actorFilter === "all") return true;
-    const performer = users.find((user) => user.id === entry.performedByUserId);
-    return actorFilter === "admin"
-      ? performer?.isAdmin === true
-      : performer?.isAdmin !== true;
+    return actionCategory(entry) === actorFilter;
   });
   const pagedEntries = visibleEntries;
   useEffect(() => {
@@ -1872,11 +1880,11 @@ function HistoryPanel({
             className="history-actor-filter"
             value={actorFilter}
             onChange={(event) => setActorFilter(event.target.value)}
-            aria-label="Filtrer les actions par profil"
+            aria-label="Filtrer les actions par catégorie"
           >
             <option value="all">Toutes les actions</option>
             <option value="user">Actions utilisateur</option>
-            <option value="admin">Actions administrateur</option>
+            <option value="admin">Actions administration</option>
           </select>
         </div>
       </div>
@@ -1931,7 +1939,7 @@ function HistoryPanel({
             {pagedEntries.map((entry) => (
               <button
                 type="button"
-                className={`history-item history-item-button ${users.find((user) => user.id === entry.performedByUserId)?.isAdmin ? "admin-action" : "user-action"}`}
+                className={`history-item history-item-button ${actionCategory(entry)}-action`}
                 disabled={!isNavigable(entry)}
                 onClick={() => onOpenEntry(entry)}
                 key={entry.id}
@@ -1940,7 +1948,7 @@ function HistoryPanel({
                 <div>
                   <p>
                     <b>{actor(entry.performedByUserId)}</b> a{" "}
-                    {actionLabel(entry.action)} un{" "}
+                    {actionLabel(entry)} un{" "}
                     {entityLabel(entry.entityType)}
                   </p>
                   {details(entry) && <small>{details(entry)}</small>}
