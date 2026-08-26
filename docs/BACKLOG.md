@@ -123,6 +123,8 @@ Optimisation UX
 - Vue admin globale des affectations de la semaine.
 - Vue admin des instances avec réaffectation et annulation contrôlées.
 - Gestion admin des profils actifs et inactifs, avec réactivation.
+- Cycle de vie des modèles de tâches avec archivage logique, filtre des modèles actifs ou
+  archivés et réactivation réservée à l'administration.
 - Configuration des rappels par modèle de tâche.
 - Boîte de notifications personnelle : lecture, non-lues/lues et nettoyage des notifications lues.
 - Génération automatique des notifications par les rappels (via scheduler périodique).
@@ -137,6 +139,12 @@ Optimisation UX
 - Calendrier mensuel des activités disponible dans la page Statistiques, avec chargement différé
   du mois affiché.
 - Dashboard distinguant la date d'échéance et la date de complétion des tâches terminées.
+- Préférence utilisateur pour le format d'affichage des dates.
+- Filtres dashboard par titre, fréquence, échéance et retard, avec action de réinitialisation.
+- Ouverture des tâches du dashboard et des entrées d'historique par double-clic.
+- Navigation des semaines récentes depuis l'historique, incluant la semaine active.
+- Actualisation silencieuse et périodique des notifications lorsqu'une nouveauté est détectée.
+- Scénario de démonstration administrateur couvrant les reports, complétions et notifications.
 
 L'envoi Web Push réel (intégration navigateur), les tests d'intégration/end-to-end complets et
 la revue sécurité avant exposition réseau restent à implémenter. Les commentaires avancés,
@@ -144,13 +152,10 @@ l'interface analytics et les parcours CRUD actuellement exposés sont implément
 
 ## Prochaines étapes
 
-1. Finaliser la gestion complète des modèles de tâches : archivage/suppression logique et
-  cohérence des parcours CRUD.
-2. Poursuivre l'historique : améliorer la navigation des périodes et renforcer la couverture
-  end-to-end de l'historique personnel et du journal d'audit.
-3. Réaliser la revue sécurité avant exposition réseau.
-4. Ajouter les tests d'intégration backend (`WebApplicationFactory`).
-5. Revenir ensuite sur les tests end-to-end frontend.
+1. Renforcer la couverture end-to-end de l'historique personnel et du journal d'audit.
+2. Réaliser la revue sécurité avant exposition réseau.
+3. Ajouter les tests d'intégration backend (`WebApplicationFactory`).
+4. Revenir ensuite sur les tests end-to-end frontend.
 
 Le Web Push réel est volontairement différé après ces étapes. Il reste une fonctionnalité V14,
 hors priorité immédiate.
@@ -192,13 +197,14 @@ hors priorité immédiate.
 -  Amélioration de l'explication de **"pourquoi cette tache ta été attribué"**
 -  ~~CHanger le system de navigation temporelle (avoir bt semaine courante, avoir un calendrier pour la navigation, voir les semaines qui ont des affectation)~~
 -  ~~Differenter l'historique vs l'audit Log. Historique => seulement les actions de l'utilisateur courant (création d'une tache, complétion d'une tache, ajout d'un commentaire,  ). L'audit log pour l'admin, lui permet de voir toutes les actions, de tous les utilisateurs, y compris les actions non utilisateur (activation ou désactivation de tache, création participant, changement parametre moteur d'affectatuib, réaffectation de tache, génération des affectaiton etc... )~~
--  Ouvrir un tache en double click
+-  ~~Ouvrir un tache en double click~~
 -  ~~Ajouter une pagination pour l'affichage de l'historique~~
 -  ~~Ajouter une pagination sur les notifications~~
 -  ~~Ajout de filtre sur le dashboard (filtre date, type de tache, titre, en retard). Affichage viseul des taches dont la date est dépassé~~
 -  ~~Supprimer le bouton 'nouvelle tache' du dashboard, le rajouter dans la page de gestion des taches~~
 -  ~~optimisation web : pour les paginations, implémenter la pagination coté API, afin d'optimiser le chargement des données coté navigateur.~~
--  Amélioration system de notificaiton (requete tous les x secondes), ne pas retourner toutes les notifications, retourner seuleemnt si il y a une nouvelle. Espacé le temps de répétition de la requete (seulement fin de journée).
+-  ~~Amélioration du système de notification : actualisation silencieuse périodique et
+  rechargement uniquement lorsqu'une nouveauté est détectée.~~
 -  Festaure: permettre visuellement d'avoir une représentation de la décision logique d'affectation de chaque tache. Une représentation sous forme d'arbre décisionnel. Je veux voir le plans d'execution logique d'attribution de chaque tache, pourquoi cette tache a été attribué a l'utilisateur. Si c'est psk c'est trié par ordre de point, si elle ne l'a pas faite la semaine passé, si c'est une tache non faite de la semaine passé, etc.. etc.. je qu'on puisse comprendre pourquoi l'affectation a été faite. Je rappel, que le choix du moteur d'affectation est paramettrable. donc il faudra que l'arbre de décision puisse s'adapté au moteur de distribution. lors de l'implémentation, pause moi des questions si cela manque de précision, ou qu'il y a un choix technique ou d'affichage a faire, si tu as une meilleur proposition donne la moi
 -  ~~Régles métier: si un tache non fini est réaffecté la nouvelle semaine, et que celle ci n'est toujours pas fin à la fin de la nouvelle semaine, cette tache n'est pas reporté. Elle n'intervient dras plus, et n'interviendra plus non plus dans les calculs de poids et répartission~~
 -  reprendre ou approfondir le system de génération d'instance + affectation. 

@@ -182,9 +182,35 @@
 - Ajout d'un calendrier mensuel signalant les jours ayant enregistré des activités.
 - Suite validée à **95 tests** : 76 Application et 19 Domain.
 
+### V13.2 — Finition UX, pagination et règles de report
+
+- Ajout de la date de complétion sur `TaskInstance`, avec restauration cohérente lors de la
+  réouverture et backfill des événements historiques de complétion.
+- Ajout d'un calendrier mensuel des complétions dans Analytics, filtrable par participant,
+  avec chargement différé du mois affiché, détails journaliers et états de chargement.
+- Ajout de la préférence utilisateur de format de date (`Weekday` ou `Numeric`) et migration
+  associée.
+- Ajout de filtres dashboard par titre, fréquence, date et retard, avec indication visuelle des
+  tâches en retard et action de réinitialisation.
+- Ajout de la pagination côté API pour l'historique d'audit et les notifications, réduisant le
+  volume chargé par le navigateur.
+- Ajout d'un scénario de démonstration administrateur pour les reports, complétions et
+  notifications, ainsi que les informations d'origine des tâches reportées.
+- Règle métier appliquée et testée : une instance déjà reportée non terminée ne peut pas être
+  reportée une seconde fois et est exclue des calculs historiques du moteur.
+- Ouverture des tâches du dashboard et des entrées navigables de l'historique par double-clic.
+- Catalogue des modèles de tâches enrichi d'un filtre actif/archivé; l'archivage reste logique
+  afin de préserver l'historique.
+- Navigation de l'historique étendue aux huit semaines récentes, semaine active incluse et
+  signalée visuellement.
+- Actualisation silencieuse des notifications toutes les 60 secondes, avec rechargement de la
+  page affichée uniquement lorsqu'une nouvelle notification ou un changement de non-lues est
+  détecté.
+- Suite validée à **96 tests** : 77 Application et 19 Domain.
+
 ---
 
-## Etat actuel (fin V13.1)
+## Etat actuel (fin V13.2)
 
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
@@ -194,7 +220,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
         → Notifications & Analytics
 ```
 
-- **76 tests unitaires** (Application), **19 tests** (Domain), tous verts.
+- **77 tests unitaires** (Application), **19 tests** (Domain), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
 - Les commentaires avancés couvrent désormais le threading et les réactions.
@@ -204,9 +230,13 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
   via les endpoints réservés au développement.
 - Les tâches terminées exposent leur date de complétion séparément de leur échéance.
 - Le calendrier des activités se trouve dans Analytics et charge uniquement le mois affiché,
-  avec skeleton pendant le chargement.
+  avec filtre participant et skeleton pendant le chargement.
 - L'historique est paginé par pages de 10 événements, avec une distinction explicite entre
-  l'historique personnel et le journal d'audit administrateur.
+  l'historique personnel et le journal d'audit administrateur; il permet aussi de rejoindre les
+  semaines récentes, dont la semaine active.
+- Les modèles archivés sont conservés pour l'historique, filtrables dans le catalogue et
+  réactivables par un administrateur.
+- Les notifications sont paginées et vérifiées périodiquement sans rechargement visible inutile.
 
 ---
 
@@ -220,10 +250,10 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 
 ## Reste à faire — ordre prioritaire
 
-- [ ] Gestion complète des modèles de tâches : archivage/suppression logique et cohérence des
-  parcours CRUD.
-- [ ] Poursuite de la gestion de l'historique : navigation améliorée des périodes et couverture
-  end-to-end de l'historique personnel et du journal d'audit.
+- [x] Gestion des modèles de tâches : archivage logique, filtrage des états et cohérence des
+  parcours CRUD exposés.
+- [ ] Poursuite de la gestion de l'historique : couverture end-to-end de l'historique personnel
+  et du journal d'audit.
 - [ ] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
   endpoints admin, politique CORS/cookies).
 - [ ] Tests d'intégration API bout en bout (`WebApplicationFactory`) en complément des tests
