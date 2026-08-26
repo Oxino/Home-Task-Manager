@@ -1844,6 +1844,8 @@ function HistoryPanel({
       ? "modèle de tâche"
       : type === "TaskInstance"
         ? "instance"
+        : type === "UserPreferences"
+          ? "préférences utilisateur"
         : type.toLowerCase();
   const visibleEntries = isAdmin
     ? entries
