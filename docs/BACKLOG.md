@@ -190,4 +190,7 @@ hors priorité immédiate.
 -  CHanger le system de navigation temporelle (avoir bt semaine courante, avoir un calendrier pour la navigation, voir les semaines qui ont des affectation)
 -  Differenter l'historique vs l'audit Log. Historique => seulement les actions de l'utilisateur courant (création d'une tache, complétion d'une tache, ajout d'un commentaire,  ). L'audit log pour l'admin, lui permet de voir toutes les actions, de tous les utilisateurs, y compris les actions non utilisateur (activation ou désactivation de tache, création participant, changement parametre moteur d'affectatuib, réaffectation de tache, génération des affectaiton etc... )
 -  Ouvrir un tache en double click
--  Ajouter une pagination pour l'affichage de l'historique
+-  ~~Ajouter une pagination pour l'affichage de l'historique~~
+-  Ajouter une pagination sur les notifications
+-  ~~Ajout de filtre sur le dashboard (filtre date, type de tache, titre, en retard). Affichage viseul des taches dont la date est dépassé~~
+-  ~~Supprimer le bouton 'nouvelle tache' du dashboard, le rajouter dans la page de gestion des taches~~
