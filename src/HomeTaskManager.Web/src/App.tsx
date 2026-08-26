@@ -376,15 +376,15 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   );
 }
 
-function EditTaskDialog({ api, user, template, templates, authorName, onUpdated }: { api: string; user: User; template: Template; templates: Template[]; authorName?: string; onUpdated: (template: Template) => void }) {
-  const [open, setOpen] = useState(false);
+function EditTaskDialog({ api, user, template, templates, authorName, onUpdated, initialOpen = false, initialRemindersOpen = false }: { api: string; user: User; template: Template; templates: Template[]; authorName?: string; onUpdated: (template: Template) => void; initialOpen?: boolean; initialRemindersOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen);
   const [title, setTitle] = useState(template.title);
   const [description, setDescription] = useState(template.description ?? "");
   const [priority, setPriority] = useState(template.priority || "Normal");
   const [frequencyType, setFrequencyType] = useState(template.frequencyType || "Weekly");
   const [difficulty, setDifficulty] = useState(String(template.manualDifficultyScore ?? 50));
   const [duration, setDuration] = useState(String(template.estimatedDurationMinutes ?? 30));
-  const [remindersOpen, setRemindersOpen] = useState(false);
+  const [remindersOpen, setRemindersOpen] = useState(initialRemindersOpen);
   const [error, setError] = useState("");
 
   async function submit(event: FormEvent) {
@@ -414,6 +414,8 @@ function TaskCatalog({
   api,
   onCreated,
   onUpdated,
+  openTemplateId,
+  openReminders,
 }: {
   templates: Template[];
   users: User[];
@@ -421,6 +423,8 @@ function TaskCatalog({
   api: string;
   onCreated: (template: Template) => void;
   onUpdated: (template: Template) => void;
+  openTemplateId?: string | null;
+  openReminders?: boolean;
 }) {
   const [allTemplates, setAllTemplates] = useState(templates);
   const [loading, setLoading] = useState(true);
@@ -482,7 +486,7 @@ function TaskCatalog({
                     : "NORMALE"}
               </span>
               <small>{template.isActive === false ? "Inactif" : "Actif"}</small>
-              <EditTaskDialog api={api} user={user} template={template} templates={allTemplates} authorName={author(template.createdByUserId)} onUpdated={updateTemplate} />
+              <EditTaskDialog api={api} user={user} template={template} templates={allTemplates} authorName={author(template.createdByUserId)} onUpdated={updateTemplate} initialOpen={openTemplateId === template.id} initialRemindersOpen={openReminders && openTemplateId === template.id} />
               <ReminderDialog api={api} template={template} />
               <button className="secondary-button" onClick={() => setActive(template)}>{template.isActive === false ? "Réactiver" : "Désactiver"}</button>
             </div>
@@ -493,13 +497,13 @@ function TaskCatalog({
   );
 }
 
-function EditProfileDialog({ user, users, api, onUpdated }: { user: User; users: User[]; api: string; onUpdated: (user: User) => void }) {
-  const [open, setOpen] = useState(false); const [name, setName] = useState(user.displayName); const [admin, setAdmin] = useState(user.isAdmin); const [availability, setAvailability] = useState(String(user.availabilityPercentage)); const [active, setActive] = useState(user.isActive); const [error, setError] = useState("");
+function EditProfileDialog({ user, users, api, onUpdated, initialOpen = false }: { user: User; users: User[]; api: string; onUpdated: (user: User) => void; initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen); const [name, setName] = useState(user.displayName); const [admin, setAdmin] = useState(user.isAdmin); const [availability, setAvailability] = useState(String(user.availabilityPercentage)); const [active, setActive] = useState(user.isActive); const [error, setError] = useState("");
   async function submit(event: FormEvent) { event.preventDefault(); const percentage = Number(availability); if (!name.trim()) return setError("Le nom d’affichage est obligatoire."); if (users.some((entry) => entry.id !== user.id && entry.displayName.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase())) return setError("Ce nom d’affichage est déjà utilisé."); if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100) return setError("La disponibilité doit être comprise entre 0 et 100."); try { const response = await fetch(`${api}/api/users/${user.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: name.trim(), isAdmin: admin, availabilityPercentage: percentage, isActive: active }) }); if (!response.ok) throw new Error((await response.json()).error ?? "Modification impossible"); onUpdated(await response.json()); } catch (reason) { return setError(reason instanceof Error ? reason.message : "Modification impossible."); } setOpen(false); setError(""); }
   return <><button className="secondary-button" onClick={() => setOpen(true)}>Modifier</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">MODIFIER LE PROFIL</span><h2>{user.displayName}</h2><label>Nom d’affichage<input value={name} onChange={(event) => setName(event.target.value)} autoFocus /></label><label>Disponibilité (%)<input type="number" min="0" max="100" value={availability} onChange={(event) => setAvailability(event.target.value)} /></label><label className="checkbox-label"><input type="checkbox" checked={admin} onChange={(event) => setAdmin(event.target.checked)} /> Administrateur</label><label className="checkbox-label"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} /> Profil actif</label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Enregistrer</button></form></div>}</>;
 }
 
-function ProfileCatalog({ users, api, onCreated, onUpdated }: { users: User[]; api: string; onCreated: (user: User) => void; onUpdated: (user: User) => void }) {
+function ProfileCatalog({ users, api, onCreated, onUpdated, openUserId }: { users: User[]; api: string; onCreated: (user: User) => void; onUpdated: (user: User) => void; openUserId?: string | null }) {
   const [allUsers, setAllUsers] = useState(users)
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -531,7 +535,7 @@ function ProfileCatalog({ users, api, onCreated, onUpdated }: { users: User[]; a
 
   if (loading) return <section className="catalog-panel"><PanelSkeleton rows={3} /></section>;
 
-  return <section className="catalog-panel"><div className="panel-heading"><div><span className="section-kicker">PILOTAGE</span><h2>Participants</h2></div><button className="primary-button" onClick={() => setOpen(true)}>+ Nouveau profil</button></div><div className="profile-catalog-list">{allUsers.map((entry) => <article className="profile-catalog-item" key={entry.id}><span className={`avatar ${entry.isAdmin ? "" : "blue"}`}>{entry.displayName[0]}</span><div><h3>{entry.displayName}</h3><p>{entry.isAdmin ? "Administrateur" : "Participant"}</p></div><div className="profile-catalog-meta"><b>{entry.availabilityPercentage}%</b><small>{entry.isActive ? "Actif" : "Inactif"}</small></div><EditProfileDialog user={entry} users={allUsers} api={api} onUpdated={(updated) => { setAllUsers((items) => items.map((item) => item.id === updated.id ? updated : item)); onUpdated(updated) }} /></article>)}</div>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">NOUVEAU PROFIL</span><h2>Ajouter un participant</h2><label>Nom d’affichage<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus /></label><label>Disponibilité (%)<input type="number" min="0" max="100" value={availability} onChange={(event) => setAvailability(event.target.value)} /></label><label className="checkbox-label"><input type="checkbox" checked={isAdmin} onChange={(event) => setIsAdmin(event.target.checked)} /> Administrateur</label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Créer le profil</button></form></div>}</section>
+  return <section className="catalog-panel"><div className="panel-heading"><div><span className="section-kicker">PILOTAGE</span><h2>Participants</h2></div><button className="primary-button" onClick={() => setOpen(true)}>+ Nouveau profil</button></div><div className="profile-catalog-list">{allUsers.map((entry) => <article className="profile-catalog-item" key={entry.id}><span className={`avatar ${entry.isAdmin ? "" : "blue"}`}>{entry.displayName[0]}</span><div><h3>{entry.displayName}</h3><p>{entry.isAdmin ? "Administrateur" : "Participant"}</p></div><div className="profile-catalog-meta"><b>{entry.availabilityPercentage}%</b><small>{entry.isActive ? "Actif" : "Inactif"}</small></div><EditProfileDialog user={entry} users={allUsers} api={api} initialOpen={openUserId === entry.id} onUpdated={(updated) => { setAllUsers((items) => items.map((item) => item.id === updated.id ? updated : item)); onUpdated(updated) }} /></article>)}</div>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">NOUVEAU PROFIL</span><h2>Ajouter un participant</h2><label>Nom d’affichage<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus /></label><label>Disponibilité (%)<input type="number" min="0" max="100" value={availability} onChange={(event) => setAvailability(event.target.value)} /></label><label className="checkbox-label"><input type="checkbox" checked={isAdmin} onChange={(event) => setIsAdmin(event.target.checked)} /> Administrateur</label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Créer le profil</button></form></div>}</section>
 }
 
 type EngineSettings = { lowPriorityMultiplier: number; normalPriorityMultiplier: number; criticalPriorityMultiplier: number; referenceDurationMinutes: number; equityWindowWeeks: number; repetitionPenaltyWeight: number }
@@ -572,7 +576,7 @@ function HistoryActivitySkeleton() {
   return <div className="history-skeleton" aria-label="Chargement de l’historique" aria-busy="true">{Array.from({ length: 4 }, (_, index) => <div className="history-skeleton-item" key={index}><span className="history-skeleton-dot" /><div className="history-skeleton-content"><span className="history-skeleton-line history-skeleton-line-main" /><span className="history-skeleton-line history-skeleton-line-detail" /><span className="history-skeleton-line history-skeleton-line-date" /></div></div>)}</div>;
 }
 
-function HistoryPanel({ api, users, isAdmin, currentUserId }: { api: string; users: User[]; isAdmin: boolean; currentUserId: string }) {
+function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEntry }: { api: string; users: User[]; templates: Template[]; isAdmin: boolean; currentUserId: string; onOpenEntry: (entry: AuditLog) => void }) {
   const [entries, setEntries] = useState<AuditLog[]>([]);
   const [weeks, setWeeks] = useState<WeekSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -605,6 +609,8 @@ function HistoryPanel({ api, users, isAdmin, currentUserId }: { api: string; use
   const historyPageCount = Math.max(1, Math.ceil(visibleEntries.length / historyPageSize));
   const pagedEntries = visibleEntries.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
   useEffect(() => { setHistoryPage((page) => Math.min(page, historyPageCount)); }, [historyPageCount]);
+  const isNavigable = (entry: AuditLog) => entry.entityType === "User" || entry.entityType === "TaskTemplate" || entry.entityType === "TaskInstance" || entry.entityType === "Week" || entry.entityType === "AssignmentRun" || entry.entityType === "AssignmentEngineSettings";
+  const details = (entry: AuditLog) => entry.newValue?.includes("Reminder") ? `Rappel · ${templates.find((template) => template.id === entry.entityId)?.title ?? "Tâche"}` : entry.newValue;
   async function seedHistory() {
     setSeeding(true)
     try {
@@ -614,7 +620,7 @@ function HistoryPanel({ api, users, isAdmin, currentUserId }: { api: string; use
       if (auditResponse.ok) setEntries(await auditResponse.json())
     } finally { setSeeding(false) }
   }
-  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Journal d’audit du foyer" : "Mon historique"}</h2></div><div className="history-actions">{isAdmin && <button className="secondary-button" disabled={seeding} onClick={seedHistory}>{seeding ? "Génération..." : "Générer 20 semaines"}</button>}<span className="history-count">{visibleEntries.length} événements</span></div></div><div className="week-history"><span className="section-kicker">8 DERNIÈRES SEMAINES</span><div className="week-history-grid">{weeks.map((period) => <button className="week-history-card" key={`${period.year}-${period.week}`} onClick={() => { window.history.pushState({}, "", `/week?year=${period.year}&week=${period.week}`); window.dispatchEvent(new PopStateEvent("popstate")); }}><b>S{period.week}</b><small>{period.total} tâches</small><strong>{period.total ? Math.round(period.completed / period.total * 100) : 0}%</strong><i style={{ width: `${period.total ? period.completed / period.total * 100 : 0}%` }} /></button>)}</div></div>{loading ? <HistoryActivitySkeleton /> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <><div className="history-list">{pagedEntries.map((entry) => <article className={`history-item ${users.find((user) => user.id === entry.performedByUserId)?.isAdmin ? "admin-action" : "user-action"}`} key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{entry.newValue && <small>{entry.newValue}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></article>)}</div><div className="history-pagination"><button className="secondary-button" disabled={historyPage === 1} onClick={() => setHistoryPage((page) => page - 1)}>Précédente</button><span>Page {historyPage} / {historyPageCount}</span><button className="secondary-button" disabled={historyPage === historyPageCount} onClick={() => setHistoryPage((page) => page + 1)}>Suivante</button></div></>}</section>;
+  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Journal d’audit du foyer" : "Mon historique"}</h2></div><div className="history-actions">{isAdmin && <button className="secondary-button" disabled={seeding} onClick={seedHistory}>{seeding ? "Génération..." : "Générer 20 semaines"}</button>}<span className="history-count">{visibleEntries.length} événements</span></div></div><div className="week-history"><span className="section-kicker">8 DERNIÈRES SEMAINES</span><div className="week-history-grid">{weeks.map((period) => <button className="week-history-card" key={`${period.year}-${period.week}`} onClick={() => { window.history.pushState({}, "", `/week?year=${period.year}&week=${period.week}`); window.dispatchEvent(new PopStateEvent("popstate")); }}><b>S{period.week}</b><small>{period.total} tâches</small><strong>{period.total ? Math.round(period.completed / period.total * 100) : 0}%</strong><i style={{ width: `${period.total ? period.completed / period.total * 100 : 0}%` }} /></button>)}</div></div>{loading ? <HistoryActivitySkeleton /> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <><div className="history-list">{pagedEntries.map((entry) => <button type="button" className={`history-item history-item-button ${users.find((user) => user.id === entry.performedByUserId)?.isAdmin ? "admin-action" : "user-action"}`} disabled={!isNavigable(entry)} onClick={() => onOpenEntry(entry)} key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{details(entry) && <small>{details(entry)}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></button>)}</div><div className="history-pagination"><button className="secondary-button" disabled={historyPage === 1} onClick={() => setHistoryPage((page) => page - 1)}>Précédente</button><span>Page {historyPage} / {historyPageCount}</span><button className="secondary-button" disabled={historyPage === historyPageCount} onClick={() => setHistoryPage((page) => page + 1)}>Suivante</button></div></>}</section>;
 }
 
 function PreferencesPanel({ api }: { api: string }) {
@@ -706,6 +712,9 @@ function App() {
   const queryYear = Number(queryParameters.get("year"));
   const queryWeek = Number(queryParameters.get("week"));
   const queryInstanceId = queryParameters.get("instanceId");
+  const queryTemplateId = queryParameters.get("templateId");
+  const queryUserId = queryParameters.get("userId");
+  const openReminders = queryParameters.get("reminders") === "1";
   const selectedWeek = Number.isInteger(queryYear) && Number.isInteger(queryWeek) && queryWeek > 0 ? { year: queryYear, week: queryWeek } : null;
   const week = selectedWeek ?? isoWeek(new Date(Date.now() + weekOffset * 7 * 86400000));
 
@@ -828,6 +837,21 @@ function App() {
       const title = extractTaskTitleFromNotification(notification.message);
       setPendingNotificationTaskTitle(title);
     }
+  }
+
+  function openHistoryEntry(entry: AuditLog) {
+    const target = entry.entityType === "User"
+      ? `/participants?userId=${entry.entityId}`
+      : entry.entityType === "TaskTemplate"
+        ? `/tasks?templateId=${entry.entityId}${entry.newValue?.includes("Reminder") ? "&reminders=1" : ""}`
+        : entry.entityType === "TaskInstance"
+          ? `/instances?instanceId=${entry.entityId}`
+          : entry.entityType === "AssignmentRun"
+            ? "/assignments"
+            : entry.entityType === "AssignmentEngineSettings"
+              ? "/assignment-engine"
+              : "/week";
+    navigate(target);
   }
 
   useEffect(() => {
@@ -1292,7 +1316,7 @@ function App() {
         ) : view === "Préférences" ? (
           <PreferencesPanel api={api} />
         ) : view === "Historique" ? (
-          <HistoryPanel api={api} users={users} isAdmin={currentUser.isAdmin} currentUserId={currentUser.id} />
+          <HistoryPanel api={api} users={users} templates={templates} isAdmin={currentUser.isAdmin} currentUserId={currentUser.id} onOpenEntry={openHistoryEntry} />
         ) : view === "Affectations" ? (
           <AssignmentsPanel instances={instances} templates={templates} users={users} year={week.year} weekNumber={week.week} api={api} busyAction={busyAction} onAction={runWeekAction} />
         ) : view === "Instances" ? (
@@ -1303,6 +1327,8 @@ function App() {
             users={users}
             user={currentUser}
             api={api}
+            openTemplateId={queryTemplateId}
+            openReminders={openReminders}
             onCreated={(created) => {
               setTemplates((items) => [...items, created])
               setNotice("Tâche créée pour les prochaines affectations")
@@ -1318,6 +1344,7 @@ function App() {
           <ProfileCatalog
             users={users}
             api={api}
+            openUserId={queryUserId}
             onCreated={(created) => {
               setUsers((items) => [...items, created])
               setNotice("Profil créé")
