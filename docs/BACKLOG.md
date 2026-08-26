@@ -57,7 +57,7 @@ Optimisation UX
 - Dashboard avec indicateurs de base
 - Mobile responsive
 
-> **État : MVP étendu livré, en validation finale.** Le frontend couvre désormais le tableau de
+> **État : MVP étendu livré, en évolution.** Le frontend couvre désormais le tableau de
 > bord, les vues d'administration principales, les notifications, les commentaires avancés
 > (threading + réactions) et un écran analytics responsive. Les liens de notification ouvrent
 > directement l'instance concernée, y compris pour les rappels.
@@ -132,10 +132,25 @@ Optimisation UX
 - Migration EF Core officielle et migration automatique en développement.
 - Endpoint de génération d'un jeu de démonstration complet et endpoint de reprise des liens
   d'anciennes notifications.
+- Historique paginé par pages de 10 événements, avec intitulé distinct pour l'historique
+  personnel et le journal d'audit administrateur.
 
 L'envoi Web Push réel (intégration navigateur), les tests d'intégration/end-to-end complets et
 la revue sécurité avant exposition réseau restent à implémenter. Les commentaires avancés,
 l'interface analytics et les parcours CRUD actuellement exposés sont implémentés.
+
+## Prochaines étapes
+
+1. Finaliser la gestion complète des modèles de tâches : archivage/suppression logique et
+  cohérence des parcours CRUD.
+2. Poursuivre l'historique : améliorer la navigation des périodes et renforcer la couverture
+  end-to-end de l'historique personnel et du journal d'audit.
+3. Réaliser la revue sécurité avant exposition réseau.
+4. Ajouter les tests d'intégration backend (`WebApplicationFactory`).
+5. Revenir ensuite sur les tests end-to-end frontend.
+
+Le Web Push réel est volontairement différé après ces étapes. Il reste une fonctionnalité V14,
+hors priorité immédiate.
 
 ---
 
@@ -174,4 +189,5 @@ l'interface analytics et les parcours CRUD actuellement exposés sont implément
 -  Amélioration de l'explication de **"pourquoi cette tache ta été attribué"**
 -  CHanger le system de navigation temporelle (avoir bt semaine courante, avoir un calendrier pour la navigation, voir les semaines qui ont des affectation)
 -  Differenter l'historique vs l'audit Log. Historique => seulement les actions de l'utilisateur courant (création d'une tache, complétion d'une tache, ajout d'un commentaire,  ). L'audit log pour l'admin, lui permet de voir toutes les actions, de tous les utilisateurs, y compris les actions non utilisateur (activation ou désactivation de tache, création participant, changement parametre moteur d'affectatuib, réaffectation de tache, génération des affectaiton etc... )
--  Ouvrir un tache en double click 
+-  Ouvrir un tache en double click
+-  Ajouter une pagination pour l'affichage de l'historique

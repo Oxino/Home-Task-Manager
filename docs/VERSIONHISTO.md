@@ -199,6 +199,8 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - Les notifications d'affectation et de rappel ouvrent directement l'instance ciblée.
 - Le jeu de démonstration complet et le backfill des anciennes notifications sont disponibles
   via les endpoints réservés au développement.
+- L'historique est paginé par pages de 10 événements, avec une distinction explicite entre
+  l'historique personnel et le journal d'audit administrateur.
 
 ---
 
@@ -210,22 +212,24 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 
 ---
 
-## Reste à faire — version actuelle
+## Reste à faire — ordre prioritaire
 
-- [ ] Web Push réel navigateur (VAPID, abonnement client, persistance des subscriptions) ;
-  `INotificationService` est prêt, l'implémentation actuelle est de type logging.
+- [ ] Gestion complète des modèles de tâches : archivage/suppression logique et cohérence des
+  parcours CRUD.
+- [ ] Poursuite de la gestion de l'historique : navigation améliorée des périodes et couverture
+  end-to-end de l'historique personnel et du journal d'audit.
+- [ ] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
+  endpoints admin, politique CORS/cookies).
 - [ ] Tests d'intégration API bout en bout (`WebApplicationFactory`) en complément des tests
   unitaires Application/Domain.
 - [ ] Tests end-to-end frontend (desktop/mobile) sur les parcours critiques.
-- [ ] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
-  endpoints admin, politique CORS/cookies).
-- [ ] Validation manuelle et tests end-to-end des écrans historiques/CRUD.
 
 ## Reste à faire — versions futures
 
 ### V14 — Notifications avancées
 
-- Web Push multi-appareils, retry policy, et télémétrie de délivrabilité.
+- Web Push navigateur multi-appareils (VAPID, abonnement client et persistance des subscriptions),
+  retry policy et télémétrie de délivrabilité.
 - Préférences utilisateur plus fines (types d'événements, plages horaires).
 
 ### V15 — Complément frontend
