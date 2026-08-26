@@ -74,7 +74,7 @@ public sealed class RunAssignmentEngineUseCase(
             // BR-053: equity window, defaults to 8 weeks before the target week; the run being (re)assigned is excluded.
             var since = week.StartDate.AddDays(-7 * settings.EquityWindowWeeks);
             var historicalInstances = (await taskInstanceRepository.GetAssignedSinceAsync(since, cancellationToken))
-                .Where(instance => instance.WeekId != week.Id)
+                .Where(instance => instance.WeekId != week.Id && !instance.IsCarryOver)
                 .ToList();
 
             var templateIds = assignableInstances.Select(i => i.TaskTemplateId)

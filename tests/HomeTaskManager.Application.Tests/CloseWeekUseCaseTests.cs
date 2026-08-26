@@ -120,4 +120,25 @@ public class CloseWeekUseCaseTests
         var carriedOver = result.CarriedOverInstances.Should().ContainSingle().Subject;
         carriedOver.PlannedDate.Should().Be(nextWeek.StartDate.AddDays(1));
     }
+
+    [Fact]
+    public async Task Already_carried_over_unfinished_instances_are_not_carried_over_again()
+    {
+        var userRepository = new InMemoryUserRepository();
+        var admin = new User("Nicolas", isAdmin: true);
+        var owner = new User("Julie");
+        userRepository.Seed(admin);
+        userRepository.Seed(owner);
+        var weekRepository = new InMemoryWeekRepository();
+        var week = new Week(new WeekKey(2026, 2));
+        await weekRepository.AddAsync(week);
+        var instanceRepository = new InMemoryTaskInstanceRepository();
+        var carriedOver = new TaskInstance(Guid.NewGuid(), null, week, owner.Id, week.StartDate, week.StartDate, isCarryOver: true, parentTaskInstanceId: Guid.NewGuid());
+        await instanceRepository.AddRangeAsync([carriedOver]);
+        var useCase = CreateUseCase(weekRepository, userRepository, instanceRepository);
+
+        var result = await useCase.ExecuteAsync(new CloseWeekCommand(2026, 2, admin.Id));
+
+        result.CarriedOverInstances.Should().BeEmpty();
+    }
 }

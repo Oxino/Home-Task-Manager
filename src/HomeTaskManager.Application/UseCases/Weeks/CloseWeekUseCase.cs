@@ -41,7 +41,7 @@ public sealed class CloseWeekUseCase(
 
         var instances = await taskInstanceRepository.GetByWeekAsync(week.Id, cancellationToken);
         var unfinishedInstances = instances
-            .Where(instance => !instance.IsCompleted && instance.Status != TaskInstanceStatus.Cancelled)
+            .Where(instance => !instance.IsCompleted && !instance.IsCarryOver && instance.Status != TaskInstanceStatus.Cancelled)
             .OrderBy(instance => instance.PlannedDate)
             .ThenBy(instance => instance.Id)
             .ToList();
