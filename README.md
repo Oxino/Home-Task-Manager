@@ -80,14 +80,15 @@ notifications, commentaires (avec réactions), et une page analytics (`/analytic
 
 - Backend: flux MVP complet (génération, affectation, complétude, clôture/report, audit,
   rappels, notifications, analytics).
-- Frontend: parcours principal utilisateur/admin opérationnel, analytics UI responsive.
+- Frontend: parcours utilisateur/admin opérationnel, notifications avec ouverture directe des
+    instances, et analytics UI responsive.
 - Qualité: tests unitaires Application et Domain verts ; build backend/frontend vert.
 
 ## Reste à faire (priorisé)
 
 1. Web Push réel navigateur (abonnements, VAPID, opt-in utilisateur).
 2. Tests d'intégration API (`WebApplicationFactory`) et tests end-to-end frontend.
-3. Finalisation UX des écrans historiques/CRUD restants.
+3. Validation manuelle et tests end-to-end des écrans historiques/CRUD.
 4. Revue sécurité avant exposition réseau.
 
 ### Générer un historique de développement

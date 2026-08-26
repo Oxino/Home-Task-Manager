@@ -132,7 +132,8 @@ interfaces (inversion de dépendance).
 - Les rappels sont configurés au niveau du modèle via `GET/POST /api/task-templates/{id}/reminders`.
   Leur stockage est persistant ; `ProcessReminderNotificationsUseCase` est exécuté par un
   `BackgroundService` périodique et crée des notifications idempotentes pour les rappels échus.
-  L’envoi Web Push reste séparé.
+  Les liens générés contiennent l'identifiant de l'instance afin que le frontend puisse ouvrir
+  directement la tâche concernée. L’envoi Web Push reste séparé.
 - La boîte de notifications personnelles est exposée par `GET /api/notifications`, avec les
   actions `PUT /api/notifications/{id}/read`, `POST /api/notifications/read-all` et
   `DELETE /api/notifications/read`. Chaque requête est filtrée par l’identité de session.
@@ -141,7 +142,7 @@ interfaces (inversion de dépendance).
 - Les réactions de commentaires sont exposées par `POST /api/comments/{commentId}/reactions`,
   `DELETE /api/comments/reactions/{reactionId}` et `GET /api/comments/{commentId}/reactions`.
 - Une affectation produite par le moteur crée une notification personnelle pour le participant
-  retenu, avec un lien vers la semaine concernée.
+  retenu, avec un lien vers la semaine et l'instance concernées.
 - Aucune règle métier complexe : l'interface présente les états et déclenche les cas d'usage
   exposés par l'API.
 

@@ -165,9 +165,23 @@
 - Raffinement des tests `DailyFlexible` (permissions, semaine clôturée, multi-exécutions),
   plus tests dédiés des réactions.
 
+### V13.1 — Stabilisation notifications, données de démonstration et UX d'erreur
+
+- Ajout de liens explicites avec `instanceId` dans les notifications d'affectation et de rappel,
+  avec compatibilité pour les anciens liens utilisant un fragment URL.
+- Ouverture automatique de l'instance de tâche depuis une notification, après chargement de la
+  semaine concernée.
+- Ajout du backfill des liens de notifications historiques et d'un endpoint de seed complet
+  pour un foyer de démonstration avec deux utilisateurs, tâches, historique et scénarios variés.
+- Séparation frontend entre erreurs réseau/API indisponible, erreurs d'authentification et
+  messages métier renvoyés par l'API.
+- Correction d'un warning React lié à une mise à jour d'état parent pendant le rendu des
+  notifications.
+- Suite validée à **95 tests** : 76 Application et 19 Domain.
+
 ---
 
-## Etat actuel (fin V13)
+## Etat actuel (fin V13.1)
 
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
@@ -182,6 +196,9 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
 - Les commentaires avancés couvrent désormais le threading et les réactions.
 - Les migrations EF Core sont en place et appliquées au démarrage en environnement développement.
+- Les notifications d'affectation et de rappel ouvrent directement l'instance ciblée.
+- Le jeu de démonstration complet et le backfill des anciennes notifications sont disponibles
+  via les endpoints réservés au développement.
 
 ---
 
@@ -202,7 +219,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - [ ] Tests end-to-end frontend (desktop/mobile) sur les parcours critiques.
 - [ ] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
   endpoints admin, politique CORS/cookies).
-- [ ] Finalisation UX des vues historiques/CRUD restantes côté frontend.
+- [ ] Validation manuelle et tests end-to-end des écrans historiques/CRUD.
 
 ## Reste à faire — versions futures
 
