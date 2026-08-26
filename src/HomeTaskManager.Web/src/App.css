@@ -1277,6 +1277,10 @@ nav {
   background: var(--mint);
   transform: translateY(-1px);
 }
+.week-history-card.current {
+  border-color: var(--teal);
+  background: #eef8f4;
+}
 .week-history-card b {
   grid-row: 1 / -1;
   font-family: "Space Grotesk";
