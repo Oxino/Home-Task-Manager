@@ -8,6 +8,16 @@
 .history-panel .activity-calendar {
   display: none;
 }
+.calendar-participant-filter {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 6px 8px;
+  background: #fbfcfb;
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+}
 .calendar-skeleton {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));

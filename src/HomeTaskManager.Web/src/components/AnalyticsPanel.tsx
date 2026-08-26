@@ -33,14 +33,15 @@ type UserLoad = {
 type LoadDistribution = {
   userLoads?: UserLoad[];
 };
-type ActivityEntry = { performedAt: string; action: string };
+type ActivityEntry = { performedAt: string; action: string; performedByUserId: string };
+type ActivityUser = { id: string; displayName: string };
 
 function safeNumber(value: number | null | undefined, digits = 1) {
   if (typeof value !== "number" || Number.isNaN(value)) return "0.0";
   return value.toFixed(digits);
 }
 
-export function AnalyticsPanel({ api, weekId, week }: { api: string; weekId: string | null; week: { year: number; week: number } }) {
+export function AnalyticsPanel({ api, weekId, week, users }: { api: string; weekId: string | null; week: { year: number; week: number }; users: ActivityUser[] }) {
   const [weekStats, setWeekStats] = useState<WeekStatistics | null>(null);
   const [completionStats, setCompletionStats] = useState<CompletionStatistics | null>(null);
   const [loadDist, setLoadDist] = useState<LoadDistribution | null>(null);
@@ -48,6 +49,7 @@ export function AnalyticsPanel({ api, weekId, week }: { api: string; weekId: str
   const [activityMonth, setActivityMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
+  const [activityParticipantId, setActivityParticipantId] = useState("all");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -113,10 +115,13 @@ export function AnalyticsPanel({ api, weekId, week }: { api: string; weekId: str
   const participantLoads = weekStats?.participantLoads ?? [];
   const userCompletions = completionStats?.userCompletions ?? [];
   const userLoads = loadDist?.userLoads ?? [];
+  const visibleActivityEntries = activityParticipantId === "all"
+    ? activityEntries
+    : activityEntries.filter((entry) => entry.performedByUserId === activityParticipantId);
   const firstActivityDay = new Date(activityMonth.getFullYear(), activityMonth.getMonth(), 1);
   const activityDaysInMonth = new Date(activityMonth.getFullYear(), activityMonth.getMonth() + 1, 0).getDate();
   const activityLeadingDays = (firstActivityDay.getDay() + 6) % 7;
-  const activityDaySet = new Set(activityEntries.map((entry) => {
+  const activityDaySet = new Set(visibleActivityEntries.map((entry) => {
     const date = new Date(entry.performedAt);
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   }));
@@ -255,8 +260,8 @@ export function AnalyticsPanel({ api, weekId, week }: { api: string; weekId: str
       </article>
 
       <article className="analytics-card activity-calendar">
-        <div className="calendar-heading"><div><span className="section-kicker">ACTIVITÉS</span><h3>Jours avec une action</h3></div><div className="calendar-controls"><button type="button" className="calendar-button" aria-label="Mois précédent" onClick={() => setActivityMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>←</button><b>{activityMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</b><button type="button" className="calendar-button" aria-label="Mois suivant" onClick={() => setActivityMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>→</button></div></div>
-        {activityLoading ? <div className="calendar-skeleton" aria-busy="true" aria-label="Chargement du calendrier"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div> : <><div className="calendar-grid calendar-weekdays">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div><div className="calendar-grid">{activityCells.map((day, index) => { const active = day !== null && activityDaySet.has(`${activityMonth.getFullYear()}-${activityMonth.getMonth()}-${day}`); return <span className={active ? "calendar-day active" : "calendar-day"} key={index}>{day}{active && <i />}</span>; })}</div><small className="calendar-legend"><i /> Jour avec au moins une activité</small></>}
+        <div className="calendar-heading"><div><span className="section-kicker">COMPLÉTIONS</span><h3>Jours de complétion</h3></div><div className="calendar-controls"><select className="calendar-participant-filter" value={activityParticipantId} onChange={(event) => setActivityParticipantId(event.target.value)} aria-label="Filtrer les complétions par participant"><option value="all">Tous les participants</option>{users.map((user) => <option value={user.id} key={user.id}>{user.displayName}</option>)}</select><button type="button" className="calendar-button" aria-label="Mois précédent" onClick={() => setActivityMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>←</button><b>{activityMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</b><button type="button" className="calendar-button" aria-label="Mois suivant" onClick={() => setActivityMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>→</button></div></div>
+        {activityLoading ? <div className="calendar-skeleton" aria-busy="true" aria-label="Chargement du calendrier"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div> : <><div className="calendar-grid calendar-weekdays">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div><div className="calendar-grid">{activityCells.map((day, index) => { const active = day !== null && activityDaySet.has(`${activityMonth.getFullYear()}-${activityMonth.getMonth()}-${day}`); return <span className={active ? "calendar-day active" : "calendar-day"} key={index}>{day}{active && <i />}</span>; })}</div><small className="calendar-legend"><i /> Jour de complétion d’une tâche</small></>}
       </article>
     </section>
   );

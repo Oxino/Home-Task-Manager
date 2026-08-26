@@ -1384,7 +1384,7 @@ function App() {
             }}
           />
         ) : view === "Statistiques" ? (
-          <AnalyticsPanel api={api} weekId={currentWeekId} week={week} />
+          <AnalyticsPanel api={api} weekId={currentWeekId} week={week} users={users} />
         ) : (
           <section className="empty-view">
             <span className="section-kicker">{view.toUpperCase()}</span>
