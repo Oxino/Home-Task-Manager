@@ -14,5 +14,7 @@ public static class TaskTemplateMapper
         taskTemplate.FrequencyType.ToString(),
         taskTemplate.IsActive,
         taskTemplate.CreatedByUserId,
-        taskTemplate.GetActiveWeekDays());
+        taskTemplate.GetActiveWeekDays(),
+        taskTemplate.MonthlyScheduleType,
+        taskTemplate.MonthlyDay);
 }

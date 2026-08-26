@@ -1,3 +1,5 @@
+using HomeTaskManager.Domain.Enums;
+
 namespace HomeTaskManager.Application.UseCases.TaskTemplates;
 
 public sealed record TaskTemplateDto(
@@ -10,4 +12,6 @@ public sealed record TaskTemplateDto(
     string FrequencyType,
     bool IsActive,
     Guid CreatedByUserId,
-    IReadOnlyList<DayOfWeek> ActiveWeekDays);
+    IReadOnlyList<DayOfWeek> ActiveWeekDays,
+    MonthlyScheduleType MonthlyScheduleType,
+    int? MonthlyDay);

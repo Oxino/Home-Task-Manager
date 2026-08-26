@@ -55,7 +55,7 @@ public sealed class GenerateWeekInstancesUseCase(
                     continue;
                 }
 
-                var dueDate = template.FrequencyType == FrequencyType.DailyMandatory ? plannedDate : week.EndDate;
+                var dueDate = template.FrequencyType is FrequencyType.DailyMandatory or FrequencyType.Monthly ? plannedDate : week.EndDate;
                 newInstances.Add(new TaskInstance(template.Id, null, week, null, plannedDate, dueDate));
             }
         }
@@ -90,8 +90,7 @@ public sealed class GenerateWeekInstancesUseCase(
                     .ToList();
 
             case FrequencyType.Monthly:
-                // R-12: default rule, generate on the first calendar week that starts within the month.
-                return week.StartDate.Day <= 7 ? [week.StartDate] : [];
+                return GetMonthlyDates(template, week);
 
             case FrequencyType.OneTime:
                 var alreadyGenerated = await taskInstanceRepository.ExistsForTaskTemplateAsync(template.Id, cancellationToken);
@@ -100,5 +99,33 @@ public sealed class GenerateWeekInstancesUseCase(
             default:
                 return [];
         }
+    }
+
+    private static IReadOnlyList<DateOnly> GetMonthlyDates(TaskTemplate template, Week week)
+    {
+        var months = new[] { new DateOnly(week.StartDate.Year, week.StartDate.Month, 1) };
+        if (week.StartDate.Month != week.EndDate.Month)
+        {
+            months = [.. months, new DateOnly(week.EndDate.Year, week.EndDate.Month, 1)];
+        }
+
+        return months
+            .Select(month => GetMonthlyDate(template, month))
+            .Where(date => date >= week.StartDate && date <= week.EndDate)
+            .Distinct()
+            .ToList();
+    }
+
+    private static DateOnly GetMonthlyDate(TaskTemplate template, DateOnly month)
+    {
+        var lastDay = DateTime.DaysInMonth(month.Year, month.Month);
+        var day = template.MonthlyScheduleType switch
+        {
+            MonthlyScheduleType.MiddleOfMonth => 15,
+            MonthlyScheduleType.EndOfMonth => lastDay,
+            MonthlyScheduleType.SpecificDay => Math.Min(template.MonthlyDay ?? 1, lastDay),
+            _ => 1,
+        };
+        return new DateOnly(month.Year, month.Month, day);
     }
 }

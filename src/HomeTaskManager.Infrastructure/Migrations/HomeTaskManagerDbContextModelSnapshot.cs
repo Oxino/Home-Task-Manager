@@ -368,6 +368,12 @@ namespace HomeTaskManager.Infrastructure.Migrations
                     b.Property<int>("ManualDifficultyScore")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("MonthlyDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MonthlyScheduleType")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
 

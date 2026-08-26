@@ -10,4 +10,6 @@ public sealed record UpdateTaskTemplateRequest(
     TaskPriority Priority,
     FrequencyType FrequencyType,
     int? EstimatedDurationMinutes,
-    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null);
+    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
+    MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
+    int? MonthlyDay = null);

@@ -7,6 +7,8 @@ public sealed class TaskTemplate
 {
     private const int MinimumDifficultyScore = 1;
     private const int MaximumDifficultyScore = 100;
+    private const int MinimumMonthDay = 1;
+    private const int MaximumMonthDay = 31;
 
     private TaskTemplate()
     {
@@ -20,7 +22,9 @@ public sealed class TaskTemplate
         TaskPriority priority = TaskPriority.Normal,
         string? description = null,
         int? estimatedDurationMinutes = null,
-        IEnumerable<DayOfWeek>? activeWeekDays = null)
+        IEnumerable<DayOfWeek>? activeWeekDays = null,
+        MonthlyScheduleType monthlyScheduleType = MonthlyScheduleType.StartOfMonth,
+        int? monthlyDay = null)
     {
         Id = Guid.NewGuid();
         CreatedAt = DateTime.UtcNow;
@@ -37,6 +41,7 @@ public sealed class TaskTemplate
         }
 
         SetActiveWeekDays(activeWeekDays ?? []);
+        SetMonthlySchedule(monthlyScheduleType, monthlyDay);
         ChangePriority(priority);
         ChangeEstimatedDuration(estimatedDurationMinutes);
         UpdatedAt = CreatedAt;
@@ -57,6 +62,10 @@ public sealed class TaskTemplate
     public FrequencyType FrequencyType { get; private set; }
 
     public string ActiveWeekDays { get; private set; } = string.Empty;
+
+    public MonthlyScheduleType MonthlyScheduleType { get; private set; }
+
+    public int? MonthlyDay { get; private set; }
 
     public bool IsActive { get; private set; }
 
@@ -122,6 +131,18 @@ public sealed class TaskTemplate
         }
 
         ActiveWeekDays = string.Join(',', normalized);
+        Touch();
+    }
+
+    public void SetMonthlySchedule(MonthlyScheduleType scheduleType, int? day)
+    {
+        if (FrequencyType == FrequencyType.Monthly && scheduleType == MonthlyScheduleType.SpecificDay && day is < MinimumMonthDay or > MaximumMonthDay)
+        {
+            throw new DomainValidationException("A specific monthly day must be between 1 and 31.");
+        }
+
+        MonthlyScheduleType = scheduleType;
+        MonthlyDay = scheduleType == MonthlyScheduleType.SpecificDay ? day : null;
         Touch();
     }
 

@@ -202,6 +202,8 @@ hors priorité immédiate.
   sinon une seule occurrence est reportée à la semaine suivante.
 - Les deux comportements sont expliqués directement dans les formulaires de création et de
   modification des modèles de tâches.
+- Les tâches mensuelles permettent de choisir le début, le milieu, la fin du mois ou un jour
+  précis, avec adaptation automatique aux mois plus courts.
 
 ### Idées futures
 

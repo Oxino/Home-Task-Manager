@@ -15,7 +15,9 @@ public sealed record UpdateTaskTemplateCommand(
     TaskPriority Priority,
     FrequencyType FrequencyType,
     int? EstimatedDurationMinutes,
-    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null);
+    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
+    MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
+    int? MonthlyDay = null);
 
 public interface IUpdateTaskTemplateUseCase
 {
@@ -56,6 +58,7 @@ public sealed class UpdateTaskTemplateUseCase(
         taskTemplate.ChangePriority(command.Priority);
         taskTemplate.ChangeFrequency(command.FrequencyType);
         taskTemplate.SetActiveWeekDays(command.ActiveWeekDays ?? []);
+        taskTemplate.SetMonthlySchedule(command.MonthlyScheduleType, command.MonthlyDay);
         taskTemplate.ChangeEstimatedDuration(command.EstimatedDurationMinutes);
 
         await auditLogger.LogAsync(

@@ -10,4 +10,6 @@ public sealed record CreateTaskTemplateRequest(
     TaskPriority Priority,
     int? EstimatedDurationMinutes,
     Guid CreatedByUserId,
-    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null);
+    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
+    MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
+    int? MonthlyDay = null);

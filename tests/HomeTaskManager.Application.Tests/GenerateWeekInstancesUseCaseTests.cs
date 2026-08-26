@@ -111,7 +111,7 @@ public class GenerateWeekInstancesUseCaseTests
         var useCase = new GenerateWeekInstancesUseCase(weekRepository, taskTemplateRepository, instanceRepository, new NoOpUnitOfWork());
 
         var firstWeekOfMonth = Enumerable.Range(1, 12).Select(week => new WeekKey(2026, week))
-            .First(key => key.StartDate.Day <= 7);
+            .First(key => key.StartDate <= new DateOnly(2026, 1, 1) && key.StartDate.AddDays(6) >= new DateOnly(2026, 1, 1));
         var laterWeekSameMonth = new WeekKey(2026, firstWeekOfMonth.WeekNumber + 1);
 
         var resultOnFirstWeek = await useCase.ExecuteAsync(
@@ -121,6 +121,23 @@ public class GenerateWeekInstancesUseCaseTests
 
         resultOnFirstWeek.CreatedInstances.Should().ContainSingle();
         resultOnNextWeek.CreatedInstances.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Monthly_specific_day_uses_the_last_day_in_short_months()
+    {
+        var taskTemplateRepository = new InMemoryTaskTemplateRepository();
+        var template = new TaskTemplate("Task-MonthlySpecific", Guid.NewGuid(), 40, FrequencyType.Monthly, monthlyScheduleType: MonthlyScheduleType.SpecificDay, monthlyDay: 31);
+        taskTemplateRepository.Seed(template);
+        var weekRepository = new InMemoryWeekRepository();
+        var instanceRepository = new InMemoryTaskInstanceRepository();
+        var useCase = new GenerateWeekInstancesUseCase(weekRepository, taskTemplateRepository, instanceRepository, new NoOpUnitOfWork());
+
+        var result = await useCase.ExecuteAsync(new GenerateWeekInstancesCommand(2026, 9));
+
+        result.CreatedInstances.Should().ContainSingle();
+        result.CreatedInstances.Single().PlannedDate.Should().Be(new DateOnly(2026, 2, 28));
+        result.CreatedInstances.Single().DueDate.Should().Be(new DateOnly(2026, 2, 28));
     }
 
     [Fact]

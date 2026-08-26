@@ -26,6 +26,8 @@ type Template = {
   createdByUserId?: string;
   isActive?: boolean;
   activeWeekDays?: number[];
+  monthlyScheduleType?: string;
+  monthlyDay?: number;
 };
 type Instance = {
   id: string;
@@ -291,7 +293,7 @@ const frequencyHelp: Record<string, string> = {
   WeeklyFlexible:
     "Hebdomadaire fluide : une instance est créée pour chaque jour sélectionné. Si au moins une occurrence est faite dans la semaine, les autres sont supprimées à la clôture; sinon une occurrence est reportée.",
   Monthly:
-    "Une instance est créée sur la semaine mensuelle définie par le moteur.",
+    "Une instance est créée à la date mensuelle choisie : début, milieu, fin du mois ou jour précis. Les mois courts utilisent leur dernier jour disponible.",
   OneTime: "Une seule instance est créée ; la tâche n’est pas récurrente.",
 };
 const priorityOrder: Record<string, number> = {
@@ -335,6 +337,10 @@ function FieldInfo({ text }: { text: string }) {
       <span className="info-tooltip">{text}</span>
     </span>
   );
+}
+
+function MonthlyScheduleField({ scheduleType, day, onScheduleTypeChange, onDayChange }: { scheduleType: string; day: string; onScheduleTypeChange: (value: string) => void; onDayChange: (value: string) => void }) {
+  return <fieldset className="monthly-schedule-field"><legend>Date mensuelle<FieldInfo text="La tâche sera générée dans la semaine contenant cette date. Pour un jour précis, les mois plus courts utilisent leur dernier jour." /></legend><div className="monthly-schedule-controls"><select value={scheduleType} onChange={(event) => onScheduleTypeChange(event.target.value)}><option value="StartOfMonth">Début du mois (1)</option><option value="MiddleOfMonth">Milieu du mois (15)</option><option value="EndOfMonth">Fin du mois</option><option value="SpecificDay">Jour précis</option></select>{scheduleType === "SpecificDay" && <input type="number" min="1" max="31" value={day} onChange={(event) => onDayChange(event.target.value)} aria-label="Jour du mois" />}</div></fieldset>;
 }
 
 function PanelSkeleton({ rows = 4 }: { rows?: number }) {
@@ -841,6 +847,10 @@ function EditTaskDialog({
   const [activeWeekDays, setActiveWeekDays] = useState<number[]>(
     template.activeWeekDays?.length ? template.activeWeekDays : [1],
   );
+  const [monthlyScheduleType, setMonthlyScheduleType] = useState(
+    template.monthlyScheduleType || "StartOfMonth",
+  );
+  const [monthlyDay, setMonthlyDay] = useState(String(template.monthlyDay ?? 1));
   const [difficulty, setDifficulty] = useState(
     String(template.manualDifficultyScore ?? 50),
   );
@@ -873,6 +883,8 @@ function EditTaskDialog({
       frequencyType,
       estimatedDurationMinutes: Number(duration) || null,
       activeWeekDays: frequencyType === "WeeklyFlexible" ? activeWeekDays : [],
+      monthlyScheduleType,
+      monthlyDay: frequencyType === "Monthly" && monthlyScheduleType === "SpecificDay" ? Number(monthlyDay) : null,
       requestingUserId: user.id,
     };
     try {
@@ -995,6 +1007,7 @@ function EditTaskDialog({
                   </div>
                 </fieldset>
               )}
+              {frequencyType === "Monthly" && <MonthlyScheduleField scheduleType={monthlyScheduleType} day={monthlyDay} onScheduleTypeChange={setMonthlyScheduleType} onDayChange={setMonthlyDay} />}
               <label>
                 Pénibilité
                 <FieldInfo text="Entier obligatoire compris entre 1 et 100." />

@@ -222,6 +222,9 @@ instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable pa
 avec validation de la semaine à la clôture. Ces règles sont persistées, exposées par l'API et
 expliquées dans les formulaires de création et de modification.
 
+Elle ajoute également une date configurable aux tâches mensuelles : début, milieu, fin du mois
+ou jour précis, avec plafonnement automatique au dernier jour des mois courts.
+
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
 ```text

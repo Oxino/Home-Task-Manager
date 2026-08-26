@@ -41,6 +41,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
             entity.Property(task => task.Title).HasMaxLength(200).IsRequired();
             entity.Property(task => task.Description).HasMaxLength(2000);
             entity.Property(task => task.ActiveWeekDays).HasMaxLength(100).IsRequired();
+            entity.Property(task => task.MonthlyScheduleType).IsRequired();
         });
 
         modelBuilder.Entity<Week>(entity =>
