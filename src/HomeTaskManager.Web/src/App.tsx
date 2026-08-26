@@ -674,8 +674,22 @@ function PreferencesPanel({ api, dateDisplayFormat, onDateDisplayFormatChanged }
 function NotificationsPanel({ api, onUnreadChange, onOpenNotification }: { api: string; onUnreadChange: (count: number) => void; onOpenNotification: (notification: NotificationItem) => void }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(1); const [totalPages, setTotalPages] = useState(1); const pageSize = 10;
-  const load = async () => { try { setLoading(true); const response = await fetch(`${api}/api/notifications?page=${page}&pageSize=${pageSize}`); if (response.ok) { const result = await response.json(); const items: NotificationItem[] = result.items ?? []; setNotifications(items); setTotalPages(result.totalPages ?? 1); onUnreadChange(items.filter((item) => !item.isRead).length); } } finally { setLoading(false); } };
+  const load = async (silent = false) => { try { if (!silent) setLoading(true); const response = await fetch(`${api}/api/notifications?page=${page}&pageSize=${pageSize}`); if (response.ok) { const result = await response.json(); const items: NotificationItem[] = result.items ?? []; setNotifications(items); setTotalPages(result.totalPages ?? 1); onUnreadChange(items.filter((item) => !item.isRead).length); } } finally { if (!silent) setLoading(false); } };
   useEffect(() => { void load(); }, [api, page]);
+  useEffect(() => {
+    const refresh = async () => {
+      const response = await fetch(`${api}/api/notifications?page=1&pageSize=${pageSize}`);
+      if (!response.ok) return;
+      const result = await response.json();
+      const firstPage: NotificationItem[] = result.items ?? [];
+      const currentLatest = notifications[0];
+      const latestChanged = page === 1 && firstPage[0]?.id !== currentLatest?.id;
+      const unreadChanged = firstPage.filter((item) => !item.isRead).length !== notifications.filter((item) => !item.isRead).length;
+      if (latestChanged || unreadChanged) void load(true);
+    };
+    const interval = window.setInterval(() => { void refresh(); }, 60_000);
+    return () => window.clearInterval(interval);
+  }, [api, notifications, page]);
   async function setRead(notification: NotificationItem) { const response = await fetch(`${api}/api/notifications/${notification.id}/read`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(!notification.isRead) }); if (response.ok) void load(); }
   async function readAll() { setBusy(true); const response = await fetch(`${api}/api/notifications/read-all`, { method: "POST" }); if (response.ok) { onUnreadChange(0); void load(); } setBusy(false); }
   async function deleteRead() { setBusy(true); const response = await fetch(`${api}/api/notifications/read`, { method: "DELETE" }); if (response.ok) { if (page > 1 && notifications.every((item) => item.isRead)) setPage((current) => current - 1); else void load(); } setBusy(false); }
