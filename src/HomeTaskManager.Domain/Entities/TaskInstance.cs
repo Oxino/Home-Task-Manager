@@ -75,6 +75,11 @@ public sealed class TaskInstance
 
     public void SetCompletion(bool isCompleted, Week week)
     {
+        SetCompletionAt(isCompleted, week, DateTime.UtcNow);
+    }
+
+    public void SetCompletionAt(bool isCompleted, Week week, DateTime completedAt)
+    {
         if (week.Id != WeekId)
         {
             throw new DomainValidationException("The provided week does not own this task instance.");
@@ -91,9 +96,15 @@ public sealed class TaskInstance
         }
 
         IsCompleted = isCompleted;
-        CompletedAt = isCompleted ? DateTime.UtcNow : null;
+        CompletedAt = isCompleted ? completedAt : null;
         Status = isCompleted ? TaskInstanceStatus.Completed : TaskInstanceStatus.Pending;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void RestoreCompletionAt(DateTime completedAt)
+    {
+        if (!IsCompleted) throw new DomainValidationException("Only completed task instances can restore a completion date.");
+        CompletedAt = completedAt;
     }
 
     public void Cancel()

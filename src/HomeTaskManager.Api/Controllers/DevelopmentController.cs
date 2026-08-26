@@ -1,5 +1,6 @@
 using HomeTaskManager.Api.Contracts.Development;
 using HomeTaskManager.Api;
+using HomeTaskManager.Application.Abstractions;
 using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Application.UseCases.Assignments;
 using HomeTaskManager.Application.UseCases.Weeks;
@@ -119,6 +120,7 @@ public sealed class DevelopmentController(
                 .ToListAsync(cancellationToken);
 
             ApplyScenarioCompletions(instances, week, scenario, admin1.Id, user1.Id);
+            AddCompletionAudits(instances, week, admin1.Id, user1.Id);
             await dbContext.SaveChangesAsync(cancellationToken);
 
             await AddCommentAndReactionSamplesAsync(instances, admin1.Id, user1.Id, cancellationToken);
@@ -301,8 +303,55 @@ public sealed class DevelopmentController(
                 _ => key % 10 < 7
             };
 
-            instance.SetCompletion(complete, week);
+            var completionAt = week.StartDate.AddDays(Math.Abs(key % 7)).ToDateTime(new TimeOnly(18, 0));
+            instance.SetCompletionAt(complete, week, completionAt.ToUniversalTime());
         }
+    }
+
+    private void AddCompletionAudits(IReadOnlyList<TaskInstance> instances, Week week, Guid adminId, Guid userId)
+    {
+        foreach (var instance in instances)
+        {
+            if (!instance.IsCompleted || instance.CompletedAt is not DateTime completedAt) continue;
+            var performedBy = instance.AssignedUserId == userId ? userId : adminId;
+            dbContext.AuditLogs.Add(new AuditLog(
+                AuditEntityTypes.TaskInstance,
+                instance.Id,
+                AuditActions.CompletionChanged,
+                performedBy,
+                "IsCompleted=False",
+                "IsCompleted=True",
+                completedAt));
+        }
+    }
+
+    [HttpPost("backfill-completion-audits")]
+    public async Task<ActionResult<object>> BackfillCompletionAudits(CancellationToken cancellationToken)
+    {
+        if (!environment.IsDevelopment()) return Forbid();
+
+        var completedInstances = await dbContext.TaskInstances
+            .Where(entry => entry.IsCompleted && entry.AssignedUserId.HasValue)
+            .ToListAsync(cancellationToken);
+        var instanceIds = completedInstances.Select(entry => entry.Id).ToList();
+        var existingIds = await dbContext.AuditLogs
+            .Where(entry => entry.EntityType == AuditEntityTypes.TaskInstance && entry.Action == AuditActions.CompletionChanged && instanceIds.Contains(entry.EntityId))
+            .Select(entry => entry.EntityId)
+            .ToHashSetAsync(cancellationToken);
+        var weeks = await dbContext.Weeks.ToDictionaryAsync(entry => entry.Id, cancellationToken);
+        var created = 0;
+
+        foreach (var instance in completedInstances.Where(entry => !existingIds.Contains(entry.Id)))
+        {
+            if (!weeks.TryGetValue(instance.WeekId, out var week)) continue;
+            var completionAt = instance.CompletedAt ?? week.EndDate.ToDateTime(new TimeOnly(18, 0)).ToUniversalTime();
+            instance.RestoreCompletionAt(completionAt);
+            dbContext.AuditLogs.Add(new AuditLog(AuditEntityTypes.TaskInstance, instance.Id, AuditActions.CompletionChanged, instance.AssignedUserId!.Value, "IsCompleted=False", "IsCompleted=True", completionAt));
+            created++;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Ok(new { completedInstances = completedInstances.Count, auditsCreated = created });
     }
 
     private async Task AddCommentAndReactionSamplesAsync(

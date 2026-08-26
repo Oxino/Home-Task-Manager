@@ -9,6 +9,11 @@ public sealed class AuditLog
     }
 
     public AuditLog(string entityType, Guid entityId, string action, Guid performedByUserId, string? oldValue, string? newValue)
+        : this(entityType, entityId, action, performedByUserId, oldValue, newValue, DateTime.UtcNow)
+    {
+    }
+
+    public AuditLog(string entityType, Guid entityId, string action, Guid performedByUserId, string? oldValue, string? newValue, DateTime performedAt)
     {
         if (string.IsNullOrWhiteSpace(entityType))
         {
@@ -27,7 +32,7 @@ public sealed class AuditLog
         PerformedByUserId = performedByUserId;
         OldValue = oldValue;
         NewValue = newValue;
-        PerformedAt = DateTime.UtcNow;
+        PerformedAt = performedAt;
     }
 
     public Guid Id { get; private set; }
