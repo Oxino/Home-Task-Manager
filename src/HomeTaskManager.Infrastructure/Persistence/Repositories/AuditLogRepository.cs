@@ -32,10 +32,12 @@ public sealed class AuditLogRepository(HomeTaskManagerDbContext dbContext) : IAu
             .OrderByDescending(entry => entry.PerformedAt)
             .ToListAsync(cancellationToken);
 
-    public async Task<(IReadOnlyList<AuditLog> Items, int TotalCount)> GetPageAsync(Guid? performerId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<AuditLog> Items, int TotalCount)> GetPageAsync(Guid? performerId, string? category, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = dbContext.AuditLogs.AsQueryable();
         if (performerId.HasValue) query = query.Where(entry => entry.PerformedByUserId == performerId.Value);
+        if (category == "admin") query = query.Where(entry => entry.Action == "Reassigned" || entry.Action == "Cancelled" || entry.Action == "Executed" || entry.Action == "Closed" || entry.EntityType == "User" || entry.EntityType == "AssignmentEngineSettings" || (entry.Action == "Updated" && entry.EntityType == "TaskTemplate" && entry.NewValue != null && entry.NewValue.Contains("IsActive")));
+        if (category == "user") query = query.Where(entry => !(entry.Action == "Reassigned" || entry.Action == "Cancelled" || entry.Action == "Executed" || entry.Action == "Closed" || entry.EntityType == "User" || entry.EntityType == "AssignmentEngineSettings" || (entry.Action == "Updated" && entry.EntityType == "TaskTemplate" && entry.NewValue != null && entry.NewValue.Contains("IsActive"))));
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query.OrderByDescending(entry => entry.PerformedAt).ThenByDescending(entry => entry.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);

@@ -8,5 +8,5 @@ public interface IAuditLogRepository
     Task<IReadOnlyList<AuditLog>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditLog>> GetByPerformerAsync(Guid performerId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditLog>> GetByPeriodAsync(DateTime from, DateTime to, string? action = null, CancellationToken cancellationToken = default);
-    Task<(IReadOnlyList<AuditLog> Items, int TotalCount)> GetPageAsync(Guid? performerId, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<AuditLog> Items, int TotalCount)> GetPageAsync(Guid? performerId, string? category, int page, int pageSize, CancellationToken cancellationToken = default);
 }

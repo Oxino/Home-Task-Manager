@@ -17,6 +17,7 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
         [FromQuery] string? action,
+        [FromQuery] string? category,
         CancellationToken cancellationToken)
     {
         if ((!from.HasValue || !to.HasValue) && entityType is null && !entityId.HasValue)
@@ -24,7 +25,7 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
             var page = Request.Query.TryGetValue("page", out var pageValue) && int.TryParse(pageValue, out var parsedPage) ? parsedPage : 1;
             var pageSize = Request.Query.TryGetValue("pageSize", out var sizeValue) && int.TryParse(sizeValue, out var parsedSize) ? parsedSize : 10;
             page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 50);
-            return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(User.IsInRole("Admin") ? null : User.GetCurrentUserId(), page, pageSize, cancellationToken));
+            return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(User.IsInRole("Admin") ? null : User.GetCurrentUserId(), category, page, pageSize, cancellationToken));
         }
         var entries = !User.IsInRole("Admin")
             ? await getAuditLogsForEntityUseCase.ExecuteForPerformerAsync(User.GetCurrentUserId(), cancellationToken)

@@ -1757,22 +1757,24 @@ function HistoryPanel({
   const [loading, setLoading] = useState(true);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageCount, setHistoryPageCount] = useState(1);
+  const [historyTotalCount, setHistoryTotalCount] = useState(0);
   const [actorFilter, setActorFilter] = useState("all");
   const historyPageSize = 10;
   useEffect(() => {
     setLoading(true);
     fetch(
-      `${api}/api/audit-logs?page=${historyPage}&pageSize=${historyPageSize}`,
+      `${api}/api/audit-logs?page=${historyPage}&pageSize=${historyPageSize}${isAdmin && actorFilter !== "all" ? `&category=${actorFilter}` : ""}`,
     )
       .then(async (response) => {
         if (!response.ok) throw new Error("Lecture impossible");
         const result = await response.json();
         setEntries(result.items ?? []);
         setHistoryPageCount(result.totalPages ?? 1);
+        setHistoryTotalCount(result.totalCount ?? 0);
       })
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
-  }, [api, historyPage]);
+  }, [api, historyPage, actorFilter, isAdmin]);
   useEffect(() => {
     const loadWeeks = async () => {
       const requests = Array.from({ length: 8 }, (_, index) => {
@@ -1842,18 +1844,10 @@ function HistoryPanel({
       : type === "TaskInstance"
         ? "instance"
         : type.toLowerCase();
-  const visibleEntries = (
-    isAdmin
-      ? entries
-      : entries.filter((entry) => entry.performedByUserId === currentUserId)
-  ).filter((entry) => {
-    if (!isAdmin || actorFilter === "all") return true;
-    return actionCategory(entry) === actorFilter;
-  });
+  const visibleEntries = isAdmin
+    ? entries
+    : entries.filter((entry) => entry.performedByUserId === currentUserId);
   const pagedEntries = visibleEntries;
-  useEffect(() => {
-    setHistoryPage(1);
-  }, [actorFilter]);
   const isNavigable = (entry: AuditLog) =>
     entry.entityType === "User" ||
     entry.entityType === "TaskTemplate" ||
@@ -1874,18 +1868,18 @@ function HistoryPanel({
         </div>
         <div className="history-actions">
           <span className="history-count">
-            {visibleEntries.length} événements
+            {historyTotalCount} événement{historyTotalCount > 1 ? "s" : ""}
           </span>
-          <select
+          {isAdmin && <select
             className="history-actor-filter"
             value={actorFilter}
-            onChange={(event) => setActorFilter(event.target.value)}
+            onChange={(event) => { setActorFilter(event.target.value); setHistoryPage(1); }}
             aria-label="Filtrer les actions par catégorie"
           >
             <option value="all">Toutes les actions</option>
             <option value="user">Actions utilisateur</option>
             <option value="admin">Actions administration</option>
-          </select>
+          </select>}
         </div>
       </div>
       <div className="week-history">
