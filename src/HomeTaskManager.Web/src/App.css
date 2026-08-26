@@ -1072,6 +1072,16 @@ nav {
   opacity: 0.45;
   cursor: not-allowed;
 }
+.history-actor-filter {
+  min-height: 31px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 6px 9px;
+  background: #fbfcfb;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+}
 .history-skeleton {
   margin-top: 25px;
 }
