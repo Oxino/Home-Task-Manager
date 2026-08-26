@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+ .history-navigation-hint{color:var(--muted);font-size:12px}.historical-week-callout{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px;padding:16px 20px;border:1px solid #e7c66f;border-left:4px solid var(--yellow);border-radius:4px;background:#fff9e8}.historical-week-callout div{display:grid;gap:4px}.historical-week-callout strong{font-family:'Space Grotesk';font-size:17px}.historical-week-callout span:last-child{color:#7d837a;font-size:12px}.historical-week-banner{background:#356f68;box-shadow:inset 0 0 0 2px #f0c865}.activity-calendar{margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}.calendar-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.calendar-heading h3{font-size:16px;margin-top:7px}.calendar-controls{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:12px;text-transform:capitalize}.calendar-button{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--teal)}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px}.calendar-weekdays{color:#9ba8a2;font-size:9px;font-weight:700;text-align:center;text-transform:uppercase}.calendar-day{position:relative;display:grid;place-items:center;min-height:31px;border:1px solid transparent;border-radius:3px;color:#7f8e87;font-size:11px}.calendar-day.active{border-color:#b9d5ca;background:var(--mint);color:var(--teal);font-weight:700}.calendar-day.active i,.calendar-legend i{width:5px;height:5px;border-radius:50%;background:var(--coral)}.calendar-day.active i{position:absolute;right:4px;top:4px}.calendar-legend{display:flex;align-items:center;gap:7px;margin-top:10px;color:var(--muted);font-size:10px}
 /* Dashboard filters and task states */
 .filter-row {
   flex-wrap: wrap !important;
@@ -2055,6 +2056,10 @@ nav {
   }
 }
 @media (max-width: 560px) {
+  .historical-week-callout {
+    align-items: flex-start;
+    flex-direction: column;
+  }
   .topbar {
     min-height: 110px;
     align-items: flex-start;

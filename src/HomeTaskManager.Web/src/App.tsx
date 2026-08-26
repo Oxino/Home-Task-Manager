@@ -145,16 +145,6 @@ function weekStart(year: number, week: number) {
   return monday;
 }
 
-function weekLabel(offset: number) {
-  const monday = new Date();
-  monday.setHours(0, 0, 0, 0);
-  const day = monday.getDay() || 7;
-  monday.setDate(monday.getDate() - day + 1 + offset * 7);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return `${monday.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} - ${sunday.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`;
-}
-
 const viewRoutes: Record<string, string> = {
   "/week": "Semaine",
   "/history": "Historique",
@@ -580,6 +570,19 @@ function HistoryActivitySkeleton() {
   return <div className="history-skeleton" aria-label="Chargement de l’historique" aria-busy="true">{Array.from({ length: 4 }, (_, index) => <div className="history-skeleton-item" key={index}><span className="history-skeleton-dot" /><div className="history-skeleton-content"><span className="history-skeleton-line history-skeleton-line-main" /><span className="history-skeleton-line history-skeleton-line-detail" /><span className="history-skeleton-line history-skeleton-line-date" /></div></div>)}</div>;
 }
 
+function ActivityCalendar({ entries }: { entries: AuditLog[] }) {
+  const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const leadingDays = (firstDay.getDay() + 6) % 7;
+  const activityDays = new Set(entries.map((entry) => {
+    const date = new Date(entry.performedAt);
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  }));
+  const cells = Array.from({ length: leadingDays + daysInMonth }, (_, index) => index < leadingDays ? null : index - leadingDays + 1);
+  return <section className="activity-calendar"><div className="calendar-heading"><div><span className="section-kicker">ACTIVITÉS</span><h3>Jours avec une action</h3></div><div className="calendar-controls"><button type="button" className="calendar-button" aria-label="Mois précédent" onClick={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>←</button><b>{month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</b><button type="button" className="calendar-button" aria-label="Mois suivant" onClick={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>→</button></div></div><div className="calendar-grid calendar-weekdays">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div><div className="calendar-grid">{cells.map((day, index) => { const active = day !== null && activityDays.has(`${month.getFullYear()}-${month.getMonth()}-${day}`); return <span className={active ? "calendar-day active" : "calendar-day"} key={index}>{day}{active && <i />}</span>; })}</div><small className="calendar-legend"><i /> Jour avec au moins une activité</small></section>;
+}
+
 function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEntry }: { api: string; users: User[]; templates: Template[]; isAdmin: boolean; currentUserId: string; onOpenEntry: (entry: AuditLog) => void }) {
   const [entries, setEntries] = useState<AuditLog[]>([]);
   const [weeks, setWeeks] = useState<WeekSummary[]>([]);
@@ -614,7 +617,7 @@ function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEnt
   useEffect(() => { setHistoryPage((page) => Math.min(page, historyPageCount)); }, [historyPageCount]);
   const isNavigable = (entry: AuditLog) => entry.entityType === "User" || entry.entityType === "TaskTemplate" || entry.entityType === "TaskInstance" || entry.entityType === "Week" || entry.entityType === "AssignmentRun" || entry.entityType === "AssignmentEngineSettings";
   const details = (entry: AuditLog) => entry.newValue?.includes("Reminder") ? `Rappel · ${templates.find((template) => template.id === entry.entityId)?.title ?? "Tâche"}` : entry.newValue;
-  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Journal d’audit du foyer" : "Mon historique"}</h2></div><div className="history-actions"><span className="history-count">{visibleEntries.length} événements</span></div></div><div className="week-history"><span className="section-kicker">8 DERNIÈRES SEMAINES</span><div className="week-history-grid">{weeks.map((period) => <button className="week-history-card" key={`${period.year}-${period.week}`} onClick={() => { window.history.pushState({}, "", `/week?year=${period.year}&week=${period.week}`); window.dispatchEvent(new PopStateEvent("popstate")); }}><b>S{period.week}</b><small>{period.total} tâches</small><strong>{period.total ? Math.round(period.completed / period.total * 100) : 0}%</strong><i style={{ width: `${period.total ? period.completed / period.total * 100 : 0}%` }} /></button>)}</div></div>{loading ? <HistoryActivitySkeleton /> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <><div className="history-list">{pagedEntries.map((entry) => <button type="button" className={`history-item history-item-button ${users.find((user) => user.id === entry.performedByUserId)?.isAdmin ? "admin-action" : "user-action"}`} disabled={!isNavigable(entry)} onClick={() => onOpenEntry(entry)} key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{details(entry) && <small>{details(entry)}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></button>)}</div><div className="history-pagination"><button className="secondary-button" disabled={historyPage === 1} onClick={() => setHistoryPage((page) => page - 1)}>Précédente</button><span>Page {historyPage} / {historyPageCount}</span><button className="secondary-button" disabled={historyPage === historyPageCount} onClick={() => setHistoryPage((page) => page + 1)}>Suivante</button></div></>}</section>;
+  return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Journal d’audit du foyer" : "Mon historique"}</h2></div><div className="history-actions"><span className="history-count">{visibleEntries.length} événements</span></div></div><div className="week-history"><span className="section-kicker">8 DERNIÈRES SEMAINES</span><div className="week-history-grid">{weeks.map((period) => <button className="week-history-card" key={`${period.year}-${period.week}`} onClick={() => { window.history.pushState({}, "", `/week?year=${period.year}&week=${period.week}`); window.dispatchEvent(new PopStateEvent("popstate")); }}><b>S{period.week}</b><small>{period.total} tâches</small><strong>{period.total ? Math.round(period.completed / period.total * 100) : 0}%</strong><i style={{ width: `${period.total ? period.completed / period.total * 100 : 0}%` }} /></button>)}</div></div><ActivityCalendar entries={visibleEntries} />{loading ? <HistoryActivitySkeleton /> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <><div className="history-list">{pagedEntries.map((entry) => <button type="button" className={`history-item history-item-button ${users.find((user) => user.id === entry.performedByUserId)?.isAdmin ? "admin-action" : "user-action"}`} disabled={!isNavigable(entry)} onClick={() => onOpenEntry(entry)} key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{details(entry) && <small>{details(entry)}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></button>)}</div><div className="history-pagination"><button className="secondary-button" disabled={historyPage === 1} onClick={() => setHistoryPage((page) => page - 1)}>Précédente</button><span>Page {historyPage} / {historyPageCount}</span><button className="secondary-button" disabled={historyPage === historyPageCount} onClick={() => setHistoryPage((page) => page + 1)}>Suivante</button></div></>}</section>;
 }
 
 function PreferencesPanel({ api }: { api: string }) {
@@ -697,7 +700,6 @@ function App() {
   const [selected, setSelected] = useState<Instance | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
-  const [weekOffset, setWeekOffset] = useState(0);
   const [locationSearch, setLocationSearch] = useState(() => window.location.search);
   const [busyAction, setBusyAction] = useState("");
   const [weekStatus, setWeekStatus] = useState<WeekStatus>("Active");
@@ -715,7 +717,9 @@ function App() {
   const queryUserId = queryParameters.get("userId");
   const openReminders = queryParameters.get("reminders") === "1";
   const selectedWeek = Number.isInteger(queryYear) && Number.isInteger(queryWeek) && queryWeek > 0 ? { year: queryYear, week: queryWeek } : null;
-  const week = selectedWeek ?? isoWeek(new Date(Date.now() + weekOffset * 7 * 86400000));
+  const activeWeek = isoWeek(new Date());
+  const week = selectedWeek ?? activeWeek;
+  const isHistoricalWeek = view === "Semaine" && selectedWeek !== null && (week.year !== activeWeek.year || week.week !== activeWeek.week);
 
   useEffect(() => {
     const onPopState = () => { setView(viewFromPath(window.location.pathname)); setLocationSearch(window.location.search); };
@@ -867,13 +871,6 @@ function App() {
     const timer = window.setInterval(refreshNotifications, 30000);
     return () => window.clearInterval(timer);
   }, [api, currentUser]);
-
-  function changeWeek(offset: number) {
-    setWeekOffset((current) => current + offset);
-    navigate("/week");
-    setNotice("Chargement de la semaine sélectionnée");
-    window.setTimeout(() => setNotice(""), 1600);
-  }
 
   async function runWeekAction(action: "generate" | "assign" | "close") {
     if (action === "close" && !window.confirm("Clôturer cette semaine ? La complétude sera figée et les tâches non terminées seront reportées.")) return;
@@ -1121,21 +1118,15 @@ function App() {
             </span>
             <h1>{view}</h1>
           </div>
-          <div className="week-switcher">
-            <button aria-label="Semaine précédente" onClick={() => changeWeek(-1)}>←</button>
-            <span>
-              <b>Semaine {week.week}</b>
-              <small>{selectedWeek ? `${weekStart(week.year, week.week).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} - ${new Date(weekStart(week.year, week.week).getTime() + 6 * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}` : weekLabel(weekOffset)}</small>
-            </span>
-            <button aria-label="Semaine suivante" onClick={() => changeWeek(1)}>→</button>
-          </div>
+          {view === "Historique" && <span className="history-navigation-hint">Sélectionne une semaine dans l’historique</span>}
         </header>
         {notice && <div className="notice">✓ {notice}</div>}
         {apiError && <div className="api-warning page-warning">API indisponible. Démarre le serveur sur http://localhost:5251 pour enregistrer les modifications.</div>}
         {!apiError && apiMessage && <div className="api-warning page-warning">{apiMessage}</div>}
+        {isHistoricalWeek && <div className="historical-week-callout"><div><span className="section-kicker">CONSULTATION HISTORIQUE</span><strong>Semaine {week.week} · {week.year}</strong><span>{weekStart(week.year, week.week).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} - {new Date(weekStart(week.year, week.week).getTime() + 6 * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span></div><button className="primary-button" onClick={() => navigate("/week")}>Retour à la semaine active</button></div>}
         {view === "Semaine" ? (
           <>
-            <section className="hero-banner">
+            <section className={isHistoricalWeek ? "hero-banner historical-week-banner" : "hero-banner"}>
               <div>
                 <span className="section-kicker light">
                   VOTRE FOYER · SEMAINE {week.week}

@@ -177,6 +177,9 @@
   messages métier renvoyés par l'API.
 - Correction d'un warning React lié à une mise à jour d'état parent pendant le rendu des
   notifications.
+- Refonte de la navigation temporelle : le dashboard reste sur la semaine active, les semaines
+  passées sont ouvertes depuis l'historique avec un bandeau de contexte et un retour rapide.
+- Ajout d'un calendrier mensuel signalant les jours ayant enregistré des activités.
 - Suite validée à **95 tests** : 76 Application et 19 Domain.
 
 ---
