@@ -336,10 +336,10 @@ Chaque cas d'usage documente :
 - **Règles** : BR-017, BR-028, BR-033.
 
 Les actions actuellement persistées dans `AuditLog` sont `Created`, `Updated`, `Closed`,
-`CompletionChanged`, `Reassigned`, `Cancelled`, `CommentAdded` et `Executed`. Les rappels et
+`CompletionChanged`, `Reassigned`, `Cancelled`, `CommentAdded`, `Executed` et `Generated`. Les rappels et
 les changements d'activation sont encore encodés comme `Updated` et identifiés par `NewValue`.
-La génération d'instances, la configuration des préférences, les réactions et les exécutions
-flexibles doivent encore être journalisées pour compléter la couverture.
+Les réactions et les exécutions flexibles doivent encore être journalisées pour compléter la
+couverture.
 
 ---
 

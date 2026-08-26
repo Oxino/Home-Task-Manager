@@ -6,7 +6,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.UseCases.Weeks;
 
-public sealed record GenerateWeekInstancesCommand(int Year, int WeekNumber);
+public sealed record GenerateWeekInstancesCommand(int Year, int WeekNumber, Guid? RequestingUserId = null);
 
 public sealed record GenerateWeekInstancesResult(WeekDto Week, IReadOnlyList<TaskInstanceDto> CreatedInstances);
 
@@ -23,7 +23,8 @@ public sealed class GenerateWeekInstancesUseCase(
     IWeekRepository weekRepository,
     ITaskTemplateRepository taskTemplateRepository,
     ITaskInstanceRepository taskInstanceRepository,
-    IUnitOfWork unitOfWork) : IGenerateWeekInstancesUseCase
+    IUnitOfWork unitOfWork,
+    IAuditLogger? auditLogger = null) : IGenerateWeekInstancesUseCase
 {
     public async Task<GenerateWeekInstancesResult> ExecuteAsync(
         GenerateWeekInstancesCommand command,
@@ -77,6 +78,13 @@ public sealed class GenerateWeekInstancesUseCase(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (auditLogger is not null && command.RequestingUserId.HasValue)
+        {
+            await auditLogger.LogAsync(AuditEntityTypes.Week, week.Id, AuditActions.Generated, command.RequestingUserId.Value,
+                newValue: $"CreatedInstances={newInstances.Count}", cancellationToken: cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return new GenerateWeekInstancesResult(WeekMapper.ToDto(week), newInstances.Select(WeekMapper.ToDto).ToList());
     }

@@ -543,8 +543,8 @@ enregistrés avec `Action = CompletionChanged` et `NewValue = IsCompleted=true|f
 les valeurs actuellement émises par les cas d'utilisation. La catégorie utilisateur ou
 administration est dérivée de l'action et de l'entité, jamais du rôle du profil auteur.
 
-Les préférences utilisateur, les réactions de commentaires, les exécutions flexibles et la
-génération d'instances ne sont pas encore enregistrées dans `AuditLog`.
+Les réactions de commentaires et les exécutions flexibles ne sont pas encore enregistrées dans
+`AuditLog`.
 
 ---
 

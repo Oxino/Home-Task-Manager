@@ -231,6 +231,9 @@ ou à la fin de la semaine, exposée dans les formulaires de création et de mod
 La classification de l'historique est désormais définie par la nature de l'action plutôt que
 par le rôle du profil auteur; la pagination API applique aussi ce filtre côté serveur.
 
+Les audits de génération d'instances (`Week/Generated`) et de modification des préférences
+(`UserPreferences/Updated`) sont désormais enregistrés explicitement.
+
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
 ```text

@@ -1827,12 +1827,13 @@ function HistoryPanel({
       Reassigned: "réaffecté",
       Cancelled: "annulé",
       Executed: "répartition lancée",
+      Generated: "instances générées",
       Closed: "semaine clôturée",
     })[entry.action] ?? entry.action.toLowerCase();
   };
   const actionCategory = (entry: AuditLog): "user" | "admin" => {
     if (entry.action === "CompletionChanged" || entry.action === "CommentAdded") return "user";
-    if (entry.action === "Reassigned" || entry.action === "Cancelled" || entry.action === "Executed" || entry.action === "Closed") return "admin";
+    if (entry.action === "Reassigned" || entry.action === "Cancelled" || entry.action === "Executed" || entry.action === "Generated" || entry.action === "Closed") return "admin";
     if (entry.entityType === "User" || entry.entityType === "AssignmentEngineSettings") return "admin";
     if (entry.action === "Created" && entry.entityType === "TaskTemplate") return "user";
     if (entry.action === "Updated" && entry.entityType === "TaskTemplate") return entry.newValue?.includes("IsActive") ? "admin" : "user";

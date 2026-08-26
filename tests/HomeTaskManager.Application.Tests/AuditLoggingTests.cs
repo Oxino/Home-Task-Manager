@@ -4,6 +4,7 @@ using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Application.UseCases.Audit;
 using HomeTaskManager.Application.UseCases.TaskTemplates;
 using HomeTaskManager.Application.UseCases.Users;
+using HomeTaskManager.Application.UseCases.Weeks;
 using HomeTaskManager.Domain.Entities;
 using HomeTaskManager.Domain.Enums;
 
@@ -58,6 +59,39 @@ public sealed class InMemoryAuditLogRepository : IAuditLogRepository
 
 public class AuditLoggingTests
 {
+    [Fact]
+    public async Task Updating_user_preferences_records_a_user_action()
+    {
+        var user = new User("Julie");
+        var repository = new InMemoryUserPreferencesRepository();
+        var auditLogger = new InMemoryAuditLogger();
+        var useCase = new UserPreferencesUseCase(repository, auditLogger, new NoOpUnitOfWork());
+
+        await useCase.UpdateAsync(new UpdateUserPreferencesCommand(user.Id, false, "Numeric"));
+
+        var entry = auditLogger.Entries.Should().ContainSingle().Subject;
+        entry.EntityType.Should().Be(AuditEntityTypes.UserPreferences);
+        entry.Action.Should().Be(AuditActions.Updated);
+        entry.PerformedByUserId.Should().Be(user.Id);
+    }
+
+    [Fact]
+    public async Task Generating_instances_records_an_administration_action()
+    {
+        var admin = new User("Nicolas", isAdmin: true);
+        var auditLogger = new InMemoryAuditLogger();
+        var useCase = new GenerateWeekInstancesUseCase(
+            new InMemoryWeekRepository(), new InMemoryTaskTemplateRepository(), new InMemoryTaskInstanceRepository(), new NoOpUnitOfWork(), auditLogger);
+
+        var result = await useCase.ExecuteAsync(new GenerateWeekInstancesCommand(2026, 1, admin.Id));
+
+        result.Week.Should().NotBeNull();
+        var entry = auditLogger.Entries.Should().ContainSingle().Subject;
+        entry.EntityType.Should().Be(AuditEntityTypes.Week);
+        entry.Action.Should().Be(AuditActions.Generated);
+        entry.PerformedByUserId.Should().Be(admin.Id);
+    }
+
     [Fact]
     public async Task Creating_a_user_records_an_audit_entry()
     {

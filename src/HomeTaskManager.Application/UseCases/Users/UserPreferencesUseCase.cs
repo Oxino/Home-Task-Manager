@@ -14,7 +14,7 @@ public interface IUserPreferencesUseCase
     Task<UserPreferencesDto> UpdateAsync(UpdateUserPreferencesCommand command, CancellationToken cancellationToken = default);
 }
 
-public sealed class UserPreferencesUseCase(IUserPreferencesRepository repository, IUnitOfWork unitOfWork) : IUserPreferencesUseCase
+public sealed class UserPreferencesUseCase(IUserPreferencesRepository repository, IAuditLogger auditLogger, IUnitOfWork unitOfWork) : IUserPreferencesUseCase
 {
     public async Task<UserPreferencesDto> GetAsync(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -38,6 +38,8 @@ public sealed class UserPreferencesUseCase(IUserPreferencesRepository repository
         }
         preferences.SetNotificationsEnabled(command.NotificationsEnabled);
         preferences.SetDateDisplayFormat(command.DateDisplayFormat);
+        await auditLogger.LogAsync(AuditEntityTypes.UserPreferences, preferences.Id, AuditActions.Updated, command.UserId,
+            newValue: $"NotificationsEnabled={preferences.NotificationsEnabled}; DateDisplayFormat={preferences.DateDisplayFormat}", cancellationToken: cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ToDto(preferences);
     }

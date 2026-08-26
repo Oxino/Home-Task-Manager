@@ -16,13 +16,14 @@ public class WeeksController(
     ICloseWeekUseCase closeWeekUseCase) : ControllerBase
 {
     [HttpPost("generate")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<GenerateWeekInstancesResult>> GenerateInstances(
         GenerateWeekInstancesRequest request,
         CancellationToken cancellationToken)
     {
         try
         {
-            var command = new GenerateWeekInstancesCommand(request.Year, request.WeekNumber);
+            var command = new GenerateWeekInstancesCommand(request.Year, request.WeekNumber, User.GetCurrentUserId());
             var result = await generateWeekInstancesUseCase.ExecuteAsync(command, cancellationToken);
             return Ok(result);
         }

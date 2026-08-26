@@ -9,6 +9,7 @@ public static class AuditEntityTypes
     public const string TaskInstance = "TaskInstance";
     public const string AssignmentRun = "AssignmentRun";
     public const string AssignmentEngineSettings = "AssignmentEngineSettings";
+    public const string UserPreferences = "UserPreferences";
 }
 
 public static class AuditActions
@@ -21,4 +22,5 @@ public static class AuditActions
     public const string Cancelled = "Cancelled";
     public const string CommentAdded = "CommentAdded";
     public const string Executed = "Executed";
+    public const string Generated = "Generated";
 }

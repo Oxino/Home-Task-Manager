@@ -275,7 +275,7 @@ Toute modification métier importante doit être tracée.
 - activation et désactivation d'un participant ;
 - création et modification d'un modèle de tâche ;
 - archivage ou réactivation d'un modèle de tâche ;
-- lancement d'une affectation ;
+- génération d'instances et lancement d'une affectation ;
 - réaffectation ou annulation d'une instance ;
 - changement de complétude (complétion ou réouverture) ;
 - ajout de commentaire ;
@@ -300,7 +300,7 @@ qu'un événement de gestion reste une action d'administration quel que soit son
 ### Actions d'administration
 
 - suppression logique, désactivation ou réactivation d'un modèle de tâche ;
-- génération d'instances (catégorie attendue, mais événement encore manquant dans l'audit) ;
+- génération d'instances ;
 - lancement ou relance d'une affectation ;
 - clôture d'une semaine ;
 - réaffectation ou annulation d'une instance ;
@@ -308,10 +308,10 @@ qu'un événement de gestion reste une action d'administration quel que soit son
 - modification des paramètres du moteur d'affectation.
 
 La classification technique actuelle s'appuie sur `EntityType`, `Action` et `NewValue`. Les
-actions de rappels et d'activation utilisent encore `Action = Updated`, avec leur détail pour
-les distinguer. Les préférences, réactions de commentaires et exécutions flexibles ne créent
-pas encore de `AuditLog`; la génération d'instances n'est pas non plus journalisée. Ces quatre
-couvertures restent à ajouter pour atteindre une traçabilité complète.
+actions de rappels, d'activation et de préférences utilisent `Action = Updated`, avec leur
+détail pour les distinguer. Les réactions de commentaires et les exécutions flexibles ne
+créent pas encore de `AuditLog`; elles restent à ajouter pour atteindre une traçabilité
+complète.
 
 ---
 
