@@ -469,11 +469,14 @@ function TaskCatalog({
         <span>{filtered.length} modèles actifs</span>
       </div>
       <div className="catalog-list">
-        {filtered.map((template) => (
+        {filtered.map((template) => {
+          const canManage = user.isAdmin || template.createdByUserId === user.id;
+          return (
           <article className="catalog-item" key={template.id}>
             <div>
               <h3>{template.title}</h3>
               <p>{template.description || "Aucune description"}</p>
+              <small className="catalog-author">Créée par {author(template.createdByUserId)}</small>
             </div>
             <div className="catalog-meta">
               <span
@@ -486,12 +489,13 @@ function TaskCatalog({
                     : "NORMALE"}
               </span>
               <small>{template.isActive === false ? "Inactif" : "Actif"}</small>
-              <EditTaskDialog api={api} user={user} template={template} templates={allTemplates} authorName={author(template.createdByUserId)} onUpdated={updateTemplate} initialOpen={openTemplateId === template.id} initialRemindersOpen={openReminders && openTemplateId === template.id} />
-              <ReminderDialog api={api} template={template} />
-              <button className="secondary-button" onClick={() => setActive(template)}>{template.isActive === false ? "Réactiver" : "Désactiver"}</button>
+              {canManage && <EditTaskDialog api={api} user={user} template={template} templates={allTemplates} authorName={author(template.createdByUserId)} onUpdated={updateTemplate} initialOpen={openTemplateId === template.id} initialRemindersOpen={openReminders && openTemplateId === template.id} />}
+              {canManage && <ReminderDialog api={api} template={template} />}
+              {user.isAdmin && <button className="secondary-button" onClick={() => setActive(template)}>{template.isActive === false ? "Réactiver" : "Désactiver"}</button>}
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -1053,6 +1057,9 @@ function App() {
           <button className={view === "Notifications" ? "nav-item active" : "nav-item"} onClick={() => navigate("/notifications")}>
             ◉ <span>Notifications</span>{unreadNotifications > 0 && <b className="notification-badge">{unreadNotifications > 99 ? "99+" : unreadNotifications}</b>}
           </button>
+          <button className={view === "Tâches" ? "nav-item active" : "nav-item"} onClick={() => navigate("/tasks")}>
+            □ <span>Tâches</span>
+          </button>
           {currentUser.isAdmin && (
             <>
               <div className="nav-label admin-label">ADMINISTRATION</div>
@@ -1061,9 +1068,6 @@ function App() {
               </button>
               <button className={view === "Instances" ? "nav-item active" : "nav-item"} onClick={() => navigate("/instances")}>
                 ◫ <span>Instances</span>
-              </button>
-              <button className={view === "Tâches" ? "nav-item active" : "nav-item"} onClick={() => navigate("/tasks")}>
-                □ <span>Tâches</span>
               </button>
               <button
                 className={view === "Participants" ? "nav-item active" : "nav-item"}
