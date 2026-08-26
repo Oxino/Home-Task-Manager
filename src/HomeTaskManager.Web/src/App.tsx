@@ -206,13 +206,21 @@ function FieldInfo({ text }: { text: string }) {
   return <span className="field-info"><button type="button" aria-label="Afficher l’explication" className="info-button">i</button><span className="info-tooltip">{text}</span></span>;
 }
 
+function PanelSkeleton({ rows = 4 }: { rows?: number }) {
+  return <div className="panel-skeleton" aria-busy="true" aria-label="Chargement"><span className="skeleton-heading" />{Array.from({ length: rows }, (_, index) => <div className="skeleton-row" key={index}><span className="skeleton-avatar" /><div className="skeleton-copy"><span className="skeleton-line skeleton-line-main" /><span className="skeleton-line skeleton-line-detail" /></div></div>)}</div>;
+}
+
+function ProfileListSkeleton() {
+  return <div className="profile-list-skeleton" aria-busy="true" aria-label="Chargement des profils">{Array.from({ length: 3 }, (_, index) => <div className="profile-skeleton-row" key={index}><span className="skeleton-avatar" /><div className="skeleton-copy"><span className="skeleton-line skeleton-line-main" /><span className="skeleton-line skeleton-line-detail" /></div><span className="skeleton-arrow" /></div>)}</div>;
+}
+
 function ReminderDialog({ api, template, initialOpen = false }: { api: string; template: Template; initialOpen?: boolean }) {
-  const [open, setOpen] = useState(initialOpen); const [reminders, setReminders] = useState<{ id: string; triggerType: string; offsetValue: number; offsetUnit: string; isEnabled: boolean }[]>([]); const [trigger, setTrigger] = useState("EndOfDay"); const [offset, setOffset] = useState("0"); const [unit, setUnit] = useState("Hour"); const [error, setError] = useState("");
-  async function load() { const response = await fetch(`${api}/api/task-templates/${template.id}/reminders`); if (response.ok) setReminders(await response.json()); }
+  const [open, setOpen] = useState(initialOpen); const [reminders, setReminders] = useState<{ id: string; triggerType: string; offsetValue: number; offsetUnit: string; isEnabled: boolean }[]>([]); const [trigger, setTrigger] = useState("EndOfDay"); const [offset, setOffset] = useState("0"); const [unit, setUnit] = useState("Hour"); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  async function load() { setLoading(true); try { const response = await fetch(`${api}/api/task-templates/${template.id}/reminders`); if (response.ok) setReminders(await response.json()); } finally { setLoading(false); } }
   useEffect(() => { if (initialOpen) void load(); }, [initialOpen, template.id]);
   async function add(event: FormEvent) { event.preventDefault(); const value = Number(offset); if (!Number.isInteger(value) || value < 0) return setError("Le décalage doit être un entier positif ou nul."); try { const response = await fetch(`${api}/api/task-templates/${template.id}/reminders`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ triggerType: trigger, offsetValue: value, offsetUnit: unit }) }); if (!response.ok) throw new Error("Rappel impossible"); const reminder = await response.json(); setReminders((items) => [...items, reminder]); setError(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Rappel impossible"); } }
   async function toggle(reminder: typeof reminders[number]) { const response = await fetch(`${api}/api/task-templates/${template.id}/reminders/${reminder.id}/active`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isEnabled: !reminder.isEnabled }) }); if (!response.ok) return setError("Le rappel n’a pas pu être modifié."); const updated = await response.json(); setReminders((items) => items.map((item) => item.id === updated.id ? updated : item)); }
-  return <><button className="secondary-button" onClick={() => { setOpen(true); void load(); }}>Rappels</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><section className="task-modal form-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">RAPPELS</span><h2>{template.title}</h2><div className="reminder-list">{reminders.length === 0 ? <p className="muted">Aucun rappel configuré.</p> : reminders.map((reminder) => <div className={reminder.isEnabled ? "reminder-row" : "reminder-row disabled"} key={reminder.id}><div><b>{reminder.triggerType === "EndOfDay" ? "Fin de journée" : "Fin de semaine"}</b><span>{reminder.offsetValue} {reminder.offsetUnit === "Hour" ? "heure(s)" : "jour(s)"} avant</span></div><button className="secondary-button" onClick={() => toggle(reminder)}>{reminder.isEnabled ? "Désactiver" : "Réactiver"}</button></div>)}</div><form onSubmit={add} className="reminder-form"><label>Moment<select value={trigger} onChange={(event) => setTrigger(event.target.value)}><option value="EndOfDay">Fin de journée</option><option value="EndOfWeek">Fin de semaine</option></select></label><label>Décalage<input type="number" min="0" value={offset} onChange={(event) => setOffset(event.target.value)} /></label><label>Unité<select value={unit} onChange={(event) => setUnit(event.target.value)}><option value="Hour">Heures</option><option value="Day">Jours</option></select></label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Ajouter le rappel</button></form></section></div>}</>
+  return <><button className="secondary-button" onClick={() => { setOpen(true); void load(); }}>Rappels</button>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><section className="task-modal form-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">RAPPELS</span><h2>{template.title}</h2><div className="reminder-list">{loading ? <PanelSkeleton rows={2} /> : reminders.length === 0 ? <p className="muted">Aucun rappel configuré.</p> : reminders.map((reminder) => <div className={reminder.isEnabled ? "reminder-row" : "reminder-row disabled"} key={reminder.id}><div><b>{reminder.triggerType === "EndOfDay" ? "Fin de journée" : "Fin de semaine"}</b><span>{reminder.offsetValue} {reminder.offsetUnit === "Hour" ? "heure(s)" : "jour(s)"} avant</span></div><button className="secondary-button" onClick={() => toggle(reminder)}>{reminder.isEnabled ? "Désactiver" : "Réactiver"}</button></div>)}</div><form onSubmit={add} className="reminder-form"><label>Moment<select value={trigger} onChange={(event) => setTrigger(event.target.value)}><option value="EndOfDay">Fin de journée</option><option value="EndOfWeek">Fin de semaine</option></select></label><label>Décalage<input type="number" min="0" value={offset} onChange={(event) => setOffset(event.target.value)} /></label><label>Unité<select value={unit} onChange={(event) => setUnit(event.target.value)}><option value="Hour">Heures</option><option value="Day">Jours</option></select></label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Ajouter le rappel</button></form></section></div>}</>
 }
 
 function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
@@ -415,9 +423,10 @@ function TaskCatalog({
   onUpdated: (template: Template) => void;
 }) {
   const [allTemplates, setAllTemplates] = useState(templates);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   useEffect(() => {
-    fetch(`${api}/api/task-templates/all`).then(async (response) => { if (response.ok) setAllTemplates(await response.json()) }).catch(() => undefined)
+    fetch(`${api}/api/task-templates/all`).then(async (response) => { if (response.ok) setAllTemplates(await response.json()) }).catch(() => undefined).finally(() => setLoading(false))
   }, [api])
   const filtered = allTemplates.filter((template) =>
     template.title.toLowerCase().includes(query.toLowerCase()),
@@ -434,6 +443,8 @@ function TaskCatalog({
   }
 
   const author = (id?: string) => users.find((entry) => entry.id === id)?.displayName ?? "Profil inconnu";
+
+  if (loading) return <section className="catalog-panel"><PanelSkeleton rows={5} /></section>;
 
   return (
     <section className="catalog-panel">
@@ -490,6 +501,7 @@ function EditProfileDialog({ user, users, api, onUpdated }: { user: User; users:
 
 function ProfileCatalog({ users, api, onCreated, onUpdated }: { users: User[]; api: string; onCreated: (user: User) => void; onUpdated: (user: User) => void }) {
   const [allUsers, setAllUsers] = useState(users)
+  const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [displayName, setDisplayName] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
@@ -497,7 +509,7 @@ function ProfileCatalog({ users, api, onCreated, onUpdated }: { users: User[]; a
   const [error, setError] = useState("")
 
   useEffect(() => {
-    fetch(`${api}/api/users/all`).then(async (response) => { if (response.ok) setAllUsers(await response.json()) }).catch(() => undefined)
+    fetch(`${api}/api/users/all`).then(async (response) => { if (response.ok) setAllUsers(await response.json()) }).catch(() => undefined).finally(() => setLoading(false))
   }, [api])
 
   async function submit(event: FormEvent) {
@@ -517,6 +529,8 @@ function ProfileCatalog({ users, api, onCreated, onUpdated }: { users: User[]; a
     setOpen(false); setDisplayName(""); setError("")
   }
 
+  if (loading) return <section className="catalog-panel"><PanelSkeleton rows={3} /></section>;
+
   return <section className="catalog-panel"><div className="panel-heading"><div><span className="section-kicker">PILOTAGE</span><h2>Participants</h2></div><button className="primary-button" onClick={() => setOpen(true)}>+ Nouveau profil</button></div><div className="profile-catalog-list">{allUsers.map((entry) => <article className="profile-catalog-item" key={entry.id}><span className={`avatar ${entry.isAdmin ? "" : "blue"}`}>{entry.displayName[0]}</span><div><h3>{entry.displayName}</h3><p>{entry.isAdmin ? "Administrateur" : "Participant"}</p></div><div className="profile-catalog-meta"><b>{entry.availabilityPercentage}%</b><small>{entry.isActive ? "Actif" : "Inactif"}</small></div><EditProfileDialog user={entry} users={allUsers} api={api} onUpdated={(updated) => { setAllUsers((items) => items.map((item) => item.id === updated.id ? updated : item)); onUpdated(updated) }} /></article>)}</div>{open && <div className="modal-backdrop" onClick={() => setOpen(false)}><form className="task-modal form-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-kicker">NOUVEAU PROFIL</span><h2>Ajouter un participant</h2><label>Nom d’affichage<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus /></label><label>Disponibilité (%)<input type="number" min="0" max="100" value={availability} onChange={(event) => setAvailability(event.target.value)} /></label><label className="checkbox-label"><input type="checkbox" checked={isAdmin} onChange={(event) => setIsAdmin(event.target.checked)} /> Administrateur</label>{error && <p className="form-error">{error}</p>}<button className="primary-button wide" type="submit">Créer le profil</button></form></div>}</section>
 }
 
@@ -526,9 +540,10 @@ function EngineSettingsPanel({ api, user, onSaved }: { api: string; user: User; 
   const [settings, setSettings] = useState<EngineSettings>({ lowPriorityMultiplier: 0.5, normalPriorityMultiplier: 1, criticalPriorityMultiplier: 1.5, referenceDurationMinutes: 30, equityWindowWeeks: 8, repetitionPenaltyWeight: 0.25 })
   const [error, setError] = useState("")
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`${api}/api/settings/assignment-engine`).then(async (response) => { if (!response.ok) throw new Error("Lecture impossible") ; setSettings(await response.json()) }).catch(() => undefined)
+    fetch(`${api}/api/settings/assignment-engine`).then(async (response) => { if (!response.ok) throw new Error("Lecture impossible") ; setSettings(await response.json()) }).catch(() => undefined).finally(() => setLoading(false))
   }, [api])
 
   function update(key: keyof EngineSettings, value: string) {
@@ -547,6 +562,8 @@ function EngineSettingsPanel({ api, user, onSaved }: { api: string; user: User; 
       return setError(reason instanceof Error ? reason.message : "API indisponible : les paramètres n’ont pas été enregistrés.")
     }
   }
+
+  if (loading) return <section className="settings-panel"><PanelSkeleton rows={3} /></section>;
 
   return <form className="settings-panel" onSubmit={submit}><div className="panel-heading"><div><span className="section-kicker">CONFIGURATION ADMIN</span><h2>Moteur d’affectation</h2></div><button className="primary-button" type="submit">Enregistrer</button></div><p className="settings-intro">Ces paramètres pilotent le score des tâches et l’équilibre de la charge pour les prochaines affectations.</p><div className="settings-section"><span className="section-kicker">MULTIPLICATEURS DE PRIORITÉ</span><div className="settings-grid"><label>Faible<input type="number" min="0" step="0.05" value={settings.lowPriorityMultiplier} onChange={(event) => update("lowPriorityMultiplier", event.target.value)} /></label><label>Normale<input type="number" min="0" step="0.05" value={settings.normalPriorityMultiplier} onChange={(event) => update("normalPriorityMultiplier", event.target.value)} /></label><label>Critique<input type="number" min="0" step="0.05" value={settings.criticalPriorityMultiplier} onChange={(event) => update("criticalPriorityMultiplier", event.target.value)} /></label></div></div><div className="settings-section"><span className="section-kicker">ÉQUILIBRE HISTORIQUE</span><div className="settings-grid"><label>Durée de référence (minutes)<input type="number" min="1" value={settings.referenceDurationMinutes} onChange={(event) => update("referenceDurationMinutes", event.target.value)} /></label><label>Fenêtre d’équité (semaines)<input type="number" min="1" value={settings.equityWindowWeeks} onChange={(event) => update("equityWindowWeeks", event.target.value)} /></label><label>Pénalité anti-répétition<input type="number" min="0" step="0.05" value={settings.repetitionPenaltyWeight} onChange={(event) => update("repetitionPenaltyWeight", event.target.value)} /></label></div></div>{error && <p className="form-error">{error}</p>}{saved && <p className="settings-saved">✓ Paramètres enregistrés</p>}</form>
 }
@@ -605,6 +622,7 @@ function PreferencesPanel({ api }: { api: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   useEffect(() => { fetch(`${api}/api/users/preferences`).then(async (response) => { if (response.ok) setEnabled((await response.json()).notificationsEnabled) }).finally(() => setLoading(false)) }, [api]);
+  if (loading) return <section className="settings-panel preferences-panel"><PanelSkeleton rows={2} /></section>;
   async function toggle() { const next = !enabled; setEnabled(next); setSaving(true); try { const response = await fetch(`${api}/api/users/preferences`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notificationsEnabled: next }) }); if (!response.ok) setEnabled(!next); } catch { setEnabled(!next); } finally { setSaving(false); } }
   return <section className="settings-panel preferences-panel"><span className="section-kicker">MON ESPACE</span><h2>Préférences</h2><p className="settings-intro">Choisis les types de notifications que tu souhaites recevoir lorsque le service de notification sera activé.</p><div className="preference-row"><div><b>Notifications du foyer</b><small>Rappels et événements liés à tes tâches.</small></div><button className={enabled ? "toggle enabled" : "toggle"} disabled={loading || saving} onClick={toggle} aria-pressed={enabled}><span /></button></div><p className="preference-status">{loading ? "Chargement..." : saving ? "Enregistrement..." : enabled ? "Activées" : "Désactivées"}</p></section>;
 }
@@ -617,16 +635,18 @@ function NotificationsPanel({ api, onUnreadChange, onOpenNotification }: { api: 
   async function readAll() { setBusy(true); const response = await fetch(`${api}/api/notifications/read-all`, { method: "POST" }); if (response.ok) { setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))); onUnreadChange(0); } setBusy(false); }
   async function deleteRead() { setBusy(true); const response = await fetch(`${api}/api/notifications/read`, { method: "DELETE" }); if (response.ok) { const remaining = notifications.filter((item) => !item.isRead); setNotifications(remaining); onUnreadChange(remaining.filter((item) => !item.isRead).length); } setBusy(false); }
   const unread = notifications.filter((notification) => !notification.isRead).length;
-  return <section className="notifications-panel"><div className="panel-heading"><div><span className="section-kicker">MON ESPACE</span><h2>Notifications</h2><p className="panel-subtitle">Retrouve les rappels et événements liés à tes tâches.</p></div><span className="notification-count">{unread} non lue{unread > 1 ? "s" : ""}</span></div><div className="notification-actions"><button className="secondary-button" disabled={busy || unread === 0} onClick={readAll}>Tout marquer comme lu</button><button className="danger-button" disabled={busy || notifications.every((item) => !item.isRead)} onClick={deleteRead}>Supprimer les lues</button></div>{loading ? <p className="muted">Chargement des notifications...</p> : notifications.length === 0 ? <div className="history-empty"><span>◷</span><h3>Boîte vide</h3><p>Les notifications apparaîtront ici.</p></div> : <div className="notification-list">{notifications.map((notification) => <article className={notification.isRead ? "notification read" : "notification"} key={notification.id}><span className="notification-mark">{notification.isRead ? "✓" : "•"}</span><div><h3>{notification.link ? <a href={notification.link} onClick={(event) => { event.preventDefault(); onOpenNotification(notification); }}>{notification.title}</a> : notification.title}</h3><p>{notification.message}</p><time>{new Date(notification.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div><button className="secondary-button" onClick={() => setRead(notification)}>{notification.isRead ? "Non lue" : "Marquer lu"}</button></article>)}</div>}</section>;
+  return <section className="notifications-panel"><div className="panel-heading"><div><span className="section-kicker">MON ESPACE</span><h2>Notifications</h2><p className="panel-subtitle">Retrouve les rappels et événements liés à tes tâches.</p></div><span className="notification-count">{unread} non lue{unread > 1 ? "s" : ""}</span></div><div className="notification-actions"><button className="secondary-button" disabled={busy || unread === 0} onClick={readAll}>Tout marquer comme lu</button><button className="danger-button" disabled={busy || notifications.every((item) => !item.isRead)} onClick={deleteRead}>Supprimer les lues</button></div>{loading ? <PanelSkeleton rows={4} /> : notifications.length === 0 ? <div className="history-empty"><span>◷</span><h3>Boîte vide</h3><p>Les notifications apparaîtront ici.</p></div> : <div className="notification-list">{notifications.map((notification) => <article className={notification.isRead ? "notification read" : "notification"} key={notification.id}><span className="notification-mark">{notification.isRead ? "✓" : "•"}</span><div><h3>{notification.link ? <a href={notification.link} onClick={(event) => { event.preventDefault(); onOpenNotification(notification); }}>{notification.title}</a> : notification.title}</h3><p>{notification.message}</p><time>{new Date(notification.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div><button className="secondary-button" onClick={() => setRead(notification)}>{notification.isRead ? "Non lue" : "Marquer lu"}</button></article>)}</div>}</section>;
 }
 
 function CommentsPanel({ api, instanceId, currentUser, users }: { api: string; instanceId: string; currentUser: User; users: User[] }) {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
-  useEffect(() => { fetch(`${api}/api/task-instances/${instanceId}/comments`).then(async (response) => { if (response.ok) setComments(await response.json()) }).catch(() => undefined) }, [api, instanceId]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { fetch(`${api}/api/task-instances/${instanceId}/comments`).then(async (response) => { if (response.ok) setComments(await response.json()) }).catch(() => undefined).finally(() => setLoading(false)) }, [api, instanceId]);
   async function submit(event: FormEvent) { event.preventDefault(); if (!content.trim()) return; try { const response = await fetch(`${api}/api/task-instances/${instanceId}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: content.trim() }) }); if (!response.ok) throw new Error("Commentaire impossible"); const comment = await response.json(); setComments((items) => [...items, comment]); setContent(""); setError(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Commentaire impossible"); } }
   const author = (id: string) => users.find((user) => user.id === id)?.displayName ?? currentUser.displayName;
+  if (loading) return <div className="comments-panel"><PanelSkeleton rows={2} /></div>;
   return <div className="comments-panel"><span className="section-kicker">ÉCHANGES</span><h3>Commentaires</h3>{comments.length === 0 ? <p className="comments-empty">Aucun commentaire pour le moment.</p> : <div className="comments-list">{comments.map((comment) => <div className="comment" key={comment.id}><b>{author(comment.authorUserId)}</b><p>{comment.content}</p><time>{new Date(comment.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div>)}</div>}<form className="comment-form" onSubmit={submit}><textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="Ajouter une précision..." rows={2} />{error && <small className="form-error">{error}</small>}<button className="secondary-button" type="submit">Ajouter</button></form></div>;
 }
 
@@ -640,9 +660,11 @@ function FlexibleExecutionPanel({ api, instance, onCompleted }: { api: string; i
 
 function AssignmentsPanel({ instances, templates, users, year, weekNumber, api, busyAction, onAction }: { instances: Instance[]; templates: Template[]; users: User[]; year: number; weekNumber: number; api: string; busyAction: string; onAction: (action: "generate" | "assign" | "close") => void }) {
   const [runs, setRuns] = useState<AssignmentRun[]>([]);
-  useEffect(() => { fetch(`${api}/api/assignments/runs?year=${year}&weekNumber=${weekNumber}`).then(async (response) => { if (response.ok) setRuns(await response.json()) }).catch(() => undefined) }, [api, year, weekNumber]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { fetch(`${api}/api/assignments/runs?year=${year}&weekNumber=${weekNumber}`).then(async (response) => { if (response.ok) setRuns(await response.json()) }).catch(() => undefined).finally(() => setLoading(false)) }, [api, year, weekNumber]);
   const template = (id: string) => templates.find((item) => item.id === id)
   const user = (id?: string) => users.find((item) => item.id === id)?.displayName ?? "Non attribuée"
+  if (loading) return <section className="assignments-panel"><PanelSkeleton rows={6} /></section>;
   return <section className="assignments-panel"><div className="panel-heading"><div><span className="section-kicker">ADMINISTRATION</span><h2>Affectations de la semaine</h2><p className="panel-subtitle">Vue globale des instances attribuées à tous les participants.</p></div><div className="admin-actions"><button className="secondary-button" disabled={Boolean(busyAction)} onClick={() => onAction("generate")}>{busyAction === "generate" ? "Génération..." : "Générer les instances"}</button><button className="primary-button" disabled={Boolean(busyAction)} onClick={() => onAction("assign")}>{busyAction === "assign" ? "Affectation..." : "Lancer l’affectation"}</button><button className="danger-button" disabled={Boolean(busyAction)} onClick={() => onAction("close")}>{busyAction === "close" ? "Clôture..." : "Clôturer"}</button></div></div><div className="assignment-summary"><b>{instances.length}</b><span>instances cette semaine</span><b>{instances.filter((item) => item.isCompleted).length}</b><span>terminées</span><b>{new Set(instances.map((item) => item.assignedUserId).filter(Boolean)).size}</b><span>participants concernés</span></div><div className="run-history"><span className="section-kicker">EXÉCUTIONS DE LA SEMAINE</span>{runs.length === 0 ? <p className="muted">Aucune exécution enregistrée.</p> : runs.map((run, index) => <div className="run-row" key={run.id}><span className="run-number">{runs.length - index}</span><div><b>{run.strategyName}</b><small>{new Date(run.generatedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</small></div><span className="run-badge">{index === 0 ? "Dernière" : "Relance"}</span></div>)}</div><div className="assignment-list">{instances.map((item) => <article className="assignment-item" key={item.id}><span className={item.isCompleted ? "assignment-state done" : "assignment-state"}>{item.isCompleted ? "✓" : "○"}</span><div><h3>{template(item.taskTemplateId)?.title ?? "Tâche sans titre"}</h3><p>Échéance : {new Date(item.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}{item.isCarryOver ? " · Reportée" : ""}</p></div><strong>{user(item.assignedUserId)}</strong></article>)}</div></section>
 }
 
@@ -941,7 +963,7 @@ function App() {
           <span className="section-kicker">ACCÈS FOYER</span>
           <h2>Qui êtes-vous ?</h2>
           {loading ? (
-            <p className="muted">Chargement des profils...</p>
+            <ProfileListSkeleton />
           ) : (
             <div className="profile-list">
               {users.map((entry) => (
@@ -963,6 +985,15 @@ function App() {
             </div>
           )}
         </div>
+      </main>
+    );
+
+  if (loading)
+    return (
+      <main className="app-shell">
+        <section className="content content-loading">
+          <PanelSkeleton rows={6} />
+        </section>
       </main>
     );
 
