@@ -323,6 +323,24 @@ Chaque cas d'usage documente :
 - **Acteur** : Administrateur
 - **Règles** : BR-020, BR-030, BR-033.
 
+## UC-HIS-04 — Classer les événements de l'historique
+
+- **Acteur** : système, lors de l'affichage de l'historique.
+- **Principe** : la catégorie est déterminée par l'action métier et l'entité, jamais par le
+  rôle du profil qui a déclenché l'action.
+- **Actions utilisateur** : complétion ou réouverture, création ou modification d'une tâche,
+  ajout de commentaire, ajout ou modification d'un rappel, configuration des préférences.
+- **Actions d'administration** : suppression logique, désactivation ou réactivation d'une tâche,
+  génération d'instances, lancement d'une affectation, clôture de semaine, réaffectation ou
+  annulation d'instance, création ou modification de participant et modification du moteur.
+- **Règles** : BR-017, BR-028, BR-033.
+
+Les actions actuellement persistées dans `AuditLog` sont `Created`, `Updated`, `Closed`,
+`CompletionChanged`, `Reassigned`, `Cancelled`, `CommentAdded` et `Executed`. Les rappels et
+les changements d'activation sont encore encodés comme `Updated` et identifiés par `NewValue`.
+La génération d'instances, la configuration des préférences, les réactions et les exécutions
+flexibles doivent encore être journalisées pour compléter la couverture.
+
 ---
 
 # Domaine : Notifications

@@ -271,15 +271,47 @@ Toute modification métier importante doit être tracée.
 
 ## Événements concernés
 
-- création utilisateur ;
-- modification utilisateur ;
-- désactivation utilisateur ;
-- création tâche ;
-- modification tâche ;
-- archivage tâche ;
-- affectation ;
-- réaffectation ;
-- changement de complétude.
+- création et modification d'un participant ;
+- activation et désactivation d'un participant ;
+- création et modification d'un modèle de tâche ;
+- archivage ou réactivation d'un modèle de tâche ;
+- lancement d'une affectation ;
+- réaffectation ou annulation d'une instance ;
+- changement de complétude (complétion ou réouverture) ;
+- ajout de commentaire ;
+- ajout ou modification d'un rappel ;
+- clôture de semaine ;
+- modification des paramètres du moteur d'affectation.
+
+## Classification de l'historique
+
+La catégorie d'un événement dépend de la nature de l'action, et non du rôle du profil qui l'a
+effectuée. Un administrateur qui crée une tâche produit donc une action utilisateur, tandis
+qu'un événement de gestion reste une action d'administration quel que soit son auteur.
+
+### Actions utilisateur
+
+- complétion ou réouverture d'une tâche ;
+- création ou modification d'un modèle de tâche ;
+- ajout d'un commentaire ;
+- ajout ou modification d'un rappel ;
+- configuration des préférences utilisateur.
+
+### Actions d'administration
+
+- suppression logique, désactivation ou réactivation d'un modèle de tâche ;
+- génération d'instances (catégorie attendue, mais événement encore manquant dans l'audit) ;
+- lancement ou relance d'une affectation ;
+- clôture d'une semaine ;
+- réaffectation ou annulation d'une instance ;
+- création ou modification d'un participant ;
+- modification des paramètres du moteur d'affectation.
+
+La classification technique actuelle s'appuie sur `EntityType`, `Action` et `NewValue`. Les
+actions de rappels et d'activation utilisent encore `Action = Updated`, avec leur détail pour
+les distinguer. Les préférences, réactions de commentaires et exécutions flexibles ne créent
+pas encore de `AuditLog`; la génération d'instances n'est pas non plus journalisée. Ces quatre
+couvertures restent à ajouter pour atteindre une traçabilité complète.
 
 ---
 

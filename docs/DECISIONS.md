@@ -130,6 +130,13 @@ y compris les retours « terminé → non terminé ». Voir R-09 / R-29.
 
 Statut : validé.
 
+Complément : la catégorie affichée dans l'historique est déterminée par la nature de l'action
+métier, et non par `IsAdmin`. Les actions utilisateur couvrent la complétion/réouverture, les
+modèles de tâches, les commentaires, les rappels et les préférences. Les actions
+d'administration couvrent le cycle de vie des instances, les affectations, la clôture, les
+participants et les paramètres du moteur. Les événements encore absents de `AuditLog` sont
+identifiés dans BR-017 et UC-HIS-04.
+
 ---
 
 ## ADR-010

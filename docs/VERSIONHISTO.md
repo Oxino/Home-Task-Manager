@@ -228,6 +228,9 @@ ou jour précis, avec plafonnement automatique au dernier jour des mois courts.
 Les tâches hebdomadaires disposent désormais d'une échéance configurable au début, au milieu
 ou à la fin de la semaine, exposée dans les formulaires de création et de modification.
 
+La classification de l'historique est désormais définie par la nature de l'action plutôt que
+par le rôle du profil auteur; la pagination API applique aussi ce filtre côté serveur.
+
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
 ```text

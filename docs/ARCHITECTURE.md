@@ -128,7 +128,9 @@ interfaces (inversion de dépendance).
   et `PUT /api/task-instances/{id}/cancel`. Les deux actions sont contrôlées par le rôle et
   historisées.
 - L’endpoint `GET /api/audit-logs` est authentifié : un participant reçoit uniquement les
-  événements qu’il a effectués ; un administrateur peut consulter l’historique global.
+  événements qu’il a effectués ; un administrateur peut consulter l’historique global. Le
+  frontend classe les événements par nature d'action (`user` ou `admin`), indépendamment du
+  rôle du profil auteur; le paramètre `category` conserve cette pagination côté API.
 - Les rappels sont configurés au niveau du modèle via `GET/POST /api/task-templates/{id}/reminders`.
   Leur stockage est persistant ; `ProcessReminderNotificationsUseCase` est exécuté par un
   `BackgroundService` périodique et crée des notifications idempotentes pour les rappels échus.
@@ -406,7 +408,8 @@ précédent et ses snapshots restent conservés (historique).
 | PUT | `/api/users/{id}` | Modifier/réactiver/désactiver un profil | admin |
 | GET | `/api/dashboard/me` | Indicateurs personnels | connecté |
 | GET | `/api/dashboard/admin` | Indicateurs globaux | admin |
-| GET | `/api/audit?entityType=&entityId=` | Journal d'audit | admin |
+| GET | `/api/audit-logs?entityType=&entityId=` | Journal d'audit | connecté |
+| GET | `/api/audit-logs?category=user|admin&page=&pageSize=` | Historique paginé par catégorie | admin |
 
 ## 6.8 Format d'erreur (uniforme)
 
