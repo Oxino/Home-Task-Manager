@@ -766,6 +766,17 @@ nav {
   font-weight: 700;
   color: #65756e;
 }
+.form-modal label:not(.checkbox-label) {
+  display: block;
+}
+.form-modal label:not(.checkbox-label) > input,
+.form-modal label:not(.checkbox-label) > textarea,
+.form-modal label:not(.checkbox-label) > select {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
 .form-modal input,
 .form-modal textarea,
 .form-modal select {
