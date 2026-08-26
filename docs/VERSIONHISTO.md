@@ -177,7 +177,6 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
         → Notifications & Analytics
 ```
 
-- **70 tests unitaires** (Application), **19 tests** (Domain), tous verts.
 - **76 tests unitaires** (Application), **19 tests** (Domain), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
