@@ -425,6 +425,11 @@ namespace HomeTaskManager.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DateDisplayFormat")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("NotificationsEnabled")
                         .HasColumnType("INTEGER");
 

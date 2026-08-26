@@ -1,3 +1,3 @@
 namespace HomeTaskManager.Api.Contracts.Users;
 
-public sealed record UpdateUserPreferencesRequest(bool NotificationsEnabled);
+public sealed record UpdateUserPreferencesRequest(bool NotificationsEnabled, string DateDisplayFormat = "Weekday");

@@ -1,4 +1,4 @@
-  import { useEffect, useMemo, useState, type FormEvent } from "react";
+  import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
   import "./App.css";
   import { AnalyticsPanel } from "./components/AnalyticsPanel";
 
@@ -144,6 +144,12 @@ function weekStart(year: number, week: number) {
   const monday = new Date(januaryFourth);
   monday.setDate(januaryFourth.getDate() - (januaryFourth.getDay() || 7) + 1 + (week - 1) * 7);
   return monday;
+}
+
+function formatTaskDate(value: string, format: "Weekday" | "Numeric"): ReactNode {
+  const date = new Date(value);
+  if (format === "Numeric") return date.toLocaleDateString("fr-FR");
+  return <><b className="task-weekday">{date.toLocaleDateString("fr-FR", { weekday: "long" })}</b> {date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</>;
 }
 
 const viewRoutes: Record<string, string> = {
@@ -626,14 +632,16 @@ function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEnt
     return <section className="history-panel"><div className="panel-heading"><div><span className="section-kicker">TRAÇABILITÉ</span><h2>{isAdmin ? "Journal d’audit du foyer" : "Mon historique"}</h2></div><div className="history-actions"><span className="history-count">{visibleEntries.length} événements</span><select className="history-actor-filter" value={actorFilter} onChange={(event) => setActorFilter(event.target.value)} aria-label="Filtrer les actions par profil"><option value="all">Toutes les actions</option><option value="user">Actions utilisateur</option><option value="admin">Actions administrateur</option></select></div></div><div className="week-history"><span className="section-kicker">8 DERNIÈRES SEMAINES</span><div className="week-history-grid">{weeks.map((period) => <button className="week-history-card" key={`${period.year}-${period.week}`} onClick={() => { window.history.pushState({}, "", `/week?year=${period.year}&week=${period.week}`); window.dispatchEvent(new PopStateEvent("popstate")); }}><b>S{period.week}</b><small>{period.total} tâches</small><strong>{period.total ? Math.round(period.completed / period.total * 100) : 0}%</strong><i style={{ width: `${period.total ? period.completed / period.total * 100 : 0}%` }} /></button>)}</div></div><ActivityCalendar entries={visibleEntries} />{loading ? <HistoryActivitySkeleton /> : visibleEntries.length === 0 ? <div className="history-empty"><span>◷</span><h3>Aucune activité enregistrée</h3><p>Les créations, affectations et changements de complétude apparaîtront ici.</p></div> : <><div className="history-list">{pagedEntries.map((entry) => <button type="button" className={`history-item history-item-button ${users.find((user) => user.id === entry.performedByUserId)?.isAdmin ? "admin-action" : "user-action"}`} disabled={!isNavigable(entry)} onClick={() => onOpenEntry(entry)} key={entry.id}><span className="history-dot" /><div><p><b>{actor(entry.performedByUserId)}</b> a {actionLabel(entry.action)} un {entityLabel(entry.entityType)}</p>{details(entry) && <small>{details(entry)}</small>}<time>{new Date(entry.performedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div></button>)}</div><div className="history-pagination"><button className="secondary-button" disabled={historyPage === 1} onClick={() => setHistoryPage((page) => page - 1)}>Précédente</button><span>Page {historyPage} / {historyPageCount}</span><button className="secondary-button" disabled={historyPage === historyPageCount} onClick={() => setHistoryPage((page) => page + 1)}>Suivante</button></div></>}</section>;
 }
 
-function PreferencesPanel({ api }: { api: string }) {
+function PreferencesPanel({ api, dateDisplayFormat, onDateDisplayFormatChanged }: { api: string; dateDisplayFormat: "Weekday" | "Numeric"; onDateDisplayFormatChanged: (format: "Weekday" | "Numeric") => void }) {
   const [enabled, setEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { fetch(`${api}/api/users/preferences`).then(async (response) => { if (response.ok) setEnabled((await response.json()).notificationsEnabled) }).finally(() => setLoading(false)) }, [api]);
+  const [selectedFormat, setSelectedFormat] = useState(dateDisplayFormat);
+  useEffect(() => { fetch(`${api}/api/users/preferences`).then(async (response) => { if (response.ok) { const preferences = await response.json(); setEnabled(preferences.notificationsEnabled); setSelectedFormat(preferences.dateDisplayFormat === "Numeric" ? "Numeric" : "Weekday"); } }).finally(() => setLoading(false)) }, [api]);
   if (loading) return <section className="settings-panel preferences-panel"><PanelSkeleton rows={2} /></section>;
-  async function toggle() { const next = !enabled; setEnabled(next); setSaving(true); try { const response = await fetch(`${api}/api/users/preferences`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notificationsEnabled: next }) }); if (!response.ok) setEnabled(!next); } catch { setEnabled(!next); } finally { setSaving(false); } }
-  return <section className="settings-panel preferences-panel"><span className="section-kicker">MON ESPACE</span><h2>Préférences</h2><p className="settings-intro">Choisis les types de notifications que tu souhaites recevoir lorsque le service de notification sera activé.</p><div className="preference-row"><div><b>Notifications du foyer</b><small>Rappels et événements liés à tes tâches.</small></div><button className={enabled ? "toggle enabled" : "toggle"} disabled={loading || saving} onClick={toggle} aria-pressed={enabled}><span /></button></div><p className="preference-status">{loading ? "Chargement..." : saving ? "Enregistrement..." : enabled ? "Activées" : "Désactivées"}</p></section>;
+  async function savePreferences(nextEnabled = enabled, nextFormat = selectedFormat) { setSaving(true); try { const response = await fetch(`${api}/api/users/preferences`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notificationsEnabled: nextEnabled, dateDisplayFormat: nextFormat }) }); if (!response.ok) throw new Error(); setEnabled(nextEnabled); setSelectedFormat(nextFormat); onDateDisplayFormatChanged(nextFormat); } catch { setSelectedFormat(dateDisplayFormat); } finally { setSaving(false); } }
+  async function toggle() { await savePreferences(!enabled); }
+  return <section className="settings-panel preferences-panel"><span className="section-kicker">MON ESPACE</span><h2>Préférences</h2><p className="settings-intro">Choisis l’affichage des échéances sur le dashboard.</p><div className="preference-row"><div><b>Notifications du foyer</b><small>Rappels et événements liés à tes tâches.</small></div><button className={enabled ? "toggle enabled" : "toggle"} disabled={loading || saving} onClick={toggle} aria-pressed={enabled}><span /></button></div><div className="date-format-preference"><label htmlFor="date-display-format">Format des dates</label><select id="date-display-format" value={selectedFormat} disabled={loading || saving} onChange={(event) => { const format = event.target.value as "Weekday" | "Numeric"; void savePreferences(enabled, format); }}><option value="Weekday">Nom du jour (lundi)</option><option value="Numeric">Date numérique (dd/mm/yyyy)</option></select></div><p className="preference-status">{loading ? "Chargement..." : saving ? "Enregistrement..." : enabled ? "Notifications activées" : "Notifications désactivées"}</p></section>;
 }
 
 function NotificationsPanel({ api, onUnreadChange, onOpenNotification }: { api: string; onUnreadChange: (count: number) => void; onOpenNotification: (notification: NotificationItem) => void }) {
@@ -696,6 +704,7 @@ function App() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [instances, setInstances] = useState<Instance[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [dateDisplayFormat, setDateDisplayFormat] = useState<"Weekday" | "Numeric">("Weekday");
   const [view, setView] = useState(() => viewFromPath(window.location.pathname));
   const [filter, setFilter] = useState("all");
   const [taskTitleFilter, setTaskTitleFilter] = useState("");
@@ -824,6 +833,16 @@ function App() {
     };
     load();
   }, [api, week.year, week.week, queryInstanceId, pendingNotificationTaskTitle]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    fetch(`${api}/api/users/preferences`).then(async (response) => {
+      if (response.ok) {
+        const preferences = await response.json();
+        setDateDisplayFormat(preferences.dateDisplayFormat === "Numeric" ? "Numeric" : "Weekday");
+      }
+    }).catch(() => undefined);
+  }, [api, currentUser]);
 
   function openNotification(notification: NotificationItem) {
     if (!notification.link) return;
@@ -1275,10 +1294,7 @@ function App() {
                         <p>{template(item.taskTemplateId)?.description}</p>
                         <div className="task-meta">
                           ◷ Échéance :{" "}
-                          {new Date(item.dueDate).toLocaleDateString("fr-FR", {
-                            day: "numeric",
-                            month: "short",
-                          })}
+                          {formatTaskDate(item.dueDate, dateDisplayFormat)}
                           {item.completedAt && <> · Complétée le {new Date(item.completedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</>}
                           {currentUser.isAdmin && (
                             <> · {user(item.assignedUserId)?.displayName}</>
@@ -1343,7 +1359,7 @@ function App() {
         ) : view === "Notifications" ? (
           <NotificationsPanel api={api} onUnreadChange={setUnreadNotifications} onOpenNotification={openNotification} />
         ) : view === "Préférences" ? (
-          <PreferencesPanel api={api} />
+          <PreferencesPanel api={api} dateDisplayFormat={dateDisplayFormat} onDateDisplayFormatChanged={setDateDisplayFormat} />
         ) : view === "Historique" ? (
           <HistoryPanel api={api} users={users} templates={templates} isAdmin={currentUser.isAdmin} currentUserId={currentUser.id} onOpenEntry={openHistoryEntry} />
         ) : view === "Affectations" ? (

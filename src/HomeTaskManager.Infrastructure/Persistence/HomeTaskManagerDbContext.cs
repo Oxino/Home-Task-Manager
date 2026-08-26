@@ -97,6 +97,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         {
             entity.HasKey(preferences => preferences.Id);
             entity.HasIndex(preferences => preferences.UserId).IsUnique();
+            entity.Property(preferences => preferences.DateDisplayFormat).HasMaxLength(20).IsRequired();
         });
 
         modelBuilder.Entity<Reminder>(entity =>

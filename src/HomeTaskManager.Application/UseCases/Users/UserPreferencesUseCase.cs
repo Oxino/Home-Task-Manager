@@ -5,8 +5,8 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.UseCases.Users;
 
-public sealed record UserPreferencesDto(Guid Id, Guid UserId, bool NotificationsEnabled);
-public sealed record UpdateUserPreferencesCommand(Guid UserId, bool NotificationsEnabled);
+public sealed record UserPreferencesDto(Guid Id, Guid UserId, bool NotificationsEnabled, string DateDisplayFormat);
+public sealed record UpdateUserPreferencesCommand(Guid UserId, bool NotificationsEnabled, string DateDisplayFormat);
 
 public interface IUserPreferencesUseCase
 {
@@ -37,9 +37,10 @@ public sealed class UserPreferencesUseCase(IUserPreferencesRepository repository
             await repository.AddAsync(preferences, cancellationToken);
         }
         preferences.SetNotificationsEnabled(command.NotificationsEnabled);
+        preferences.SetDateDisplayFormat(command.DateDisplayFormat);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ToDto(preferences);
     }
 
-    private static UserPreferencesDto ToDto(UserPreferences preferences) => new(preferences.Id, preferences.UserId, preferences.NotificationsEnabled);
+    private static UserPreferencesDto ToDto(UserPreferences preferences) => new(preferences.Id, preferences.UserId, preferences.NotificationsEnabled, preferences.DateDisplayFormat);
 }

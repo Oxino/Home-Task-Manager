@@ -549,6 +549,7 @@ nav {
   color: #a2aea8;
   margin-top: 9px;
 }
+.task-weekday{color:var(--ink);font-weight:700}
 .tag {
   font-size: 8px;
   letter-spacing: 0.08em;
@@ -1591,6 +1592,7 @@ nav {
   font-size: 11px;
   font-weight: 700;
 }
+.date-format-preference{display:grid;gap:7px;border-top:1px solid var(--line);padding:18px 0 0;color:#65756e;font-size:11px;font-weight:700}.date-format-preference select{max-width:260px;border:1px solid var(--line);border-radius:3px;padding:9px;background:#fbfcfb;color:var(--ink);font:inherit;font-size:11px}
 .toggle {
   width: 44px;
   height: 24px;
