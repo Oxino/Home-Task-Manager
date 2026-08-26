@@ -85,6 +85,22 @@ public class GenerateWeekInstancesUseCaseTests
         result.CreatedInstances.Should().ContainSingle();
     }
 
+    [Theory]
+    [InlineData(WeeklyScheduleType.StartOfWeek, 0)]
+    [InlineData(WeeklyScheduleType.MiddleOfWeek, 3)]
+    [InlineData(WeeklyScheduleType.EndOfWeek, 6)]
+    public async Task Weekly_task_uses_the_configured_deadline(WeeklyScheduleType scheduleType, int expectedOffset)
+    {
+        var taskTemplateRepository = new InMemoryTaskTemplateRepository();
+        taskTemplateRepository.Seed(new TaskTemplate("Task-WeeklySchedule", Guid.NewGuid(), 40, FrequencyType.Weekly, weeklyScheduleType: scheduleType));
+        var useCase = new GenerateWeekInstancesUseCase(
+            new InMemoryWeekRepository(), taskTemplateRepository, new InMemoryTaskInstanceRepository(), new NoOpUnitOfWork());
+
+        var result = await useCase.ExecuteAsync(new GenerateWeekInstancesCommand(2026, 1));
+
+        result.CreatedInstances.Single().DueDate.Should().Be(new WeekKey(2026, 1).StartDate.AddDays(expectedOffset));
+    }
+
     [Fact]
     public async Task Weekly_fluid_task_generates_one_instance_per_active_day()
     {

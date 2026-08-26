@@ -50,7 +50,8 @@ public class TaskTemplatesController(
                 User.GetCurrentUserId(),
                 request.ActiveWeekDays,
                 request.MonthlyScheduleType,
-                request.MonthlyDay);
+                request.MonthlyDay,
+                request.WeeklyScheduleType);
 
             var taskTemplate = await createTaskTemplateUseCase.ExecuteAsync(command, cancellationToken);
             return CreatedAtAction(nameof(GetActiveTaskTemplates), new { }, taskTemplate);
@@ -78,7 +79,8 @@ public class TaskTemplatesController(
                 request.EstimatedDurationMinutes,
                 request.ActiveWeekDays,
                 request.MonthlyScheduleType,
-                request.MonthlyDay);
+                request.MonthlyDay,
+                request.WeeklyScheduleType);
 
             var taskTemplate = await updateTaskTemplateUseCase.ExecuteAsync(command, cancellationToken);
             return Ok(taskTemplate);

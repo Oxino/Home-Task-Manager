@@ -204,6 +204,8 @@ hors priorité immédiate.
   modification des modèles de tâches.
 - Les tâches mensuelles permettent de choisir le début, le milieu, la fin du mois ou un jour
   précis, avec adaptation automatique aux mois plus courts.
+- Les tâches hebdomadaires permettent de fixer leur échéance au début, au milieu ou à la fin
+  de la semaine.
 
 ### Idées futures
 
@@ -221,3 +223,5 @@ hors priorité immédiate.
 -  Festaure: permettre visuellement d'avoir une représentation de la décision logique d'affectation de chaque tache. Une représentation sous forme d'arbre décisionnel. Je veux voir le plans d'execution logique d'attribution de chaque tache, pourquoi cette tache a été attribué a l'utilisateur. Si c'est psk c'est trié par ordre de point, si elle ne l'a pas faite la semaine passé, si c'est une tache non faite de la semaine passé, etc.. etc.. je qu'on puisse comprendre pourquoi l'affectation a été faite. Je rappel, que le choix du moteur d'affectation est paramettrable. donc il faudra que l'arbre de décision puisse s'adapté au moteur de distribution. lors de l'implémentation, pause moi des questions si cela manque de précision, ou qu'il y a un choix technique ou d'affichage a faire, si tu as une meilleur proposition donne la moi
 -  ~~Régles métier: si un tache non fini est réaffecté la nouvelle semaine, et que celle ci n'est toujours pas fin à la fin de la nouvelle semaine, cette tache n'est pas reporté. Elle n'intervient dras plus, et n'interviendra plus non plus dans les calculs de poids et répartission~~
 -  reprendre ou approfondir le system de génération d'instance + affectation. 
+-  Historique : faire la distinction entre les actions admin et utilsiateur. Pas si c'est un utilisateur avec role admin. Une action utilisateur est : complétion de tache, réouverture de tache, création de tache, modificaiton de tache, ajout de commentaire, ajout/modificaiton rappel ,configuration des préférences.
+admin : suppression tache, 

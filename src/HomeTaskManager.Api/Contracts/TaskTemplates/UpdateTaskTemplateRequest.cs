@@ -12,4 +12,5 @@ public sealed record UpdateTaskTemplateRequest(
     int? EstimatedDurationMinutes,
     IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
     MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
-    int? MonthlyDay = null);
+    int? MonthlyDay = null,
+    WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek);

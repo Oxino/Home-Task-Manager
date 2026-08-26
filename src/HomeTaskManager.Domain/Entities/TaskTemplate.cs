@@ -24,7 +24,8 @@ public sealed class TaskTemplate
         int? estimatedDurationMinutes = null,
         IEnumerable<DayOfWeek>? activeWeekDays = null,
         MonthlyScheduleType monthlyScheduleType = MonthlyScheduleType.StartOfMonth,
-        int? monthlyDay = null)
+        int? monthlyDay = null,
+        WeeklyScheduleType weeklyScheduleType = WeeklyScheduleType.EndOfWeek)
     {
         Id = Guid.NewGuid();
         CreatedAt = DateTime.UtcNow;
@@ -42,6 +43,7 @@ public sealed class TaskTemplate
 
         SetActiveWeekDays(activeWeekDays ?? []);
         SetMonthlySchedule(monthlyScheduleType, monthlyDay);
+        WeeklyScheduleType = weeklyScheduleType;
         ChangePriority(priority);
         ChangeEstimatedDuration(estimatedDurationMinutes);
         UpdatedAt = CreatedAt;
@@ -66,6 +68,8 @@ public sealed class TaskTemplate
     public MonthlyScheduleType MonthlyScheduleType { get; private set; }
 
     public int? MonthlyDay { get; private set; }
+
+    public WeeklyScheduleType WeeklyScheduleType { get; private set; }
 
     public bool IsActive { get; private set; }
 
@@ -143,6 +147,12 @@ public sealed class TaskTemplate
 
         MonthlyScheduleType = scheduleType;
         MonthlyDay = scheduleType == MonthlyScheduleType.SpecificDay ? day : null;
+        Touch();
+    }
+
+    public void SetWeeklySchedule(WeeklyScheduleType scheduleType)
+    {
+        WeeklyScheduleType = scheduleType;
         Touch();
     }
 

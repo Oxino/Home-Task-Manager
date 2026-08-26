@@ -12,4 +12,5 @@ public sealed record CreateTaskTemplateRequest(
     Guid CreatedByUserId,
     IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
     MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
-    int? MonthlyDay = null);
+    int? MonthlyDay = null,
+    WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek);

@@ -28,6 +28,7 @@ type Template = {
   activeWeekDays?: number[];
   monthlyScheduleType?: string;
   monthlyDay?: number;
+  weeklyScheduleType?: string;
 };
 type Instance = {
   id: string;
@@ -289,7 +290,8 @@ const frequencyHelp: Record<string, string> = {
     "Une instance est créée pour chacun des 7 jours de la semaine.",
   DailyFlexible:
     "Flexible : une seule instance existe à la fois. Elle démarre le lundi, avance au jour suivant si elle n’est pas faite et une nouvelle instance est créée après chaque réalisation.",
-  Weekly: "Une instance est créée pour la semaine sélectionnée.",
+  Weekly:
+    "Une instance est créée pour la semaine sélectionnée, avec une échéance au début, au milieu ou à la fin selon le paramètre choisi.",
   WeeklyFlexible:
     "Hebdomadaire fluide : une instance est créée pour chaque jour sélectionné. Si au moins une occurrence est faite dans la semaine, les autres sont supprimées à la clôture; sinon une occurrence est reportée.",
   Monthly:
@@ -341,6 +343,10 @@ function FieldInfo({ text }: { text: string }) {
 
 function MonthlyScheduleField({ scheduleType, day, onScheduleTypeChange, onDayChange }: { scheduleType: string; day: string; onScheduleTypeChange: (value: string) => void; onDayChange: (value: string) => void }) {
   return <fieldset className="monthly-schedule-field"><legend>Date mensuelle<FieldInfo text="La tâche sera générée dans la semaine contenant cette date. Pour un jour précis, les mois plus courts utilisent leur dernier jour." /></legend><div className="monthly-schedule-controls"><select value={scheduleType} onChange={(event) => onScheduleTypeChange(event.target.value)}><option value="StartOfMonth">Début du mois (1)</option><option value="MiddleOfMonth">Milieu du mois (15)</option><option value="EndOfMonth">Fin du mois</option><option value="SpecificDay">Jour précis</option></select>{scheduleType === "SpecificDay" && <input type="number" min="1" max="31" value={day} onChange={(event) => onDayChange(event.target.value)} aria-label="Jour du mois" />}</div></fieldset>;
+}
+
+function WeeklyScheduleField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return <fieldset className="weekly-schedule-field"><legend>Échéance dans la semaine<FieldInfo text="Ce choix fixe la date limite de la tâche : lundi, jeudi ou dimanche." /></legend><select value={value} onChange={(event) => onChange(event.target.value)}><option value="StartOfWeek">Début de semaine (lundi)</option><option value="MiddleOfWeek">Milieu de semaine (jeudi)</option><option value="EndOfWeek">Fin de semaine (dimanche)</option></select></fieldset>;
 }
 
 function PanelSkeleton({ rows = 4 }: { rows?: number }) {
@@ -844,6 +850,9 @@ function EditTaskDialog({
   const [frequencyType, setFrequencyType] = useState(
     template.frequencyType || "Weekly",
   );
+  const [weeklyScheduleType, setWeeklyScheduleType] = useState(
+    template.weeklyScheduleType || "EndOfWeek",
+  );
   const [activeWeekDays, setActiveWeekDays] = useState<number[]>(
     template.activeWeekDays?.length ? template.activeWeekDays : [1],
   );
@@ -885,6 +894,7 @@ function EditTaskDialog({
       activeWeekDays: frequencyType === "WeeklyFlexible" ? activeWeekDays : [],
       monthlyScheduleType,
       monthlyDay: frequencyType === "Monthly" && monthlyScheduleType === "SpecificDay" ? Number(monthlyDay) : null,
+      weeklyScheduleType,
       requestingUserId: user.id,
     };
     try {
@@ -1008,6 +1018,7 @@ function EditTaskDialog({
                 </fieldset>
               )}
               {frequencyType === "Monthly" && <MonthlyScheduleField scheduleType={monthlyScheduleType} day={monthlyDay} onScheduleTypeChange={setMonthlyScheduleType} onDayChange={setMonthlyDay} />}
+              {frequencyType === "Weekly" && <WeeklyScheduleField value={weeklyScheduleType} onChange={setWeeklyScheduleType} />}
               <label>
                 Pénibilité
                 <FieldInfo text="Entier obligatoire compris entre 1 et 100." />

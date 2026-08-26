@@ -14,4 +14,5 @@ public sealed record TaskTemplateDto(
     Guid CreatedByUserId,
     IReadOnlyList<DayOfWeek> ActiveWeekDays,
     MonthlyScheduleType MonthlyScheduleType,
-    int? MonthlyDay);
+    int? MonthlyDay,
+    WeeklyScheduleType WeeklyScheduleType);

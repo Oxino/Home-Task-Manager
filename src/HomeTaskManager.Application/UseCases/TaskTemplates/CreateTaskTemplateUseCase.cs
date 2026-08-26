@@ -16,7 +16,8 @@ public sealed record CreateTaskTemplateCommand(
     Guid CreatedByUserId,
     IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
     MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
-    int? MonthlyDay = null);
+    int? MonthlyDay = null,
+    WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek);
 
 public interface ICreateTaskTemplateUseCase
 {
@@ -55,7 +56,8 @@ public sealed class CreateTaskTemplateUseCase(
             command.EstimatedDurationMinutes,
             command.ActiveWeekDays,
             command.MonthlyScheduleType,
-            command.MonthlyDay);
+            command.MonthlyDay,
+            command.WeeklyScheduleType);
 
         await taskTemplateRepository.AddAsync(taskTemplate, cancellationToken);
 

@@ -225,6 +225,9 @@ expliquées dans les formulaires de création et de modification.
 Elle ajoute également une date configurable aux tâches mensuelles : début, milieu, fin du mois
 ou jour précis, avec plafonnement automatique au dernier jour des mois courts.
 
+Les tâches hebdomadaires disposent désormais d'une échéance configurable au début, au milieu
+ou à la fin de la semaine, exposée dans les formulaires de création et de modification.
+
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
 ```text

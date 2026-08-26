@@ -835,6 +835,23 @@ nav {
 .monthly-schedule-controls input {
   width: 110px;
 }
+.weekly-schedule-field {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.weekly-schedule-field legend {
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.weekly-schedule-field select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
 .form-error {
   color: #af5f4f;
   background: #f8dfd8;

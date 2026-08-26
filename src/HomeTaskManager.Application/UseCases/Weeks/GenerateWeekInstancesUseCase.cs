@@ -55,7 +55,18 @@ public sealed class GenerateWeekInstancesUseCase(
                     continue;
                 }
 
-                var dueDate = template.FrequencyType is FrequencyType.DailyMandatory or FrequencyType.Monthly ? plannedDate : week.EndDate;
+                var dueDate = template.FrequencyType switch
+                {
+                    FrequencyType.DailyMandatory or FrequencyType.Monthly => plannedDate,
+                    FrequencyType.Weekly => week.StartDate.AddDays(template.WeeklyScheduleType switch
+                    {
+                        WeeklyScheduleType.StartOfWeek => 0,
+                        WeeklyScheduleType.MiddleOfWeek => 3,
+                        WeeklyScheduleType.EndOfWeek => 6,
+                        _ => 6,
+                    }),
+                    _ => week.EndDate,
+                };
                 newInstances.Add(new TaskInstance(template.Id, null, week, null, plannedDate, dueDate));
             }
         }
