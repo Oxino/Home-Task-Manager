@@ -606,11 +606,13 @@ function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEnt
   const [weeks, setWeeks] = useState<WeekSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageCount, setHistoryPageCount] = useState(1);
   const [actorFilter, setActorFilter] = useState("all");
   const historyPageSize = 10;
   useEffect(() => {
-    fetch(`${api}/api/audit-logs`).then(async (response) => { if (!response.ok) throw new Error("Lecture impossible"); setEntries(await response.json()); }).catch(() => undefined).finally(() => setLoading(false));
-  }, [api]);
+    setLoading(true);
+    fetch(`${api}/api/audit-logs?page=${historyPage}&pageSize=${historyPageSize}`).then(async (response) => { if (!response.ok) throw new Error("Lecture impossible"); const result = await response.json(); setEntries(result.items ?? []); setHistoryPageCount(result.totalPages ?? 1); }).catch(() => setEntries([])).finally(() => setLoading(false));
+  }, [api, historyPage]);
   useEffect(() => {
     const loadWeeks = async () => {
       const requests = Array.from({ length: 8 }, (_, index) => {
@@ -643,9 +645,7 @@ function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEnt
     const performer = users.find((user) => user.id === entry.performedByUserId);
     return actorFilter === "admin" ? performer?.isAdmin === true : performer?.isAdmin !== true;
   });
-  const historyPageCount = Math.max(1, Math.ceil(visibleEntries.length / historyPageSize));
-  const pagedEntries = visibleEntries.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
-  useEffect(() => { setHistoryPage((page) => Math.min(page, historyPageCount)); }, [historyPageCount]);
+  const pagedEntries = visibleEntries;
   useEffect(() => { setHistoryPage(1); }, [actorFilter]);
   const isNavigable = (entry: AuditLog) => entry.entityType === "User" || entry.entityType === "TaskTemplate" || entry.entityType === "TaskInstance" || entry.entityType === "Week" || entry.entityType === "AssignmentRun" || entry.entityType === "AssignmentEngineSettings";
   const details = (entry: AuditLog) => entry.newValue?.includes("Reminder") ? `Rappel · ${templates.find((template) => template.id === entry.entityId)?.title ?? "Tâche"}` : entry.newValue;
@@ -666,13 +666,14 @@ function PreferencesPanel({ api, dateDisplayFormat, onDateDisplayFormatChanged }
 
 function NotificationsPanel({ api, onUnreadChange, onOpenNotification }: { api: string; onUnreadChange: (count: number) => void; onOpenNotification: (notification: NotificationItem) => void }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false);
-  const load = async () => { try { const response = await fetch(`${api}/api/notifications`); if (response.ok) { const items: NotificationItem[] = await response.json(); setNotifications(items); onUnreadChange(items.filter((item) => !item.isRead).length); } } finally { setLoading(false); } };
-  useEffect(() => { void load(); }, [api]);
-  async function setRead(notification: NotificationItem) { const response = await fetch(`${api}/api/notifications/${notification.id}/read`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(!notification.isRead) }); if (response.ok) { const updated = await response.json(); setNotifications((items) => items.map((item) => item.id === updated.id ? updated : item)); onUnreadChange(notifications.map((item) => item.id === updated.id ? updated : item).filter((item) => !item.isRead).length); } }
-  async function readAll() { setBusy(true); const response = await fetch(`${api}/api/notifications/read-all`, { method: "POST" }); if (response.ok) { setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))); onUnreadChange(0); } setBusy(false); }
-  async function deleteRead() { setBusy(true); const response = await fetch(`${api}/api/notifications/read`, { method: "DELETE" }); if (response.ok) { const remaining = notifications.filter((item) => !item.isRead); setNotifications(remaining); onUnreadChange(remaining.filter((item) => !item.isRead).length); } setBusy(false); }
+  const [page, setPage] = useState(1); const [totalPages, setTotalPages] = useState(1); const pageSize = 10;
+  const load = async () => { try { setLoading(true); const response = await fetch(`${api}/api/notifications?page=${page}&pageSize=${pageSize}`); if (response.ok) { const result = await response.json(); const items: NotificationItem[] = result.items ?? []; setNotifications(items); setTotalPages(result.totalPages ?? 1); onUnreadChange(items.filter((item) => !item.isRead).length); } } finally { setLoading(false); } };
+  useEffect(() => { void load(); }, [api, page]);
+  async function setRead(notification: NotificationItem) { const response = await fetch(`${api}/api/notifications/${notification.id}/read`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(!notification.isRead) }); if (response.ok) void load(); }
+  async function readAll() { setBusy(true); const response = await fetch(`${api}/api/notifications/read-all`, { method: "POST" }); if (response.ok) { onUnreadChange(0); void load(); } setBusy(false); }
+  async function deleteRead() { setBusy(true); const response = await fetch(`${api}/api/notifications/read`, { method: "DELETE" }); if (response.ok) { if (page > 1 && notifications.every((item) => item.isRead)) setPage((current) => current - 1); else void load(); } setBusy(false); }
   const unread = notifications.filter((notification) => !notification.isRead).length;
-  return <section className="notifications-panel"><div className="panel-heading"><div><span className="section-kicker">MON ESPACE</span><h2>Notifications</h2><p className="panel-subtitle">Retrouve les rappels et événements liés à tes tâches.</p></div><span className="notification-count">{unread} non lue{unread > 1 ? "s" : ""}</span></div><div className="notification-actions"><button className="secondary-button" disabled={busy || unread === 0} onClick={readAll}>Tout marquer comme lu</button><button className="danger-button" disabled={busy || notifications.every((item) => !item.isRead)} onClick={deleteRead}>Supprimer les lues</button></div>{loading ? <PanelSkeleton rows={4} /> : notifications.length === 0 ? <div className="history-empty"><span>◷</span><h3>Boîte vide</h3><p>Les notifications apparaîtront ici.</p></div> : <div className="notification-list">{notifications.map((notification) => <article className={notification.isRead ? "notification read" : "notification"} key={notification.id}><span className="notification-mark">{notification.isRead ? "✓" : "•"}</span><div><h3>{notification.link ? <a href={notification.link} onClick={(event) => { event.preventDefault(); onOpenNotification(notification); }}>{notification.title}</a> : notification.title}</h3><p>{notification.message}</p><time>{new Date(notification.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div><button className="secondary-button" onClick={() => setRead(notification)}>{notification.isRead ? "Non lue" : "Marquer lu"}</button></article>)}</div>}</section>;
+  return <section className="notifications-panel"><div className="panel-heading"><div><span className="section-kicker">MON ESPACE</span><h2>Notifications</h2><p className="panel-subtitle">Retrouve les rappels et événements liés à tes tâches.</p></div><span className="notification-count">{unread} non lue{unread > 1 ? "s" : ""}</span></div><div className="notification-actions"><button className="secondary-button" disabled={busy || unread === 0} onClick={readAll}>Tout marquer comme lu</button><button className="danger-button" disabled={busy || notifications.every((item) => !item.isRead)} onClick={deleteRead}>Supprimer les lues</button></div>{loading ? <PanelSkeleton rows={4} /> : notifications.length === 0 ? <div className="history-empty"><span>◷</span><h3>Boîte vide</h3><p>Les notifications apparaîtront ici.</p></div> : <><div className="notification-list">{notifications.map((notification) => <article className={notification.isRead ? "notification read" : "notification"} key={notification.id}><span className="notification-mark">{notification.isRead ? "✓" : "•"}</span><div><h3>{notification.link ? <a href={notification.link} onClick={(event) => { event.preventDefault(); onOpenNotification(notification); }}>{notification.title}</a> : notification.title}</h3><p>{notification.message}</p><time>{new Date(notification.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</time></div><button className="secondary-button" onClick={() => setRead(notification)}>{notification.isRead ? "Non lue" : "Marquer lu"}</button></article>)}</div><div className="history-pagination"><button className="secondary-button" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>Précédente</button><span>Page {page} / {totalPages}</span><button className="secondary-button" disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>Suivante</button></div></>}</section>;
 }
 
 function CommentsPanel({ api, instanceId, currentUser, users }: { api: string; instanceId: string; currentUser: User; users: User[] }) {
@@ -906,9 +907,10 @@ function App() {
   useEffect(() => {
     if (!currentUser) return;
     const refreshNotifications = async () => {
-      const response = await fetch(`${api}/api/notifications`);
+      const response = await fetch(`${api}/api/notifications?page=1&pageSize=50`);
       if (response.ok) {
-        const notifications: NotificationItem[] = await response.json();
+        const result = await response.json();
+        const notifications: NotificationItem[] = result.items ?? [];
         setUnreadNotifications(notifications.filter((notification) => !notification.isRead).length);
       }
     };

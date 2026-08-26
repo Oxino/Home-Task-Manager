@@ -12,6 +12,7 @@ public sealed record SetNotificationReadCommand(Guid NotificationId, Guid UserId
 public interface INotificationUseCase
 {
     Task<IReadOnlyList<NotificationDto>> ListAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<PagedResult<NotificationDto>> ListPageAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<NotificationDto> SetReadAsync(SetNotificationReadCommand command, CancellationToken cancellationToken = default);
     Task MarkAllReadAsync(Guid userId, CancellationToken cancellationToken = default);
     Task DeleteReadAsync(Guid userId, CancellationToken cancellationToken = default);
@@ -21,6 +22,12 @@ public sealed class NotificationUseCase(INotificationRepository repository, IUni
 {
     public async Task<IReadOnlyList<NotificationDto>> ListAsync(Guid userId, CancellationToken cancellationToken = default) =>
         (await repository.GetByUserIdAsync(userId, cancellationToken)).Select(ToDto).ToList();
+
+    public async Task<PagedResult<NotificationDto>> ListPageAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var result = await repository.GetPageByUserIdAsync(userId, page, pageSize, cancellationToken);
+        return new PagedResult<NotificationDto>(result.Items.Select(ToDto).ToList(), page, pageSize, result.TotalCount);
+    }
 
     public async Task<NotificationDto> SetReadAsync(SetNotificationReadCommand command, CancellationToken cancellationToken = default)
     {

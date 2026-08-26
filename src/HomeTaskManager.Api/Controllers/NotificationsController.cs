@@ -11,7 +11,10 @@ namespace HomeTaskManager.Api.Controllers;
 public sealed class NotificationsController(INotificationUseCase useCase) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<NotificationDto>>> Get(CancellationToken cancellationToken) => Ok(await useCase.ListAsync(User.GetCurrentUserId(), cancellationToken));
+    public async Task<ActionResult<object>> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+    {
+        return Ok(await useCase.ListPageAsync(User.GetCurrentUserId(), Math.Max(1, page), Math.Clamp(pageSize, 1, 50), cancellationToken));
+    }
 
     [HttpPut("{id:guid}/read")]
     public async Task<ActionResult<NotificationDto>> SetRead(Guid id, [FromBody] bool isRead, CancellationToken cancellationToken)

@@ -11,7 +11,7 @@ namespace HomeTaskManager.Api.Controllers;
 public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEntityUseCase) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetForEntity(
+    public async Task<ActionResult<object>> GetForEntity(
         [FromQuery] string? entityType,
         [FromQuery] Guid? entityId,
         [FromQuery] DateTime? from,
@@ -19,6 +19,13 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
         [FromQuery] string? action,
         CancellationToken cancellationToken)
     {
+        if ((!from.HasValue || !to.HasValue) && entityType is null && !entityId.HasValue)
+        {
+            var page = Request.Query.TryGetValue("page", out var pageValue) && int.TryParse(pageValue, out var parsedPage) ? parsedPage : 1;
+            var pageSize = Request.Query.TryGetValue("pageSize", out var sizeValue) && int.TryParse(sizeValue, out var parsedSize) ? parsedSize : 10;
+            page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 50);
+            return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(User.IsInRole("Admin") ? null : User.GetCurrentUserId(), page, pageSize, cancellationToken));
+        }
         var entries = !User.IsInRole("Admin")
             ? await getAuditLogsForEntityUseCase.ExecuteForPerformerAsync(User.GetCurrentUserId(), cancellationToken)
             : from.HasValue && to.HasValue && User.IsInRole("Admin")

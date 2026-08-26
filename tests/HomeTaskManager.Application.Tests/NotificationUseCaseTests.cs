@@ -9,6 +9,11 @@ public sealed class InMemoryNotificationRepository : INotificationRepository
 {
     private readonly List<Notification> _notifications = [];
     public Task<IReadOnlyList<Notification>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Notification>>(_notifications.Where(notification => notification.UserId == userId).OrderByDescending(notification => notification.CreatedAt).ToList());
+    public Task<(IReadOnlyList<Notification> Items, int TotalCount)> GetPageByUserIdAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var items = _notifications.Where(notification => notification.UserId == userId).OrderByDescending(notification => notification.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        return Task.FromResult<(IReadOnlyList<Notification>, int)>((items, _notifications.Count(notification => notification.UserId == userId)));
+    }
     public Task<Notification?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(_notifications.SingleOrDefault(notification => notification.Id == id));
     public Task AddAsync(Notification notification, CancellationToken cancellationToken = default) { _notifications.Add(notification); return Task.CompletedTask; }
     public Task<bool> ExistsByLinkAsync(Guid userId, string link, CancellationToken cancellationToken = default) => Task.FromResult(_notifications.Any(notification => notification.UserId == userId && notification.Link == link));
