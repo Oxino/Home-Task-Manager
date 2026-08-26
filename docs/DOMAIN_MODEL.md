@@ -539,8 +539,10 @@ Journal d'audit générique des modifications métier.
 
 Couvre BR-011, BR-017, BR-033 et BR-043. Les changements de complétude bidirectionnels sont
 enregistrés avec `Action = CompletionChanged` et `NewValue = IsCompleted=true|false`.
-`Created`, `Updated`, `Closed`, `Reassigned`, `Cancelled`, `CommentAdded` et `Executed` sont
-les valeurs actuellement émises par les cas d'utilisation. La catégorie utilisateur ou
+`Created`, `Updated`, `Closed`, `Reassigned`, `Cancelled`, `CommentAdded`, `Executed` et
+`Generated` sont les valeurs actuellement émises par les cas d'utilisation. Les préférences
+utilisateur sont tracées comme `UserPreferences/Updated`, et la génération comme
+`Week/Generated`. La catégorie utilisateur ou
 administration est dérivée de l'action et de l'entité, jamais du rôle du profil auteur.
 
 Les réactions de commentaires et les exécutions flexibles ne sont pas encore enregistrées dans

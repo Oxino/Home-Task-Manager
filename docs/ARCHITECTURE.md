@@ -131,6 +131,8 @@ interfaces (inversion de dépendance).
   événements qu’il a effectués ; un administrateur peut consulter l’historique global. Le
   frontend classe les événements par nature d'action (`user` ou `admin`), indépendamment du
   rôle du profil auteur; le paramètre `category` conserve cette pagination côté API.
+  Les préférences existantes restent compatibles avec les variantes historiques de leur
+  `EntityType`.
 - Les rappels sont configurés au niveau du modèle via `GET/POST /api/task-templates/{id}/reminders`.
   Leur stockage est persistant ; `ProcessReminderNotificationsUseCase` est exécuté par un
   `BackgroundService` périodique et crée des notifications idempotentes pour les rappels échus.

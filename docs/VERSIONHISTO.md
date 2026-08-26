@@ -211,7 +211,7 @@
   validation de la semaine à la clôture.
 - Les jours actifs sont persistés par migration EF et configurables dans les formulaires de
   création et de modification, avec une explication de fonctionnement pour chaque type.
-- Suite validée à **97 tests** : 78 Application et 19 Domain.
+- Suite validée à **103 tests** : 84 Application et 19 Domain.
 
 ---
 
@@ -234,6 +234,10 @@ par le rôle du profil auteur; la pagination API applique aussi ce filtre côté
 Les audits de génération d'instances (`Week/Generated`) et de modification des préférences
 (`UserPreferences/Updated`) sont désormais enregistrés explicitement.
 
+Les correctifs suivants ont complété cette évolution : compatibilité avec les anciennes
+variantes de nommage des événements de préférence et classification de toutes les entités de
+préférences comme actions utilisateur, quel que soit leur libellé historique.
+
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
 ```text
@@ -242,7 +246,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
         → Notifications & Analytics
 ```
 
-- **78 tests unitaires** (Application), **19 tests** (Domain), tous verts.
+- **84 tests unitaires** (Application), **19 tests** (Domain), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
 - Les commentaires avancés couvrent désormais le threading et les réactions.
