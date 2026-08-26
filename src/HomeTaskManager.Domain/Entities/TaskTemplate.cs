@@ -19,7 +19,8 @@ public sealed class TaskTemplate
         FrequencyType frequencyType,
         TaskPriority priority = TaskPriority.Normal,
         string? description = null,
-        int? estimatedDurationMinutes = null)
+        int? estimatedDurationMinutes = null,
+        IEnumerable<DayOfWeek>? activeWeekDays = null)
     {
         Id = Guid.NewGuid();
         CreatedAt = DateTime.UtcNow;
@@ -30,6 +31,12 @@ public sealed class TaskTemplate
         ChangeDescription(description);
         ChangeDifficulty(manualDifficultyScore);
         ChangeFrequency(frequencyType);
+        if (frequencyType == FrequencyType.WeeklyFlexible && activeWeekDays is null)
+        {
+            throw new DomainValidationException("A fluid weekly task requires at least one active day.");
+        }
+
+        SetActiveWeekDays(activeWeekDays ?? []);
         ChangePriority(priority);
         ChangeEstimatedDuration(estimatedDurationMinutes);
         UpdatedAt = CreatedAt;
@@ -48,6 +55,8 @@ public sealed class TaskTemplate
     public int? EstimatedDurationMinutes { get; private set; }
 
     public FrequencyType FrequencyType { get; private set; }
+
+    public string ActiveWeekDays { get; private set; } = string.Empty;
 
     public bool IsActive { get; private set; }
 
@@ -94,6 +103,25 @@ public sealed class TaskTemplate
     public void ChangeFrequency(FrequencyType frequencyType)
     {
         FrequencyType = frequencyType;
+        Touch();
+    }
+
+    public IReadOnlyList<DayOfWeek> GetActiveWeekDays() =>
+        ActiveWeekDays.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(value => Enum.TryParse<DayOfWeek>(value, out var day) ? day : (DayOfWeek?)null)
+            .Where(day => day.HasValue)
+            .Select(day => day!.Value)
+            .ToList();
+
+    public void SetActiveWeekDays(IEnumerable<DayOfWeek> days)
+    {
+        var normalized = days.Distinct().OrderBy(day => day).ToList();
+        if (FrequencyType == FrequencyType.WeeklyFlexible && normalized.Count == 0)
+        {
+            throw new DomainValidationException("A fluid weekly task requires at least one active day.");
+        }
+
+        ActiveWeekDays = string.Join(',', normalized);
         Touch();
     }
 

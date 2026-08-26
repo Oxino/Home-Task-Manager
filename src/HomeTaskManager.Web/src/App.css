@@ -785,6 +785,23 @@ nav {
   grid-template-columns: 1fr 1fr;
   gap: 13px;
 }
+.weekday-picker {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.weekday-picker legend {
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.weekday-picker > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
 .form-error {
   color: #af5f4f;
   background: #f8dfd8;

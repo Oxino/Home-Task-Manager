@@ -34,6 +34,7 @@ public sealed class ExecuteDailyFlexibleTaskUseCaseTests
 
         result.TaskInstanceId.Should().Be(instance.Id);
         instance.IsCompleted.Should().BeTrue();
+        (await instances.GetByWeekAsync(week.Id)).Should().HaveCount(2);
     }
 
     [Fact]

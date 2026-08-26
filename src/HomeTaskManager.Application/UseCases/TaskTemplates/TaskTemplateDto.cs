@@ -9,4 +9,5 @@ public sealed record TaskTemplateDto(
     int? EstimatedDurationMinutes,
     string FrequencyType,
     bool IsActive,
-    Guid CreatedByUserId);
+    Guid CreatedByUserId,
+    IReadOnlyList<DayOfWeek> ActiveWeekDays);

@@ -14,7 +14,8 @@ public sealed record UpdateTaskTemplateCommand(
     int ManualDifficultyScore,
     TaskPriority Priority,
     FrequencyType FrequencyType,
-    int? EstimatedDurationMinutes);
+    int? EstimatedDurationMinutes,
+    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null);
 
 public interface IUpdateTaskTemplateUseCase
 {
@@ -54,6 +55,7 @@ public sealed class UpdateTaskTemplateUseCase(
         taskTemplate.ChangeDifficulty(command.ManualDifficultyScore);
         taskTemplate.ChangePriority(command.Priority);
         taskTemplate.ChangeFrequency(command.FrequencyType);
+        taskTemplate.SetActiveWeekDays(command.ActiveWeekDays ?? []);
         taskTemplate.ChangeEstimatedDuration(command.EstimatedDurationMinutes);
 
         await auditLogger.LogAsync(

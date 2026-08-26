@@ -47,7 +47,8 @@ public class TaskTemplatesController(
                 request.FrequencyType,
                 request.Priority,
                 request.EstimatedDurationMinutes,
-                User.GetCurrentUserId());
+                User.GetCurrentUserId(),
+                request.ActiveWeekDays);
 
             var taskTemplate = await createTaskTemplateUseCase.ExecuteAsync(command, cancellationToken);
             return CreatedAtAction(nameof(GetActiveTaskTemplates), new { }, taskTemplate);
@@ -72,7 +73,8 @@ public class TaskTemplatesController(
                 request.ManualDifficultyScore,
                 request.Priority,
                 request.FrequencyType,
-                request.EstimatedDurationMinutes);
+                request.EstimatedDurationMinutes,
+                request.ActiveWeekDays);
 
             var taskTemplate = await updateTaskTemplateUseCase.ExecuteAsync(command, cancellationToken);
             return Ok(taskTemplate);

@@ -6,5 +6,6 @@ public enum FrequencyType
     DailyFlexible,
     Weekly,
     Monthly,
-    OneTime
+    OneTime,
+    WeeklyFlexible
 }

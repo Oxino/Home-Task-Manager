@@ -9,4 +9,5 @@ public sealed record UpdateTaskTemplateRequest(
     int ManualDifficultyScore,
     TaskPriority Priority,
     FrequencyType FrequencyType,
-    int? EstimatedDurationMinutes);
+    int? EstimatedDurationMinutes,
+    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null);

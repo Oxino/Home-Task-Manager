@@ -13,7 +13,8 @@ public sealed record CreateTaskTemplateCommand(
     FrequencyType FrequencyType,
     TaskPriority Priority,
     int? EstimatedDurationMinutes,
-    Guid CreatedByUserId);
+    Guid CreatedByUserId,
+    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null);
 
 public interface ICreateTaskTemplateUseCase
 {
@@ -49,7 +50,8 @@ public sealed class CreateTaskTemplateUseCase(
             command.FrequencyType,
             command.Priority,
             command.Description,
-            command.EstimatedDurationMinutes);
+            command.EstimatedDurationMinutes,
+            command.ActiveWeekDays);
 
         await taskTemplateRepository.AddAsync(taskTemplate, cancellationToken);
 

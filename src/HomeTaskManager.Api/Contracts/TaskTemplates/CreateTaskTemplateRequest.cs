@@ -9,4 +9,5 @@ public sealed record CreateTaskTemplateRequest(
     FrequencyType FrequencyType,
     TaskPriority Priority,
     int? EstimatedDurationMinutes,
-    Guid CreatedByUserId);
+    Guid CreatedByUserId,
+    IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null);

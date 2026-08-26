@@ -13,5 +13,6 @@ public static class TaskTemplateMapper
         taskTemplate.EstimatedDurationMinutes,
         taskTemplate.FrequencyType.ToString(),
         taskTemplate.IsActive,
-        taskTemplate.CreatedByUserId);
+        taskTemplate.CreatedByUserId,
+        taskTemplate.GetActiveWeekDays());
 }

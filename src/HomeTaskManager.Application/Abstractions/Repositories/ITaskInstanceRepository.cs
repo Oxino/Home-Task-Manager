@@ -13,4 +13,6 @@ public interface ITaskInstanceRepository
     Task<IReadOnlyList<TaskInstance>> GetAssignedSinceAsync(DateOnly since, CancellationToken cancellationToken = default);
 
     Task AddRangeAsync(IEnumerable<TaskInstance> instances, CancellationToken cancellationToken = default);
+
+    void RemoveRange(IEnumerable<TaskInstance> instances);
 }

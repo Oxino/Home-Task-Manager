@@ -34,4 +34,6 @@ public sealed class TaskInstanceRepository(HomeTaskManagerDbContext dbContext) :
     {
         return dbContext.TaskInstances.AddRangeAsync(instances, cancellationToken);
     }
+
+    public void RemoveRange(IEnumerable<TaskInstance> instances) => dbContext.TaskInstances.RemoveRange(instances);
 }

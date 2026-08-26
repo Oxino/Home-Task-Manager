@@ -84,6 +84,11 @@ public sealed class GenerateWeekInstancesUseCase(
             case FrequencyType.Weekly:
                 return [week.StartDate];
 
+            case FrequencyType.WeeklyFlexible:
+                return template.GetActiveWeekDays()
+                    .Select(day => week.StartDate.AddDays(((int)day + 6) % 7))
+                    .ToList();
+
             case FrequencyType.Monthly:
                 // R-12: default rule, generate on the first calendar week that starts within the month.
                 return week.StartDate.Day <= 7 ? [week.StartDate] : [];

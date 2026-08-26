@@ -206,11 +206,21 @@
 - Actualisation silencieuse des notifications toutes les 60 secondes, avec rechargement de la
   page affichée uniquement lorsqu'une nouvelle notification ou un changement de non-lues est
   détecté.
-- Suite validée à **96 tests** : 77 Application et 19 Domain.
+- Ajout des types de tâches répétables **Flexible** et **Hebdomadaire fluide**. Le premier crée
+  l'occurrence suivante après une réalisation; le second gère des jours actifs multiples et la
+  validation de la semaine à la clôture.
+- Les jours actifs sont persistés par migration EF et configurables dans les formulaires de
+  création et de modification, avec une explication de fonctionnement pour chaque type.
+- Suite validée à **97 tests** : 78 Application et 19 Domain.
 
 ---
 
 ## Etat actuel (fin V13.2)
+
+La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
+instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
+avec validation de la semaine à la clôture. Ces règles sont persistées, exposées par l'API et
+expliquées dans les formulaires de création et de modification.
 
 Le backend couvre l'intégralité du flux MVP documenté de bout en bout avec analytics :
 
@@ -220,7 +230,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
         → Notifications & Analytics
 ```
 
-- **77 tests unitaires** (Application), **19 tests** (Domain), tous verts.
+- **78 tests unitaires** (Application), **19 tests** (Domain), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
 - Les commentaires avancés couvrent désormais le threading et les réactions.

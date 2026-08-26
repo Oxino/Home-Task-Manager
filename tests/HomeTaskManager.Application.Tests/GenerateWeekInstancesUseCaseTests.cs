@@ -47,6 +47,8 @@ public sealed class InMemoryTaskInstanceRepository : ITaskInstanceRepository
         _instances.AddRange(instances);
         return Task.CompletedTask;
     }
+
+    public void RemoveRange(IEnumerable<TaskInstance> instances) => _instances.RemoveAll(instance => instances.Contains(instance));
 }
 
 public class GenerateWeekInstancesUseCaseTests
@@ -81,6 +83,22 @@ public class GenerateWeekInstancesUseCaseTests
         var result = await useCase.ExecuteAsync(new GenerateWeekInstancesCommand(2026, 1));
 
         result.CreatedInstances.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Weekly_fluid_task_generates_one_instance_per_active_day()
+    {
+        var taskTemplateRepository = new InMemoryTaskTemplateRepository();
+        var template = new TaskTemplate("Task-WeeklyFluid", Guid.NewGuid(), 40, FrequencyType.WeeklyFlexible, activeWeekDays: [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Saturday]);
+        taskTemplateRepository.Seed(template);
+        var useCase = new GenerateWeekInstancesUseCase(
+            new InMemoryWeekRepository(), taskTemplateRepository, new InMemoryTaskInstanceRepository(), new NoOpUnitOfWork());
+
+        var result = await useCase.ExecuteAsync(new GenerateWeekInstancesCommand(2026, 1));
+
+        result.CreatedInstances.Should().HaveCount(3);
+        result.CreatedInstances.Select(instance => instance.PlannedDate.DayOfWeek)
+            .Should().BeEquivalentTo([DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Saturday]);
     }
 
     [Fact]

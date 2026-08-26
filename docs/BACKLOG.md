@@ -191,6 +191,18 @@ hors priorité immédiate.
   `UserPreferences`
   (voir `DOMAIN_MODEL.md` et ADR-008 / ADR-009).
 
+### Types de tâches livrés
+
+- **Flexible** (`DailyFlexible`) : une seule instance active à la fois, démarrant le lundi;
+  son échéance avance au jour suivant si elle n'est pas réalisée. Chaque réalisation est
+  conservée et permet une nouvelle instance pour le prochain jour disponible.
+- **Hebdomadaire fluide** (`WeeklyFlexible`) : l'administrateur choisit un ou plusieurs jours
+  actifs. Une occurrence indépendante est créée pour chaque jour. Si au moins une occurrence
+  est réalisée pendant la semaine, les occurrences restantes sont supprimées à la clôture;
+  sinon une seule occurrence est reportée à la semaine suivante.
+- Les deux comportements sont expliqués directement dans les formulaires de création et de
+  modification des modèles de tâches.
+
 ### Idées futures
 
 -  Création d'un tache type 'fluide', sur laquel on est configurer sur quels jours de la semaine elle est active. Contrairement à la tache quotidienne flexible, qui elle est présente un fois dans la semaine mais peut etre répéter tous les jours, c'est a dire que quand elle est terminé une nouvelle instnace de cette tache est automatiquement créé, le principe est que l'utilisateur puisse faire cette tache au moins une fois dans la semaine, mais répétable a volonté. Elle est présente seulement 1 fois dans les taches a faire pour la date courante, si elle est complété, une nouvelle instance de la tache est créé et affectué, à faire pour l'utilisateur. Exemple : semaine 1, le lundi il fait la tache 1 (quotidienne flexible), elle apparait donc compltété le lundi, la tache 1 réapparait a nouveau mais la dead line est pour mardi. Mardi rien, la dead line passe automatiquemment a Mercredi. Mercredi rien sur la tache, la dead line passe automatiquement à jeudi. Jeudi la tache est complété, elle est marqué comme complété dans l'historique, une nouvelle tache 1 est créé avec la dead line pour Vendredi. A la fin de la semaine, cette tache ayant deja été complété au moins une fois dans la semaine, celle-ci est conscidéré comme complété, et donc, l'instances en cours non complété est supprimé. Par contre, si a la fin de la semaine, cette tache n'a jamais été complété, celles ci est reporter atomatiquement sur la semaine suivante.
@@ -203,8 +215,7 @@ hors priorité immédiate.
 -  ~~Ajout de filtre sur le dashboard (filtre date, type de tache, titre, en retard). Affichage viseul des taches dont la date est dépassé~~
 -  ~~Supprimer le bouton 'nouvelle tache' du dashboard, le rajouter dans la page de gestion des taches~~
 -  ~~optimisation web : pour les paginations, implémenter la pagination coté API, afin d'optimiser le chargement des données coté navigateur.~~
--  ~~Amélioration du système de notification : actualisation silencieuse périodique et
-  rechargement uniquement lorsqu'une nouveauté est détectée.~~
+-  ~~Amélioration du système de notification : actualisation silencieuse périodique et rechargement uniquement lorsqu'une nouveauté est détectée.~~
 -  Festaure: permettre visuellement d'avoir une représentation de la décision logique d'affectation de chaque tache. Une représentation sous forme d'arbre décisionnel. Je veux voir le plans d'execution logique d'attribution de chaque tache, pourquoi cette tache a été attribué a l'utilisateur. Si c'est psk c'est trié par ordre de point, si elle ne l'a pas faite la semaine passé, si c'est une tache non faite de la semaine passé, etc.. etc.. je qu'on puisse comprendre pourquoi l'affectation a été faite. Je rappel, que le choix du moteur d'affectation est paramettrable. donc il faudra que l'arbre de décision puisse s'adapté au moteur de distribution. lors de l'implémentation, pause moi des questions si cela manque de précision, ou qu'il y a un choix technique ou d'affichage a faire, si tu as une meilleur proposition donne la moi
 -  ~~Régles métier: si un tache non fini est réaffecté la nouvelle semaine, et que celle ci n'est toujours pas fin à la fin de la nouvelle semaine, cette tache n'est pas reporté. Elle n'intervient dras plus, et n'interviendra plus non plus dans les calculs de poids et répartission~~
 -  reprendre ou approfondir le system de génération d'instance + affectation. 

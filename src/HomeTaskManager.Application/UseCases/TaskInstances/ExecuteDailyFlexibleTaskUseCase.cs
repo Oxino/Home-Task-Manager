@@ -37,7 +37,17 @@ public sealed class ExecuteDailyFlexibleTaskUseCase(
 
         var execution = new DailyFlexibleExecution(instance.Id, user.Id, command.ExecutionDate, week.StartDate, week.EndDate);
         await executionRepository.AddAsync(execution, cancellationToken);
-        if (!instance.IsCompleted) instance.SetCompletion(true, week);
+        if (!instance.IsCompleted)
+        {
+            instance.SetCompletion(true, week);
+            var nextDate = command.ExecutionDate.AddDays(1);
+            if (nextDate <= week.EndDate)
+            {
+                await instanceRepository.AddRangeAsync([
+                    new TaskInstance(template.Id, null, week, instance.AssignedUserId, nextDate, nextDate)
+                ], cancellationToken);
+            }
+        }
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new DailyFlexibleExecutionDto(execution.Id, execution.TaskInstanceId, execution.ExecutedByUserId, execution.ExecutionDate, execution.CreatedAt);
     }

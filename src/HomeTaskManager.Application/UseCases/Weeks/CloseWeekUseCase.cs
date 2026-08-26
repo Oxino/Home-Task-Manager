@@ -22,6 +22,7 @@ public sealed class CloseWeekUseCase(
     IWeekRepository weekRepository,
     IUserRepository userRepository,
     ITaskInstanceRepository taskInstanceRepository,
+    ITaskTemplateRepository taskTemplateRepository,
     IAuditLogger auditLogger,
     IUnitOfWork unitOfWork) : ICloseWeekUseCase
 {
@@ -45,11 +46,26 @@ public sealed class CloseWeekUseCase(
             .OrderBy(instance => instance.PlannedDate)
             .ThenBy(instance => instance.Id)
             .ToList();
+        var templates = (await taskTemplateRepository.GetByIdsAsync(instances.Select(instance => instance.TaskTemplateId).Distinct(), cancellationToken))
+            .ToDictionary(template => template.Id);
+        var completedFluidTemplates = instances
+            .Where(instance => instance.IsCompleted && templates.TryGetValue(instance.TaskTemplateId, out var template) && template.FrequencyType == FrequencyType.WeeklyFlexible)
+            .Select(instance => instance.TaskTemplateId)
+            .ToHashSet();
+        var carryCandidates = unfinishedInstances
+            .Where(instance => !completedFluidTemplates.Contains(instance.TaskTemplateId))
+            .GroupBy(instance => templates.TryGetValue(instance.TaskTemplateId, out var template) && template.FrequencyType == FrequencyType.WeeklyFlexible ? instance.TaskTemplateId : Guid.Empty)
+            .SelectMany(group => group.Key == Guid.Empty ? group : group.Take(1))
+            .ToList();
+        var completedFluidRemainders = unfinishedInstances
+            .Where(instance => completedFluidTemplates.Contains(instance.TaskTemplateId))
+            .ToList();
+        taskInstanceRepository.RemoveRange(completedFluidRemainders);
 
         week.Close();
 
         var carriedOverInstances = new List<TaskInstance>();
-        if (unfinishedInstances.Count > 0)
+        if (carryCandidates.Count > 0)
         {
             var nextKey = key.Next();
             var nextWeek = await weekRepository.GetByKeyAsync(nextKey, cancellationToken);
@@ -63,7 +79,7 @@ public sealed class CloseWeekUseCase(
                 .Select(instance => (instance.TaskTemplateId, instance.PlannedDate))
                 .ToHashSet();
 
-            foreach (var instance in unfinishedInstances)
+            foreach (var instance in carryCandidates)
             {
                 var plannedDate = nextWeek.StartDate;
                 while (!occupiedDates.Add((instance.TaskTemplateId, plannedDate)))
