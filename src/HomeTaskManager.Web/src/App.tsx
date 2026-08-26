@@ -150,6 +150,12 @@ function weekStart(year: number, week: number) {
   return monday;
 }
 
+function weekPeriodLabel(year: number, week: number) {
+  const start = weekStart(year, week);
+  const end = new Date(start.getTime() + 6 * 86400000);
+  return `S${String(week).padStart(2, "0")} · ${start.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} - ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
+}
+
 function formatTaskDate(value: string, format: "Weekday" | "Numeric"): ReactNode {
   const date = new Date(value);
   if (format === "Numeric") return date.toLocaleDateString("fr-FR");
@@ -1162,13 +1168,13 @@ function App() {
         {notice && <div className="notice">✓ {notice}</div>}
         {apiError && <div className="api-warning page-warning">API indisponible. Démarre le serveur sur http://localhost:5251 pour enregistrer les modifications.</div>}
         {!apiError && apiMessage && <div className="api-warning page-warning">{apiMessage}</div>}
-        {isHistoricalWeek && <div className="historical-week-callout"><div><span className="section-kicker">CONSULTATION HISTORIQUE</span><strong>Semaine {week.week} · {week.year}</strong><span>{weekStart(week.year, week.week).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} - {new Date(weekStart(week.year, week.week).getTime() + 6 * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span></div><button className="primary-button" onClick={() => navigate("/week")}>Retour à la semaine active</button></div>}
+        {isHistoricalWeek && <div className="historical-week-callout"><div><span className="section-kicker">CONSULTATION HISTORIQUE</span><strong>{weekPeriodLabel(week.year, week.week)}</strong></div><button className="primary-button" onClick={() => navigate("/week")}>Retour à la semaine active</button></div>}
         {view === "Semaine" ? (
           <>
             <section className={isHistoricalWeek ? "hero-banner historical-week-banner" : "hero-banner"}>
               <div>
                 <span className="section-kicker light">
-                  VOTRE FOYER · SEMAINE {week.week}
+                  VOTRE FOYER · {weekPeriodLabel(week.year, week.week)}
                 </span>
                 <h2>On avance, une tâche après l’autre.</h2>
                 <p>
@@ -1438,7 +1444,7 @@ function App() {
             <span className="section-kicker">DÉTAIL DE L’AFFECTATION</span>
             <h2>{template(selected.taskTemplateId)?.title}</h2>
             {template(selected.taskTemplateId)?.description && <p className="task-description">{template(selected.taskTemplateId)?.description}</p>}
-            {selected.isCarryOver && (() => { const origin = carryOverOrigin(selected); return <div className="carry-over-origin"><span className="section-kicker">REPORT</span><strong>Reportée depuis la semaine {origin.year}-S{String(origin.week).padStart(2, "0")}</strong><span>Échéance d’origine : {origin.dueDate.toLocaleDateString("fr-FR", { dateStyle: "long" })}</span></div>; })()}
+            {selected.isCarryOver && (() => { const origin = carryOverOrigin(selected); return <div className="carry-over-origin"><span className="section-kicker">REPORT</span><strong>Reportée depuis {weekPeriodLabel(origin.year, origin.week)}</strong><span>Échéance d’origine : {origin.dueDate.toLocaleDateString("fr-FR", { dateStyle: "long" })}</span></div>; })()}
             <div className="task-properties"><div><span>Priorité</span><b>{priorityLabels[template(selected.taskTemplateId)?.priority ?? "Normal"]}</b></div><div><span>Fréquence</span><b>{frequencyLabels[template(selected.taskTemplateId)?.frequencyType ?? "Weekly"]}</b></div><div><span>Pénibilité</span><b>{template(selected.taskTemplateId)?.manualDifficultyScore ?? "Non renseignée"}/100</b></div><div><span>Durée estimée</span><b>{template(selected.taskTemplateId)?.estimatedDurationMinutes ? `${template(selected.taskTemplateId)?.estimatedDurationMinutes} min` : "Non renseignée"}</b></div><div><span>Échéance</span><b>{new Date(selected.dueDate).toLocaleDateString("fr-FR", { dateStyle: "long" })}</b></div><div><span>État</span><b>{selected.isCompleted ? "Terminée" : selected.status === "Cancelled" ? "Annulée" : "À faire"}</b></div></div>
             {template(selected.taskTemplateId) && (currentUser.isAdmin || template(selected.taskTemplateId)?.createdByUserId === currentUser.id) && <EditTaskDialog api={api} user={currentUser} template={template(selected.taskTemplateId)!} templates={templates} authorName={users.find((entry) => entry.id === template(selected.taskTemplateId)?.createdByUserId)?.displayName} onUpdated={(updated) => { setTemplates((items) => items.map((item) => item.id === updated.id ? updated : item)); setNotice("Tâche mise à jour") }} />}
             <div className="explanation">
