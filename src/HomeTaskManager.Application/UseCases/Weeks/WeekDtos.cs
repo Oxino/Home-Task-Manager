@@ -8,6 +8,7 @@ public sealed record TaskInstanceDto(
     DateOnly DueDate,
     string Status,
     bool IsCompleted,
+    DateTime? CompletedAt,
     bool IsCarryOver,
     Guid? AssignedUserId);
 

@@ -5,6 +5,29 @@
   flex-wrap: wrap !important;
   gap: 8px !important;
 }
+.history-panel .activity-calendar {
+  display: none;
+}
+.calendar-skeleton {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 16px;
+}
+.calendar-skeleton span {
+  display: block;
+  height: 31px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #edf2f0 0%, #f8fbfa 45%, #edf2f0 90%);
+  background-size: 220% 100%;
+  animation: history-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+.calendar-skeleton span:nth-child(3n) {
+  height: 25px;
+}
+.calendar-skeleton span:nth-child(4n) {
+  height: 36px;
+}
 .task-filter-input,
 .task-filter-select,
 .task-filter-date {

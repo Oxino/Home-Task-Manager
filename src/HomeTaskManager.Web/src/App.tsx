@@ -25,6 +25,7 @@ type Instance = {
   taskTemplateId: string;
   dueDate: string;
   isCompleted: boolean;
+  completedAt?: string;
   isCarryOver: boolean;
   status?: string;
   assignedUserId?: string;
@@ -570,17 +571,8 @@ function HistoryActivitySkeleton() {
   return <div className="history-skeleton" aria-label="Chargement de l’historique" aria-busy="true">{Array.from({ length: 4 }, (_, index) => <div className="history-skeleton-item" key={index}><span className="history-skeleton-dot" /><div className="history-skeleton-content"><span className="history-skeleton-line history-skeleton-line-main" /><span className="history-skeleton-line history-skeleton-line-detail" /><span className="history-skeleton-line history-skeleton-line-date" /></div></div>)}</div>;
 }
 
-function ActivityCalendar({ entries }: { entries: AuditLog[] }) {
-  const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  const leadingDays = (firstDay.getDay() + 6) % 7;
-  const activityDays = new Set(entries.map((entry) => {
-    const date = new Date(entry.performedAt);
-    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-  }));
-  const cells = Array.from({ length: leadingDays + daysInMonth }, (_, index) => index < leadingDays ? null : index - leadingDays + 1);
-  return <section className="activity-calendar"><div className="calendar-heading"><div><span className="section-kicker">ACTIVITÉS</span><h3>Jours avec une action</h3></div><div className="calendar-controls"><button type="button" className="calendar-button" aria-label="Mois précédent" onClick={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>←</button><b>{month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</b><button type="button" className="calendar-button" aria-label="Mois suivant" onClick={() => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>→</button></div></div><div className="calendar-grid calendar-weekdays">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div><div className="calendar-grid">{cells.map((day, index) => { const active = day !== null && activityDays.has(`${month.getFullYear()}-${month.getMonth()}-${day}`); return <span className={active ? "calendar-day active" : "calendar-day"} key={index}>{day}{active && <i />}</span>; })}</div><small className="calendar-legend"><i /> Jour avec au moins une activité</small></section>;
+function ActivityCalendar({ entries: _entries }: { entries?: AuditLog[] }) {
+  return null;
 }
 
 function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEntry }: { api: string; users: User[]; templates: Template[]; isAdmin: boolean; currentUserId: string; onOpenEntry: (entry: AuditLog) => void }) {
@@ -1274,11 +1266,12 @@ function App() {
                         </div>
                         <p>{template(item.taskTemplateId)?.description}</p>
                         <div className="task-meta">
-                          ◷ Pour le{" "}
+                          ◷ Échéance :{" "}
                           {new Date(item.dueDate).toLocaleDateString("fr-FR", {
                             day: "numeric",
                             month: "short",
                           })}
+                          {item.completedAt && <> · Complétée le {new Date(item.completedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</>}
                           {currentUser.isAdmin && (
                             <> · {user(item.assignedUserId)?.displayName}</>
                           )}

@@ -15,6 +15,7 @@ internal static class WeekMapper
         instance.DueDate,
         instance.Status.ToString(),
         instance.IsCompleted,
+        instance.CompletedAt,
         instance.IsCarryOver,
         instance.AssignedUserId);
 }

@@ -63,6 +63,8 @@ public sealed class TaskInstance
 
     public bool IsCompleted { get; private set; }
 
+    public DateTime? CompletedAt { get; private set; }
+
     public bool IsCarryOver { get; private set; }
 
     public Guid? ParentTaskInstanceId { get; private set; }
@@ -89,6 +91,7 @@ public sealed class TaskInstance
         }
 
         IsCompleted = isCompleted;
+        CompletedAt = isCompleted ? DateTime.UtcNow : null;
         Status = isCompleted ? TaskInstanceStatus.Completed : TaskInstanceStatus.Pending;
         UpdatedAt = DateTime.UtcNow;
     }

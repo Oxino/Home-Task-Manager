@@ -134,6 +134,9 @@ Optimisation UX
   d'anciennes notifications.
 - Historique paginé par pages de 10 événements, avec intitulé distinct pour l'historique
   personnel et le journal d'audit administrateur.
+- Calendrier mensuel des activités disponible dans la page Statistiques, avec chargement différé
+  du mois affiché.
+- Dashboard distinguant la date d'échéance et la date de complétion des tâches terminées.
 
 L'envoi Web Push réel (intégration navigateur), les tests d'intégration/end-to-end complets et
 la revue sécurité avant exposition réseau restent à implémenter. Les commentaires avancés,

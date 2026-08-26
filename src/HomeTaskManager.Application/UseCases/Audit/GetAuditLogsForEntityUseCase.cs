@@ -7,6 +7,7 @@ public interface IGetAuditLogsForEntityUseCase
     Task<IReadOnlyList<AuditLogDto>> ExecuteAsync(string entityType, Guid entityId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditLogDto>> ExecuteAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditLogDto>> ExecuteForPerformerAsync(Guid performerId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AuditLogDto>> ExecuteForPeriodAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default);
 }
 
 /// <summary>BR-033: exposes the audit trail of a given entity for explanation purposes.</summary>
@@ -31,6 +32,12 @@ public sealed class GetAuditLogsForEntityUseCase(IAuditLogRepository auditLogRep
     public async Task<IReadOnlyList<AuditLogDto>> ExecuteForPerformerAsync(Guid performerId, CancellationToken cancellationToken = default)
     {
         var entries = await auditLogRepository.GetByPerformerAsync(performerId, cancellationToken);
+        return Map(entries);
+    }
+
+    public async Task<IReadOnlyList<AuditLogDto>> ExecuteForPeriodAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    {
+        var entries = await auditLogRepository.GetByPeriodAsync(from, to, cancellationToken);
         return Map(entries);
     }
 

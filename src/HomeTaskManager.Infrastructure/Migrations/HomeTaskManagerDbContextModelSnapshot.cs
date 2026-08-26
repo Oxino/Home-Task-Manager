@@ -292,6 +292,9 @@ namespace HomeTaskManager.Infrastructure.Migrations
                     b.Property<Guid?>("AssignmentRunId")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 

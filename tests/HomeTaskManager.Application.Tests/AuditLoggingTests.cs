@@ -44,6 +44,9 @@ public sealed class InMemoryAuditLogRepository : IAuditLogRepository
 
     public Task<IReadOnlyList<AuditLog>> GetByPerformerAsync(Guid performerId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<AuditLog>>(_entries.Where(entry => entry.PerformedByUserId == performerId).OrderByDescending(entry => entry.PerformedAt).ToList());
+
+    public Task<IReadOnlyList<AuditLog>> GetByPeriodAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<AuditLog>>(_entries.Where(entry => entry.PerformedAt >= from && entry.PerformedAt < to).OrderByDescending(entry => entry.PerformedAt).ToList());
 }
 
 public class AuditLoggingTests

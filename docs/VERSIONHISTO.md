@@ -202,6 +202,9 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - Les notifications d'affectation et de rappel ouvrent directement l'instance ciblée.
 - Le jeu de démonstration complet et le backfill des anciennes notifications sont disponibles
   via les endpoints réservés au développement.
+- Les tâches terminées exposent leur date de complétion séparément de leur échéance.
+- Le calendrier des activités se trouve dans Analytics et charge uniquement le mois affiché,
+  avec skeleton pendant le chargement.
 - L'historique est paginé par pages de 10 événements, avec une distinction explicite entre
   l'historique personnel et le journal d'audit administrateur.
 
