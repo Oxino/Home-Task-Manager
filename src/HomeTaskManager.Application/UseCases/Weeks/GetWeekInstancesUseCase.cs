@@ -23,6 +23,20 @@ public sealed class GetWeekInstancesUseCase(
 
         var instances = await taskInstanceRepository.GetByWeekAsync(week.Id, cancellationToken);
 
-        return new GetWeekInstancesResult(WeekMapper.ToDto(week), instances.Select(WeekMapper.ToDto).ToList());
+        var instanceDtos = new List<TaskInstanceDto>();
+        foreach (var instance in instances)
+        {
+            var dto = WeekMapper.ToDto(instance);
+            if (instance.ParentTaskInstanceId is Guid parentId)
+            {
+                var parent = await taskInstanceRepository.GetByIdAsync(parentId, cancellationToken);
+                var parentWeek = parent is null ? null : await weekRepository.GetByIdAsync(parent.WeekId, cancellationToken);
+                if (parent is not null && parentWeek is not null)
+                    dto = dto with { OriginalWeekYear = parentWeek.Year, OriginalWeekNumber = parentWeek.WeekNumber, OriginalDueDate = parent.DueDate };
+            }
+            instanceDtos.Add(dto);
+        }
+
+        return new GetWeekInstancesResult(WeekMapper.ToDto(week), instanceDtos);
     }
 }

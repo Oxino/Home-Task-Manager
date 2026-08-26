@@ -10,6 +10,10 @@ public sealed record TaskInstanceDto(
     bool IsCompleted,
     DateTime? CompletedAt,
     bool IsCarryOver,
-    Guid? AssignedUserId);
+    Guid? AssignedUserId,
+    Guid? ParentTaskInstanceId = null,
+    int? OriginalWeekYear = null,
+    int? OriginalWeekNumber = null,
+    DateOnly? OriginalDueDate = null);
 
 public sealed record WeekDto(Guid Id, int Year, int WeekNumber, DateOnly StartDate, DateOnly EndDate, string Status);

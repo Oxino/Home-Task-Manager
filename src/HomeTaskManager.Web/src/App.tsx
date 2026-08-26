@@ -28,6 +28,10 @@ type Instance = {
   completedAt?: string;
   isCarryOver: boolean;
   status?: string;
+  parentTaskInstanceId?: string;
+  originalWeekYear?: number;
+  originalWeekNumber?: number;
+  originalDueDate?: string;
   assignedUserId?: string;
 };
 type AuditLog = { id: string; entityType: string; entityId: string; action: string; performedByUserId: string; oldValue?: string; newValue?: string; performedAt: string };
@@ -150,6 +154,16 @@ function formatTaskDate(value: string, format: "Weekday" | "Numeric"): ReactNode
   const date = new Date(value);
   if (format === "Numeric") return date.toLocaleDateString("fr-FR");
   return <><b className="task-weekday">{date.toLocaleDateString("fr-FR", { weekday: "long" })}</b> {date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</>;
+}
+
+function carryOverOrigin(instance: Instance) {
+  if (instance.originalWeekYear && instance.originalWeekNumber && instance.originalDueDate) {
+    return { year: instance.originalWeekYear, week: instance.originalWeekNumber, dueDate: new Date(instance.originalDueDate) };
+  }
+  const fallbackDate = new Date(instance.dueDate);
+  fallbackDate.setDate(fallbackDate.getDate() - 1);
+  const fallbackWeek = isoWeek(fallbackDate);
+  return { year: fallbackWeek.year, week: fallbackWeek.week, dueDate: fallbackDate };
 }
 
 const viewRoutes: Record<string, string> = {
@@ -1423,7 +1437,8 @@ function App() {
             </button>
             <span className="section-kicker">DÉTAIL DE L’AFFECTATION</span>
             <h2>{template(selected.taskTemplateId)?.title}</h2>
-            <p>{template(selected.taskTemplateId)?.description}</p>
+            {template(selected.taskTemplateId)?.description && <p className="task-description">{template(selected.taskTemplateId)?.description}</p>}
+            {selected.isCarryOver && (() => { const origin = carryOverOrigin(selected); return <div className="carry-over-origin"><span className="section-kicker">REPORT</span><strong>Reportée depuis la semaine {origin.year}-S{String(origin.week).padStart(2, "0")}</strong><span>Échéance d’origine : {origin.dueDate.toLocaleDateString("fr-FR", { dateStyle: "long" })}</span></div>; })()}
             <div className="task-properties"><div><span>Priorité</span><b>{priorityLabels[template(selected.taskTemplateId)?.priority ?? "Normal"]}</b></div><div><span>Fréquence</span><b>{frequencyLabels[template(selected.taskTemplateId)?.frequencyType ?? "Weekly"]}</b></div><div><span>Pénibilité</span><b>{template(selected.taskTemplateId)?.manualDifficultyScore ?? "Non renseignée"}/100</b></div><div><span>Durée estimée</span><b>{template(selected.taskTemplateId)?.estimatedDurationMinutes ? `${template(selected.taskTemplateId)?.estimatedDurationMinutes} min` : "Non renseignée"}</b></div><div><span>Échéance</span><b>{new Date(selected.dueDate).toLocaleDateString("fr-FR", { dateStyle: "long" })}</b></div><div><span>État</span><b>{selected.isCompleted ? "Terminée" : selected.status === "Cancelled" ? "Annulée" : "À faire"}</b></div></div>
             {template(selected.taskTemplateId) && (currentUser.isAdmin || template(selected.taskTemplateId)?.createdByUserId === currentUser.id) && <EditTaskDialog api={api} user={currentUser} template={template(selected.taskTemplateId)!} templates={templates} authorName={users.find((entry) => entry.id === template(selected.taskTemplateId)?.createdByUserId)?.displayName} onUpdated={(updated) => { setTemplates((items) => items.map((item) => item.id === updated.id ? updated : item)); setNotice("Tâche mise à jour") }} />}
             <div className="explanation">

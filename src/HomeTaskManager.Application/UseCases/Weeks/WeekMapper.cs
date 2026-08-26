@@ -17,5 +17,6 @@ internal static class WeekMapper
         instance.IsCompleted,
         instance.CompletedAt,
         instance.IsCarryOver,
-        instance.AssignedUserId);
+        instance.AssignedUserId,
+        instance.ParentTaskInstanceId);
 }
