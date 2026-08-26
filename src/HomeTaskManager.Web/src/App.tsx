@@ -601,6 +601,14 @@ function HistoryPanel({ api, users, templates, isAdmin, currentUserId, onOpenEnt
     };
     loadWeeks();
   }, [api, currentUserId]);
+  useEffect(() => {
+    document.querySelectorAll<HTMLElement>(".week-history-card").forEach((card, index) => {
+      const period = weeks[index];
+      if (period?.startDate && period.endDate) {
+        card.dataset.weekDates = `${new Date(period.startDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} - ${new Date(period.endDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`;
+      }
+    });
+  }, [weeks]);
   const actor = (id: string) => users.find((user) => user.id === id)?.displayName ?? "Participant";
   const actionLabel = (action: string) => ({ Created: "créé", Updated: "modifié", Completed: "terminé", Reopened: "rouvert", AssignmentRun: "répartition lancée", WeekClosed: "semaine clôturée" }[action] ?? action.toLowerCase());
   const entityLabel = (type: string) => type === "TaskTemplate" ? "modèle de tâche" : type === "TaskInstance" ? "instance" : type.toLowerCase();
