@@ -768,7 +768,7 @@ nav {
 }
 .task-modal {
   background: white;
-  max-width: 400px;
+  max-width: 1300px;
   width: 100%;
   max-height: calc(100vh - 60px);
   overflow-y: auto;
