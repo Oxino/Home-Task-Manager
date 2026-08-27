@@ -124,6 +124,9 @@ namespace HomeTaskManager.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Importance")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsRead")
                         .HasColumnType("INTEGER");
 
@@ -444,8 +447,9 @@ namespace HomeTaskManager.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("NotificationsEnabled")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("NotificationPreference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");

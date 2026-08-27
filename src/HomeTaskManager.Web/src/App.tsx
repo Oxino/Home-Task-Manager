@@ -2132,7 +2132,7 @@ function PreferencesPanel({
   dateDisplayFormat: "Weekday" | "Numeric";
   onDateDisplayFormatChanged: (format: "Weekday" | "Numeric") => void;
 }) {
-  const [enabled, setEnabled] = useState(true);
+  const [notificationPreference, setNotificationPreference] = useState<"All" | "Important" | "None">("All");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState(dateDisplayFormat);
@@ -2141,7 +2141,7 @@ function PreferencesPanel({
       .then(async (response) => {
         if (response.ok) {
           const preferences = await response.json();
-          setEnabled(preferences.notificationsEnabled);
+          setNotificationPreference(preferences.notificationPreference || "All");
           setSelectedFormat(
             preferences.dateDisplayFormat === "Numeric" ? "Numeric" : "Weekday",
           );
@@ -2156,7 +2156,7 @@ function PreferencesPanel({
       </section>
     );
   async function savePreferences(
-    nextEnabled = enabled,
+    nextPreference = notificationPreference,
     nextFormat = selectedFormat,
   ) {
     setSaving(true);
@@ -2165,12 +2165,12 @@ function PreferencesPanel({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          notificationsEnabled: nextEnabled,
+          notificationPreference: nextPreference,
           dateDisplayFormat: nextFormat,
         }),
       });
       if (!response.ok) throw new Error();
-      setEnabled(nextEnabled);
+      setNotificationPreference(nextPreference);
       setSelectedFormat(nextFormat);
       onDateDisplayFormatChanged(nextFormat);
     } catch {
@@ -2179,9 +2179,6 @@ function PreferencesPanel({
       setSaving(false);
     }
   }
-  async function toggle() {
-    await savePreferences(!enabled);
-  }
   return (
     <section className="settings-panel preferences-panel">
       <span className="section-kicker">MON ESPACE</span>
@@ -2189,19 +2186,26 @@ function PreferencesPanel({
       <p className="settings-intro">
         Choisis l’affichage des échéances sur le dashboard.
       </p>
-      <div className="preference-row">
-        <div>
-          <b>Notifications du foyer</b>
-          <small>Rappels et événements liés à tes tâches.</small>
-        </div>
-        <button
-          className={enabled ? "toggle enabled" : "toggle"}
+      <div className="notification-preference">
+        <label htmlFor="notification-preference">Niveau de notification</label>
+        <select
+          id="notification-preference"
+          value={notificationPreference}
           disabled={loading || saving}
-          onClick={toggle}
-          aria-pressed={enabled}
+          onChange={(event) => {
+            const preference = event.target.value as "All" | "Important" | "None";
+            void savePreferences(preference, selectedFormat);
+          }}
         >
-          <span />
-        </button>
+          <option value="All">Toutes les notifications (rappels + affectations)</option>
+          <option value="Important">Notifications importantes seulement (réaffectations)</option>
+          <option value="None">Aucune notification</option>
+        </select>
+        <small>
+          {notificationPreference === "All" && "Tu reçois tous les rappels et affectations."}
+          {notificationPreference === "Important" && "Tu reçois uniquement les réaffectations manuelles."}
+          {notificationPreference === "None" && "Tu ne reçois aucune notification."}
+        </small>
       </div>
       <div className="date-format-preference">
         <label htmlFor="date-display-format">Format des dates</label>
@@ -2211,7 +2215,7 @@ function PreferencesPanel({
           disabled={loading || saving}
           onChange={(event) => {
             const format = event.target.value as "Weekday" | "Numeric";
-            void savePreferences(enabled, format);
+            void savePreferences(notificationPreference, format);
           }}
         >
           <option value="Weekday">Nom du jour (lundi)</option>
@@ -2223,9 +2227,7 @@ function PreferencesPanel({
           ? "Chargement..."
           : saving
             ? "Enregistrement..."
-            : enabled
-              ? "Notifications activées"
-              : "Notifications désactivées"}
+            : `Préférences définies`}
       </p>
     </section>
   );
