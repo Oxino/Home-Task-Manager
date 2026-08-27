@@ -108,10 +108,11 @@ public sealed class RunAssignmentEngineUseCase(
             {
                 var assignedInstance = instancesById[assignment.TaskInstanceId];
                 assignedInstance.Assign(run.Id, assignment.AssignedUserId);
-                var notificationsEnabled = userPreferencesRepository is null ||
-                    (await userPreferencesRepository.GetByUserIdAsync(assignment.AssignedUserId, cancellationToken))?.NotificationsEnabled != false;
+                var notificationPreference = userPreferencesRepository is null
+                    ? "All"
+                    : (await userPreferencesRepository.GetByUserIdAsync(assignment.AssignedUserId, cancellationToken))?.NotificationPreference ?? "All";
                 if (notificationRepository is not null &&
-                    notificationsEnabled &&
+                    notificationPreference == "All" &&
                     notifiedAssignments.Add((assignment.AssignedUserId, assignedInstance.TaskTemplateId)) &&
                     templatesById.TryGetValue(assignedInstance.TaskTemplateId, out var assignedTemplate))
                 {
@@ -121,13 +122,15 @@ public sealed class RunAssignmentEngineUseCase(
                         assignment.AssignedUserId,
                         title,
                         message,
-                        $"/week?year={week.Year}&week={week.WeekNumber}&instanceId={assignedInstance.Id}"), cancellationToken);
+                        $"/week?year={week.Year}&week={week.WeekNumber}&instanceId={assignedInstance.Id}",
+                        Domain.Enums.NotificationImportance.Normal), cancellationToken);
                     if (notificationService is not null)
                     {
-                        await notificationService.SendAssignmentNotificationAsync(
+                        await notificationService.SendNotificationAsync(
                             assignment.AssignedUserId,
-                            assignedTemplate.Title,
-                            $"Semaine {week.WeekNumber} de {week.Year}",
+                            title,
+                            message,
+                            Domain.Enums.NotificationImportance.Normal,
                             cancellationToken);
                     }
                 }

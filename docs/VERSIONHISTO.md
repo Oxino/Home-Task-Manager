@@ -249,9 +249,28 @@
 - L'autorisation est contrôlée côté API: un participant ne peut pas réaffecter l'instance d'un
   autre participant.
 
+### V13.6 — Préférences de notification avec 3 niveaux
+
+- Système de préférences de notification à 3 niveaux : **Aucune**, **Importante**, **Toutes**.
+  - **Aucune** : Aucune notification reçue.
+  - **Importante** : Seulement les notifications critiques (réaffectations manuelles).
+  - **Toutes** : Toutes les notifications (défaut) incluant affectations, rappels, réaffectations.
+- Les notifications d'affectation et rappels (type Normal) respectent la préférence **Toutes**.
+- Les notifications de réaffectation (type Important) respectent les préférences **Importante** et **Toutes**.
+- Interface de préférence utilisateur mise à jour avec dropdown pour sélectionner le niveau.
+- Filtre appliqué au moment de la création des notifications dans tous les use cases.
+
+### V13.7 — Blocage de la réaffectation des tâches complétées
+
+- Une tâche complétée ne peut plus être réaffectée (ni manuellement, ni admin).
+- Validation au niveau du domaine (méthode `TaskInstance.Reassign()`) avec message d'erreur clair.
+- Interface utilisateur : le bouton de réaffectation est masqué si la tâche est complétée.
+- Couvert par un test Application dédié.
+- Harmonisation : tous les flux de notification passent par `INotificationService` avec importance paramétrisée.
+
 ---
 
-## Etat actuel (fin V13.3)
+## Etat actuel (fin V13.7)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -341,7 +360,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 
 - [x] Gestion des modèles de tâches : archivage logique, filtrage des états et cohérence des
   parcours CRUD exposés.
-- [ ] Poursuite de la gestion de l'historique : couverture end-to-end de l'historique personnel
+- [x] Poursuite de la gestion de l'historique : couverture end-to-end de l'historique personnel
   et du journal d'audit.
 - [ ] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
   endpoints admin, politique CORS/cookies).

@@ -25,7 +25,7 @@ public sealed class RunAssignmentEngineNotificationPreferenceTests
         var admin = new User("Admin", isAdmin: true);
         var participant = new User("Julie");
         users.Seed(admin); users.Seed(participant);
-        var preferences = new UserPreferences(participant.Id); preferences.SetNotificationsEnabled(false);
+        var preferences = new UserPreferences(participant.Id); preferences.SetNotificationPreference("None");
         var preferencesRepository = new InMemoryUserPreferencesRepository(); preferencesRepository.Seed(preferences);
         var week = new Week(new WeekKey(2026, 1)); var weeks = new InMemoryWeekRepository(); await weeks.AddAsync(week);
         var template = new TaskTemplate("Aspirateur", participant.Id, 40, FrequencyType.Weekly); var templates = new InMemoryTaskTemplateRepository(); templates.Seed(template);

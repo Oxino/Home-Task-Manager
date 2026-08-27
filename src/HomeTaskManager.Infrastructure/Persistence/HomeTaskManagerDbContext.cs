@@ -103,6 +103,11 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
             entity.Property(preferences => preferences.DateDisplayFormat).HasMaxLength(20).IsRequired();
         });
 
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.Property(notification => notification.Importance).HasConversion<int>().IsRequired();
+        });
+
         modelBuilder.Entity<Reminder>(entity =>
         {
             entity.HasKey(reminder => reminder.Id);

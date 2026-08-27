@@ -241,3 +241,6 @@ hors priorité immédiate.
 - ~~Bug formulaire création de tache : le formulaire de création de tache et différent de modificaiton. => Dans la création il manque la partie 'configuration' de l'échéance, pour hebdomadaire, et mensuelle, vérrifie les autres type également.~~
 - ~~Modifier toutes les dropdowns de l'application du méme style graphique~~
 - ~~Journal d'audit : page dédiée à la consultation de l'audit log administrateur, sans navigation temporelle, avec filtres par catégorie, entité et action, et tri chronologique.~~
+- Blocquer l'acces au page admin pour les utilsilateurs. http://localhost:5173/assignments est accecible par exemple, participants, assignment-engine, statistique. Mettre également un contexte de securité sur les endpoint des API pour que seul les actions admin puisse etre appeler par les admin.
+- ~~si la tache est terminé blocker la réaffectation.~~
+- ~~Changer le parametrage des notifications : Aucune / Importante / Toutes.~~

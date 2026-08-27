@@ -6,7 +6,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.UseCases.Users;
 
-public sealed record NotificationDto(Guid Id, Guid UserId, string Title, string Message, string? Link, bool IsRead, DateTime? ReadAt, DateTime CreatedAt);
+public sealed record NotificationDto(Guid Id, Guid UserId, string Title, string Message, string? Link, bool IsRead, DateTime? ReadAt, DateTime CreatedAt, string Importance);
 public sealed record SetNotificationReadCommand(Guid NotificationId, Guid UserId, bool IsRead);
 
 public interface INotificationUseCase
@@ -18,15 +18,16 @@ public interface INotificationUseCase
     Task DeleteReadAsync(Guid userId, CancellationToken cancellationToken = default);
 }
 
-public sealed class NotificationUseCase(INotificationRepository repository, IUnitOfWork unitOfWork) : INotificationUseCase
+public sealed class NotificationUseCase(INotificationRepository repository, IUnitOfWork unitOfWork, IUserPreferencesRepository? preferencesRepository = null) : INotificationUseCase
 {
     public async Task<IReadOnlyList<NotificationDto>> ListAsync(Guid userId, CancellationToken cancellationToken = default) =>
-        (await repository.GetByUserIdAsync(userId, cancellationToken)).Select(ToDto).ToList();
+        (await FilterAsync(await repository.GetByUserIdAsync(userId, cancellationToken), userId, cancellationToken)).Select(ToDto).ToList();
 
     public async Task<PagedResult<NotificationDto>> ListPageAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var result = await repository.GetPageByUserIdAsync(userId, page, pageSize, cancellationToken);
-        return new PagedResult<NotificationDto>(result.Items.Select(ToDto).ToList(), page, pageSize, result.TotalCount);
+        var items = await repository.GetByUserIdAsync(userId, cancellationToken);
+        var filtered = await FilterAsync(items, userId, cancellationToken);
+        return new PagedResult<NotificationDto>(filtered.Skip((page - 1) * pageSize).Take(pageSize).Select(ToDto).ToList(), page, pageSize, filtered.Count);
     }
 
     public async Task<NotificationDto> SetReadAsync(SetNotificationReadCommand command, CancellationToken cancellationToken = default)
@@ -51,5 +52,16 @@ public sealed class NotificationUseCase(INotificationRepository repository, IUni
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    private static NotificationDto ToDto(Notification notification) => new(notification.Id, notification.UserId, notification.Title, notification.Message, notification.Link, notification.IsRead, notification.ReadAt, notification.CreatedAt);
+    private async Task<IReadOnlyList<Notification>> FilterAsync(IReadOnlyList<Notification> notifications, Guid userId, CancellationToken cancellationToken)
+    {
+        var preference = preferencesRepository is null ? "All" : (await preferencesRepository.GetByUserIdAsync(userId, cancellationToken))?.NotificationPreference ?? "All";
+        return preference switch
+        {
+            "None" => [],
+            "Important" => notifications.Where(notification => notification.Importance == Domain.Enums.NotificationImportance.Important).ToList(),
+            _ => notifications
+        };
+    }
+
+    private static NotificationDto ToDto(Notification notification) => new(notification.Id, notification.UserId, notification.Title, notification.Message, notification.Link, notification.IsRead, notification.ReadAt, notification.CreatedAt, notification.Importance.ToString());
 }

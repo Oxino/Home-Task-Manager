@@ -40,12 +40,12 @@ public sealed class ProcessReminderNotificationsUseCase(
                 var link = $"/week?year={instance.PlannedDate.Year}&week={ISOWeek.GetWeekOfYear(instance.PlannedDate.ToDateTime(TimeOnly.MinValue))}&instanceId={instance.Id}";
                 if (await notificationRepository.ExistsByLinkAsync(assignedUserId, link, cancellationToken)) continue;
                 var preferences = await preferencesRepository.GetByUserIdAsync(assignedUserId, cancellationToken);
-                if (preferences?.NotificationsEnabled == false) continue;
+                if (preferences?.NotificationPreference is "None" or "Important") continue;
                 var weekNumber = ISOWeek.GetWeekOfYear(instance.PlannedDate.ToDateTime(TimeOnly.MinValue));
                 var title = $"Rappel : {template.Title} · Semaine {instance.PlannedDate.Year}-S{weekNumber:00}";
                 var message = $"Cette tâche arrive à échéance le {instance.DueDate:dd/MM/yyyy}.";
-                await notificationRepository.AddAsync(new Notification(assignedUserId, title, message, link), cancellationToken);
-                await notificationService.SendReminderNotificationAsync(assignedUserId, title, message, cancellationToken);
+                await notificationRepository.AddAsync(new Notification(assignedUserId, title, message, link, NotificationImportance.Normal), cancellationToken);
+                await notificationService.SendNotificationAsync(assignedUserId, title, message, NotificationImportance.Normal, cancellationToken);
                 created++;
             }
         }

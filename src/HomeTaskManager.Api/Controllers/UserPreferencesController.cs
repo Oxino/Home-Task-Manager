@@ -17,5 +17,5 @@ public sealed class UserPreferencesController(IUserPreferencesUseCase useCase) :
 
     [HttpPut]
     public async Task<ActionResult<UserPreferencesDto>> Update(UpdateUserPreferencesRequest request, CancellationToken cancellationToken) =>
-        Ok(await useCase.UpdateAsync(new UpdateUserPreferencesCommand(User.GetCurrentUserId(), request.NotificationsEnabled, request.DateDisplayFormat), cancellationToken));
+        Ok(await useCase.UpdateAsync(new UpdateUserPreferencesCommand(User.GetCurrentUserId(), request.NotificationPreference, request.DateDisplayFormat), cancellationToken));
 }

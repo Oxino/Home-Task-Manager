@@ -10,7 +10,7 @@ namespace HomeTaskManager.Application.Tests;
 
 public sealed class ReassignTaskInstanceUseCaseTests
 {
-    private static async Task<(User Admin, User Owner, User Target, User Other, Week Week, TaskInstance Instance, ReassignTaskInstanceUseCase UseCase, InMemoryNotificationRepository Notifications)> CreateContext(bool closed = false, bool withNotifications = false)
+    private static async Task<(User Admin, User Owner, User Target, User Other, Week Week, TaskInstance Instance, ReassignTaskInstanceUseCase UseCase, InMemoryNotificationRepository Notifications)> CreateContext(bool closed = false, bool withNotifications = false, bool completed = false)
     {
         var admin = new User("Admin", isAdmin: true);
         var owner = new User("Julie");
@@ -31,6 +31,7 @@ public sealed class ReassignTaskInstanceUseCaseTests
         var template = new TaskTemplate("Sortir les poubelles", admin.Id, 20, Domain.Enums.FrequencyType.Weekly);
         templates.Seed(template);
         var instance = new TaskInstance(template.Id, null, week, owner.Id, week.StartDate, week.EndDate);
+        if (completed) instance.SetCompletion(true, week);
         await instances.AddRangeAsync([instance]);
         var useCase = new ReassignTaskInstanceUseCase(instances, weeks, users, new NoOpAuditLogger(), new NoOpUnitOfWork(), notifications, templates);
         return (admin, owner, target, other, week, instance, useCase, notifications ?? new InMemoryNotificationRepository());
@@ -79,6 +80,14 @@ public sealed class ReassignTaskInstanceUseCaseTests
     public async Task Closed_week_cannot_be_reassigned()
     {
         var context = await CreateContext(closed: true);
+        var action = () => context.UseCase.ExecuteAsync(new ReassignTaskInstanceCommand(context.Instance.Id, context.Admin.Id, context.Target.Id));
+        await action.Should().ThrowAsync<DomainValidationException>();
+    }
+
+    [Fact]
+    public async Task Completed_task_cannot_be_reassigned()
+    {
+        var context = await CreateContext(completed: true);
         var action = () => context.UseCase.ExecuteAsync(new ReassignTaskInstanceCommand(context.Instance.Id, context.Admin.Id, context.Target.Id));
         await action.Should().ThrowAsync<DomainValidationException>();
     }

@@ -5,8 +5,8 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.UseCases.Users;
 
-public sealed record UserPreferencesDto(Guid Id, Guid UserId, bool NotificationsEnabled, string DateDisplayFormat);
-public sealed record UpdateUserPreferencesCommand(Guid UserId, bool NotificationsEnabled, string DateDisplayFormat);
+public sealed record UserPreferencesDto(Guid Id, Guid UserId, string NotificationPreference, string DateDisplayFormat);
+public sealed record UpdateUserPreferencesCommand(Guid UserId, string NotificationPreference, string DateDisplayFormat);
 
 public interface IUserPreferencesUseCase
 {
@@ -36,13 +36,13 @@ public sealed class UserPreferencesUseCase(IUserPreferencesRepository repository
             preferences = new UserPreferences(command.UserId);
             await repository.AddAsync(preferences, cancellationToken);
         }
-        preferences.SetNotificationsEnabled(command.NotificationsEnabled);
+        preferences.SetNotificationPreference(command.NotificationPreference);
         preferences.SetDateDisplayFormat(command.DateDisplayFormat);
         await auditLogger.LogAsync(AuditEntityTypes.UserPreferences, preferences.Id, AuditActions.Updated, command.UserId,
-            newValue: $"NotificationsEnabled={preferences.NotificationsEnabled}; DateDisplayFormat={preferences.DateDisplayFormat}", cancellationToken: cancellationToken);
+            newValue: $"NotificationPreference={preferences.NotificationPreference}; DateDisplayFormat={preferences.DateDisplayFormat}", cancellationToken: cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ToDto(preferences);
     }
 
-    private static UserPreferencesDto ToDto(UserPreferences preferences) => new(preferences.Id, preferences.UserId, preferences.NotificationsEnabled, preferences.DateDisplayFormat);
+    private static UserPreferencesDto ToDto(UserPreferences preferences) => new(preferences.Id, preferences.UserId, preferences.NotificationPreference, preferences.DateDisplayFormat);
 }

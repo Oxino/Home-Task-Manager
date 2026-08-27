@@ -67,7 +67,7 @@ public class AuditLoggingTests
         var auditLogger = new InMemoryAuditLogger();
         var useCase = new UserPreferencesUseCase(repository, auditLogger, new NoOpUnitOfWork());
 
-        await useCase.UpdateAsync(new UpdateUserPreferencesCommand(user.Id, false, "Numeric"));
+        await useCase.UpdateAsync(new UpdateUserPreferencesCommand(user.Id, "None", "Numeric"));
 
         var entry = auditLogger.Entries.Should().ContainSingle().Subject;
         entry.EntityType.Should().Be(AuditEntityTypes.UserPreferences);

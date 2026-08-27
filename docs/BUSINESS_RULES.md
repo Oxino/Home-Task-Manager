@@ -1060,3 +1060,43 @@ Ces paramètres constituent la configuration de l'algorithme actif (BR-046). De 
 algorithmes de répartition pourront exposer leurs propres paramètres ultérieurement.
 
 > Confirmé par ADR-014. Réservé à l'administrateur (BR-031).
+
+---
+
+# BR-059 - Blocage de la réaffectation des tâches complétées
+
+## Description
+
+Une tâche instance qui a atteint le statut **Complétée** (`IsCompleted = true`) ne peut plus être
+réaffectée, ni par un participant ni par un administrateur.
+
+## Conséquence
+
+Toute tentative de réaffectation d'une tâche complétée lève une `DomainValidationException` avec le
+message "A completed task instance cannot be reassigned."
+
+L'interface utilisateur masque le bouton de réaffectation si la tâche affichée est complétée.
+
+---
+
+# BR-060 - Préférences de notification utilisateur
+
+## Description
+
+Chaque utilisateur dispose de préférences de notification avec 3 niveaux :
+- **Aucune** (`"None"`) : L'utilisateur ne reçoit aucune notification.
+- **Importante** (`"Important"`) : L'utilisateur reçoit uniquement les notifications critiques (réaffectations manuelles).
+- **Toutes** (`"All"`) : L'utilisateur reçoit toutes les notifications (défaut) — affectations, rappels, réaffectations.
+
+## Conséquence
+
+Les notifications sont filtrées lors de leur création selon le niveau de préférence :
+- Les notifications de type **Normal** (affectations, rappels) ne sont créées que si la préférence est `"All"`.
+- Les notifications de type **Important** (réaffectations) ne sont créées que si la préférence est `"Important"` ou `"All"`.
+- Les notifications de type **Important** sont toujours envoyées via `INotificationService` si créées.
+
+Chaque notification persistante contient un champ `NotificationImportance` indiquant son type.
+
+La préférence est stockée dans `UserPreferences.NotificationPreference` (string, valeur par défaut `"All"`).
+
+L'utilisateur peut modifier sa préférence via l'interface de gestion des paramètres personnels.

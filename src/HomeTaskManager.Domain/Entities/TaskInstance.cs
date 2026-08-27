@@ -132,6 +132,10 @@ public sealed class TaskInstance
 
     public void Reassign(Guid userId)
     {
+        if (Status == TaskInstanceStatus.Completed || IsCompleted)
+        {
+            throw new DomainValidationException("A completed task instance cannot be reassigned.");
+        }
         if (Status == TaskInstanceStatus.Cancelled)
         {
             throw new DomainValidationException("A cancelled task instance cannot be assigned.");

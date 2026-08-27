@@ -10,7 +10,7 @@ public sealed class UserPreferences
     {
         Id = Guid.NewGuid();
         UserId = userId;
-        NotificationsEnabled = true;
+        NotificationPreference = "All";
         DateDisplayFormat = "Weekday";
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = CreatedAt;
@@ -18,14 +18,16 @@ public sealed class UserPreferences
 
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
-    public bool NotificationsEnabled { get; private set; }
+    public string NotificationPreference { get; private set; } = "All";
     public string DateDisplayFormat { get; private set; } = "Weekday";
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
-    public void SetNotificationsEnabled(bool enabled)
+    public void SetNotificationPreference(string preference)
     {
-        NotificationsEnabled = enabled;
+        if (preference is not ("None" or "Important" or "All"))
+            throw new DomainValidationException("Unsupported notification preference.");
+        NotificationPreference = preference;
         UpdatedAt = DateTime.UtcNow;
     }
 

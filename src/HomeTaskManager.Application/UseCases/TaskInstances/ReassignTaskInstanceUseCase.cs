@@ -22,7 +22,9 @@ public sealed class ReassignTaskInstanceUseCase(
     IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
     INotificationRepository? notificationRepository = null,
-    ITaskTemplateRepository? taskTemplateRepository = null) : IReassignTaskInstanceUseCase
+    ITaskTemplateRepository? taskTemplateRepository = null,
+    IUserPreferencesRepository? userPreferencesRepository = null,
+    INotificationService? notificationService = null) : IReassignTaskInstanceUseCase
 {
     public async Task<TaskInstanceDto> ExecuteAsync(ReassignTaskInstanceCommand command, CancellationToken cancellationToken = default)
     {
@@ -43,7 +45,10 @@ public sealed class ReassignTaskInstanceUseCase(
 
         var previousUserId = instance.AssignedUserId;
         instance.Reassign(command.AssignedUserId);
-        if (notificationRepository is not null)
+        var notificationPreference = userPreferencesRepository is null
+            ? "All"
+            : (await userPreferencesRepository.GetByUserIdAsync(assignedUser.Id, cancellationToken))?.NotificationPreference ?? "All";
+        if (notificationPreference is not "None" && notificationRepository is not null)
         {
             var taskTitle = taskTemplateRepository is null
                 ? "une tâche"
@@ -54,7 +59,10 @@ public sealed class ReassignTaskInstanceUseCase(
                 assignedUser.Id,
                 title,
                 message,
-                $"/week?year={week.Year}&week={week.WeekNumber}&instanceId={instance.Id}"), cancellationToken);
+                $"/week?year={week.Year}&week={week.WeekNumber}&instanceId={instance.Id}",
+                NotificationImportance.Important), cancellationToken);
+            if (notificationService is not null)
+                await notificationService.SendNotificationAsync(assignedUser.Id, title, message, NotificationImportance.Important, cancellationToken);
         }
         await auditLogger.LogAsync(AuditEntityTypes.TaskInstance, instance.Id, AuditActions.Reassigned, requestingUser.Id,
             $"AssignedUserId={previousUserId}", $"AssignedUserId={assignedUser.Id}", cancellationToken);
