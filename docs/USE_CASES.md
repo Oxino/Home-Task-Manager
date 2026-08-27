@@ -273,6 +273,8 @@ Chaque cas d'usage documente :
   1. Le participant marque l'instance terminée.
   2. Le système crée une `TaskCompletion` et passe `Status = Completed`.
 - **Règles** : BR-009, BR-010, BR-011.
+- **Postcondition complémentaire** : `CompletedAt` contient l'instant UTC de la complétion et
+  est exposé dans le détail de l'instance, indépendamment de `DueDate`.
 
 ## UC-CMP-02 — Modifier l'état de complétude durant la semaine
 
@@ -282,6 +284,8 @@ Chaque cas d'usage documente :
 - **Postcondition** : à la clôture de la semaine, l'état courant est figé et verrouillé
   (ADR-011, BR-043, BR-055) : plus aucune modification possible.
 - **Règles** : BR-010, BR-011, BR-012, BR-043, BR-055.
+- Lors d'une réouverture, `CompletedAt` redevient nul ; lors d'une nouvelle complétion, il est
+  remplacé par le nouvel instant de complétion.
 
 ## UC-CMP-03 — Déclarer une exécution d'une tâche quotidienne flexible
 

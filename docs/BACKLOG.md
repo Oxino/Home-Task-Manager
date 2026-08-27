@@ -139,6 +139,8 @@ Optimisation UX
 - Calendrier mensuel des activités disponible dans la page Statistiques, avec chargement différé
   du mois affiché.
 - Dashboard distinguant la date d'échéance et la date de complétion des tâches terminées.
+- Détail d'une tâche terminée affichant la date de complétion dans la grille des propriétés,
+  avec rattrapage des anciennes instances dont `CompletedAt` était nul.
 - Préférence utilisateur pour le format d'affichage des dates.
 - Filtres dashboard par titre, fréquence, échéance et retard, avec action de réinitialisation.
 - Ouverture des tâches du dashboard et des entrées d'historique par double-clic.

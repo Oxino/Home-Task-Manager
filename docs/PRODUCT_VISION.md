@@ -135,6 +135,10 @@ Exemple :
 
 Le système doit toujours afficher l'état courant.
 
+Pour une tâche terminée, l'application affiche aussi la date et l'heure de complétion, séparées
+de la date d'échéance. Cette information est absente uniquement lorsqu'aucun timestamp fiable
+n'est disponible pour une ancienne donnée ; elle ne doit pas être remplacée par la date du jour.
+
 Tous les changements doivent être historisés.
 
 ---

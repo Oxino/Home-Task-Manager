@@ -297,3 +297,24 @@ L'ORM abstrait les spécificités du SGBD ; la bascule vers PostgreSQL aura un i
 (types, `DateOnly`, contraintes) et valider PostgreSQL avant la mise en production.
 
 Statut : validé.
+
+---
+
+## ADR-020
+
+Décision :
+
+Conserver `CompletedAt` sur `TaskInstance` pour exposer l'instant de la dernière complétion,
+séparément de l'échéance. Le détail frontend rend cette information dans la grille des
+propriétés de l'instance. Les anciennes instances dont le timestamp est inconnu sont
+initialisées par migration avec `UpdatedAt`, valeur de compatibilité et non reconstitution
+historique exacte.
+
+Justification :
+
+Une échéance indique quand la tâche devait être faite, tandis que `CompletedAt` indique quand
+elle l'a effectivement été. Cette distinction est nécessaire pour le dashboard, l'historique
+et le détail d'une instance. Le placement hors du `<select>` garantit que le navigateur ne
+supprime pas le bloc HTML.
+
+Statut : validé.

@@ -220,9 +220,21 @@
   départage sont conformes à la documentation; les absences restent hors périmètre V1.
 - Suite validée à **106 tests** : 84 Application et 22 Domain.
 
+### V13.3 — Correction de l'affichage de la date de complétion
+
+- Correction du markup du détail d'une instance : `completion-date-property` est rendu dans
+  `.task-properties`, après l'état, et reste en dehors du `<select>` de délégation.
+- Correction de la perte du bloc par le navigateur, qui ignore les éléments `<div>` placés dans
+  un `<select>`.
+- Ajout d'une migration EF Core de compatibilité qui renseigne `CompletedAt` avec `UpdatedAt`
+  pour les anciennes instances terminées encore dépourvues de timestamp.
+- Conservation de la distinction fonctionnelle entre `DueDate` (échéance) et `CompletedAt`
+  (instant de complétion), exposée dans les DTO et l'interface.
+- Build frontend vérifié avec `npm run build`; aucune erreur TypeScript détectée.
+
 ---
 
-## Etat actuel (fin V13.2)
+## Etat actuel (fin V13.3)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -286,6 +298,9 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - Le jeu de démonstration complet et le backfill des anciennes notifications sont disponibles
   via les endpoints réservés au développement.
 - Les tâches terminées exposent leur date de complétion séparément de leur échéance.
+- Le détail d'une tâche terminée affiche cette date dans la grille de propriétés. Les données
+  historiques sans timestamp sont compatibilisées par migration, avec `UpdatedAt` comme valeur
+  de repli explicitement non exacte.
 - Le calendrier des activités se trouve dans Analytics et charge uniquement le mois affiché,
   avec filtre participant et skeleton pendant le chargement.
 - L'historique est paginé par pages de 10 événements, avec une distinction explicite entre

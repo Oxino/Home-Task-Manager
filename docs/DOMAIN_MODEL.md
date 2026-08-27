@@ -267,6 +267,7 @@ Occurrence réelle d'une tâche.
 | DueDate | DateOnly | Oui |
 | Status | enum | Oui |
 | IsCompleted | bool | Oui |
+| CompletedAt | DateTime | Non |
 | IsCarryOver | bool | Oui |
 | ParentTaskInstanceId | Guid | Non |
 | CreatedAt | DateTime | Oui |
@@ -282,6 +283,9 @@ Une tâche reportée :
 `IsCompleted` porte l'état courant réversible durant la semaine active (BR-043). À la clôture de
 la semaine (BR-055), cet état est figé. Le `Status` (`Pending` / `Completed` / `Cancelled`)
 représente le cycle de vie de l'instance ; `WeekId` rattache l'instance à sa semaine.
+`CompletedAt` contient la date et l'heure UTC de la dernière complétion lorsque
+`IsCompleted = true`, et reste nul lorsque l'instance est ouverte ou n'a jamais été complétée.
+Il est exposé par les DTO et séparé de `DueDate` dans l'interface.
 
 ---
 

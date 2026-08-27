@@ -203,6 +203,15 @@ Historique :
 
 Non complétée
 
+Lorsque l'état courant est `Complétée`, le système conserve et expose également la date et
+l'heure de la dernière complétion (`CompletedAt`). Cette date est distincte de l'échéance
+(`DueDate`) et doit être affichée dans le détail de l'instance. Lorsqu'une instance est
+rouverte, `CompletedAt` est supprimé jusqu'à sa prochaine complétion.
+
+Pour les instances historiques créées avant l'introduction de `CompletedAt`, une migration de
+données peut restaurer une valeur à partir de `UpdatedAt`, sans prétendre reconstituer l'heure
+exacte de la complétion originale.
+
 ---
 
 # BR-013 - Commentaires utilisateur

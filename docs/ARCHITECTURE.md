@@ -112,6 +112,8 @@ interfaces (inversion de dépendance).
 - Écrans de présentation : sélection de profil, tableau de bord hebdomadaire, liste filtrable
   des instances, détail d'affectation, commentaires avec réactions, navigation administrateur,
   et vue analytics (`/analytics`).
+- Le DTO d'instance expose `CompletedAt` séparément de `DueDate`; le détail rend cette date dans
+  la grille `.task-properties`, en dehors de tout élément `<select>`.
 - Appels REST vers l'API ASP.NET via `fetch`, avec le profil courant transmis aux commandes qui
   le requièrent (`RequestingUserId` / `TriggeredByUserId`).
 - L'autorisation métier reste contrôlée par l'API ; l'état du profil côté client ne constitue
