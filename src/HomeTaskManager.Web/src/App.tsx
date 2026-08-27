@@ -1847,6 +1847,7 @@ function HistoryPanel({
   const [historyPageCount, setHistoryPageCount] = useState(1);
   const [historyTotalCount, setHistoryTotalCount] = useState(0);
   const [actorFilter, setActorFilter] = useState("all");
+  const [historyTargets, setHistoryTargets] = useState<Record<string, { instance: Instance; week: { year: number; weekNumber: number } }>>({});
   const historyPageSize = 10;
   useEffect(() => {
     setLoading(true);
@@ -1863,6 +1864,20 @@ function HistoryPanel({
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
   }, [api, historyPage, actorFilter, isAdmin]);
+  useEffect(() => {
+    const instanceEntries = entries.filter((entry) => entry.entityType === "TaskInstance");
+    if (instanceEntries.length === 0) return;
+    Promise.all(instanceEntries.map(async (entry) => {
+      try {
+        const response = await fetch(`${api}/api/task-instances/${entry.entityId}`);
+        if (!response.ok) return null;
+        const result = await response.json();
+        return result.instance && result.week ? [entry.entityId, result] as const : null;
+      } catch {
+        return null;
+      }
+    })).then((results) => setHistoryTargets((current) => ({ ...current, ...Object.fromEntries(results.filter((result): result is readonly [string, { instance: Instance; week: { year: number; weekNumber: number } }] => result !== null)) })));
+  }, [api, entries]);
   useEffect(() => {
     const loadWeeks = async () => {
       const requests = Array.from({ length: 8 }, (_, index) => {
@@ -1935,6 +1950,25 @@ function HistoryPanel({
         : type === "UserPreferences"
           ? "préférences utilisateur"
         : type.toLowerCase();
+  const targetLabel = (entry: AuditLog) => {
+    if (entry.entityType === "TaskTemplate") {
+      return templates.find((template) => template.id === entry.entityId)?.title ?? "Modèle indisponible";
+    }
+    if (entry.entityType === "TaskInstance") {
+      const target = historyTargets[entry.entityId];
+      const title = target ? templates.find((template) => template.id === target.instance.taskTemplateId)?.title : undefined;
+      if (target) return `${title ?? "Tâche indisponible"} · semaine ${target.week.weekNumber}/${target.week.year}`;
+      return "Tâche indisponible";
+    }
+    return entityLabel(entry.entityType);
+  };
+  const targetDetails = (entry: AuditLog) => {
+    if (entry.entityType !== "TaskInstance") return details(entry);
+    const target = historyTargets[entry.entityId];
+    if (!target) return details(entry);
+    const dueDate = new Date(`${target.instance.dueDate}T00:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    return `Échéance : ${dueDate}${details(entry) ? ` · ${details(entry)}` : ""}`;
+  };
   const visibleEntries = isAdmin
     ? entries
     : entries.filter((entry) => entry.performedByUserId === currentUserId);
@@ -1973,8 +2007,8 @@ function HistoryPanel({
           </select>}
         </div>
       </div>
-      <div className="week-history">
-        <span className="section-kicker">SEMAINES RÉCENTES</span>
+      <section className="history-periods">
+        <div className="history-section-heading"><div><span className="section-kicker">NAVIGATION TEMPORELLE</span><h3>Mes semaines passées</h3></div><p>Ouvre le dashboard d’une semaine sans ouvrir une activité particulière.</p></div>
         <div className="week-history-grid">
           {weeks.map((period, index) => (
             <button
@@ -2005,7 +2039,7 @@ function HistoryPanel({
             </button>
           ))}
         </div>
-      </div>
+      </section>
       <ActivityCalendar entries={visibleEntries} />
       {loading ? (
         <HistoryActivitySkeleton />
@@ -2019,7 +2053,8 @@ function HistoryPanel({
           </p>
         </div>
       ) : (
-        <>
+        <section className="history-activities">
+          <div className="history-section-heading"><div><span className="section-kicker">JOURNAL D’ACTIVITÉ</span><h3>Activités passées</h3></div><p>Les actions sont datées séparément de l’échéance des tâches.</p></div>
           <div className="history-list">
             {pagedEntries.map((entry) => (
               <button
@@ -2035,9 +2070,11 @@ function HistoryPanel({
                     <b>{actor(entry.performedByUserId)}</b> a{" "}
                     {actionLabel(entry)} un{" "}
                     {entityLabel(entry.entityType)}
+                    {entry.entityType === "TaskInstance" || entry.entityType === "TaskTemplate" ? ` : ${targetLabel(entry)}` : ""}
                   </p>
-                  {details(entry) && <small>{details(entry)}</small>}
+                  {targetDetails(entry) && <small>{targetDetails(entry)}</small>}
                   <time>
+                    Activité : {" "}
                     {new Date(entry.performedAt).toLocaleString("fr-FR", {
                       dateStyle: "medium",
                       timeStyle: "short",
@@ -2066,7 +2103,7 @@ function HistoryPanel({
               Suivante
             </button>
           </div>
-        </>
+        </section>
       )}
     </section>
   );

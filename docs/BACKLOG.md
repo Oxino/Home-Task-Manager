@@ -145,6 +145,8 @@ Optimisation UX
 - Navigation des semaines récentes depuis l'historique, incluant la semaine active.
 - Actualisation silencieuse et périodique des notifications lorsqu'une nouveauté est détectée.
 - Scénario de démonstration administrateur couvrant les reports, complétions et notifications.
+- Historique séparé en navigation des semaines passées et journal d'activités, avec titre des
+  templates et détails des instances (semaine d'affectation, échéance et date d'activité).
 
 L'envoi Web Push réel (intégration navigateur), les tests d'intégration/end-to-end complets et
 la revue sécurité avant exposition réseau restent à implémenter. Les commentaires avancés,

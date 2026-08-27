@@ -245,6 +245,11 @@ Les actions d'historique liées à une tâche retournent désormais vers le dash
 concernée, avec sélection de l'instance; les cartes de semaines récentes restent un parcours
 séparé de navigation temporelle.
 
+L'affichage de l'historique distingue maintenant le parcours **Semaines passées** du **Journal
+d'activité**. Les événements affichent le titre du modèle ou de la tâche quand il est disponible,
+ainsi que la semaine d'affectation et l'échéance d'une instance, séparément de la date de
+l'activité.
+
 Le choix du moteur de répartition est désormais configurable et persistant. Les moteurs
 `RANDOM`, `BALANCED_POINTS` et `BALANCED_TIME` ont été ajoutés en complément de `INTELLIGENT_V1`;
 la page d'administration explique leurs règles et leurs étapes de décision.
