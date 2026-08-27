@@ -253,6 +253,7 @@ function carryOverOrigin(instance: Instance) {
 const viewRoutes: Record<string, string> = {
   "/week": "Semaine",
   "/history": "Historique",
+  "/admin-history": "Journal d’audit",
   "/preferences": "Préférences",
   "/notifications": "Notifications",
   "/assignments": "Affectations",
@@ -1852,7 +1853,7 @@ function HistoryPanel({
   useEffect(() => {
     setLoading(true);
     fetch(
-      `${api}/api/audit-logs?page=${historyPage}&pageSize=${historyPageSize}${isAdmin && actorFilter !== "all" ? `&category=${actorFilter}` : ""}`,
+      `${api}/api/audit-logs?page=${historyPage}&pageSize=${historyPageSize}${!isAdmin ? "&scope=personal" : actorFilter !== "all" ? `&category=${actorFilter}` : ""}`,
     )
       .then(async (response) => {
         if (!response.ok) throw new Error("Lecture impossible");
@@ -3058,6 +3059,10 @@ function App() {
       .catch(() => undefined);
   }, [api, currentUser]);
 
+  useEffect(() => {
+    if (view === "Journal d’audit" && !currentUser?.isAdmin) navigate("/history");
+  }, [view, currentUser?.isAdmin]);
+
   function openNotification(notification: NotificationItem) {
     if (!notification.link) return;
 
@@ -3334,6 +3339,11 @@ function App() {
             : item,
         ),
       );
+      setSelected((item) =>
+        item?.id === instanceId
+          ? { ...item, assignedUserId: updated.assignedUserId }
+          : item,
+      );
       setNotice("Instance réaffectée");
     } catch (reason) {
       setNotice(
@@ -3479,6 +3489,12 @@ function App() {
             <>
               <div className="nav-label admin-label">ADMINISTRATION</div>
               <button
+                className={view === "Journal d’audit" ? "nav-item active" : "nav-item"}
+                onClick={() => navigate("/admin-history")}
+              >
+                ↗ <span>Journal d’audit</span>
+              </button>
+              <button
                 className={
                   view === "Affectations" ? "nav-item active" : "nav-item"
                 }
@@ -3556,9 +3572,9 @@ function App() {
             </span>
             <h1>{view}</h1>
           </div>
-          {view === "Historique" && (
+          {(view === "Historique" || view === "Journal d’audit") && (
             <span className="history-navigation-hint">
-              Sélectionne une semaine dans l’historique
+              {view === "Historique" ? "Tes activités et tes semaines passées" : "Toutes les actions du foyer"}
             </span>
           )}
         </header>
@@ -3888,7 +3904,16 @@ function App() {
             api={api}
             users={users}
             templates={templates}
-            isAdmin={currentUser.isAdmin}
+            isAdmin={false}
+            currentUserId={currentUser.id}
+            onOpenEntry={openHistoryEntry}
+          />
+        ) : view === "Journal d’audit" && currentUser.isAdmin ? (
+          <HistoryPanel
+            api={api}
+            users={users}
+            templates={templates}
+            isAdmin
             currentUserId={currentUser.id}
             onOpenEntry={openHistoryEntry}
           />
@@ -4006,6 +4031,10 @@ function App() {
                 );
               })()}
             <div className="task-properties">
+              <div className="task-assignee-property">
+                <span>Affectée à</span>
+                <b>{users.find((user) => user.id === selected.assignedUserId)?.displayName ?? "Non attribuée"}</b>
+              </div>
               <div>
                 <span>Priorité</span>
                 <b>
@@ -4062,6 +4091,23 @@ function App() {
                 </b>
               </div>
             </div>
+            {currentUser.isAdmin && selected.status !== "Cancelled" && !isHistoricalWeek && (
+              <div className="task-delegation">
+                <label htmlFor="task-delegation-select">Déléguer à un autre participant</label>
+                <select
+                  id="task-delegation-select"
+                  value={selected.assignedUserId ?? ""}
+                  onChange={(event) => {
+                    if (event.target.value) void reassignInstance(selected.id, event.target.value);
+                  }}
+                >
+                  <option value="">Non attribuée</option>
+                  {users.filter((user) => user.isActive).map((user) => (
+                    <option value={user.id} key={user.id}>{user.displayName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {template(selected.taskTemplateId) &&
               (currentUser.isAdmin ||
                 template(selected.taskTemplateId)?.createdByUserId ===

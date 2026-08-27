@@ -228,6 +228,8 @@ hors priorité immédiate.
 -  ~~Régles métier: si un tache non fini est réaffecté la nouvelle semaine, et que celle ci n'est toujours pas fin à la fin de la nouvelle semaine, cette tache n'est pas reporté. Elle n'intervient dras plus, et n'interviendra plus non plus dans les calculs de poids et répartission~~
 -  reprendre ou approfondir le system de génération d'instance + affectation. 
 - ~~Historique : ouvrir une action de tâche vers le dashboard de la semaine concernée et distinguer ce parcours des cartes de navigation des semaines passées.~~
+- La page d'historique personnel et le journal d'audit administrateur sont séparés par route,
+  avec filtres et tris à renforcer dans les tests end-to-end.
 - ~~quand on ouvre un formulaire type popup (formulaire création, modification de tache), si on modifie la valeur et qu'on ferme sans sauvegardé, la valeur modifier persiste.~~
 - ~~Choix du moteur de répartition de tâche.~~
 - déclaration absence pour un participant. (impact la réaffectation des taches)

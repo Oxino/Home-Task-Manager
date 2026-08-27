@@ -350,6 +350,14 @@ couverture.
   sélection d'instance; elles restent distinctes de la liste des actions d'audit.
 - **Accès** : la page `/instances` reste réservée à l'administration.
 
+## UC-HIS-06 — Consulter deux espaces d'historique
+
+- **Historique personnel (`/history`)** : chaque profil ne voit que les événements qu'il a
+  effectués. Ce comportement s'applique aussi à un profil administrateur.
+- **Journal d'audit (`/admin-history`)** : réservé aux administrateurs, il affiche tous les
+  événements du foyer et conserve les filtres de catégorie utilisateur/administration ainsi que
+  la pagination serveur.
+
 ---
 
 # Domaine : Notifications

@@ -130,7 +130,9 @@ interfaces (inversion de dépendance).
 - L’endpoint `GET /api/audit-logs` est authentifié : un participant reçoit uniquement les
   événements qu’il a effectués ; un administrateur peut consulter l’historique global. Le
   frontend classe les événements par nature d'action (`user` ou `admin`), indépendamment du
-  rôle du profil auteur; le paramètre `category` conserve cette pagination côté API.
+  rôle du profil auteur; le paramètre `category` conserve cette pagination côté API. `/history`
+  force la portée personnelle, y compris pour un administrateur, tandis que `/admin-history`
+  expose le journal global aux administrateurs.
   Les préférences existantes restent compatibles avec les variantes historiques de leur
   `EntityType`.
 - Les rappels sont configurés au niveau du modèle via `GET/POST /api/task-templates/{id}/reminders`.

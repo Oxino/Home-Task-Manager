@@ -250,6 +250,13 @@ d'activité**. Les événements affichent le titre du modèle ou de la tâche qu
 ainsi que la semaine d'affectation et l'échéance d'une instance, séparément de la date de
 l'activité.
 
+Le détail d'une instance affiche maintenant son participant affecté. Un administrateur peut
+déléguer une instance active à un autre participant actif depuis ce détail; cette action utilise
+la même règle et le même audit que la vue d'administration des instances.
+
+Les historiques sont séparés en deux routes : `/history` pour les actions du profil courant et
+`/admin-history` pour le journal global réservé aux administrateurs.
+
 Le choix du moteur de répartition est désormais configurable et persistant. Les moteurs
 `RANDOM`, `BALANCED_POINTS` et `BALANCED_TIME` ont été ajoutés en complément de `INTELLIGENT_V1`;
 la page d'administration explique leurs règles et leurs étapes de décision.
