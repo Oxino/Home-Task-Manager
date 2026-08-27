@@ -1586,6 +1586,29 @@ type EngineSettings = {
   strategyName: string;
 };
 
+const engineInfo: Record<string, { title: string; summary: string; detail: string }> = {
+  INTELLIGENT_V1: {
+    title: "INTELLIGENT_V1",
+    summary: "Équilibre la charge dans le temps.",
+    detail: "Le moteur combine les points de la semaine, la disponibilité, les huit dernières semaines et une pénalité anti-répétition. Les tâches reportées gardent leur propriétaire.",
+  },
+  RANDOM: {
+    title: "RANDOM",
+    summary: "Distribue les tâches au hasard, en équilibrant les volumes.",
+    detail: "Les instances et les participants éligibles sont mélangés, puis distribués en rotation. L’historique, les points et les durées ne sont jamais consultés.",
+  },
+  BALANCED_POINTS: {
+    title: "BALANCED_POINTS",
+    summary: "Répartit la charge de points de la semaine.",
+    detail: "Les tâches sont triées par score décroissant puis affectées au participant dont la charge de points normalisée par disponibilité est la plus faible. Aucun historique n’est utilisé.",
+  },
+  BALANCED_TIME: {
+    title: "BALANCED_TIME",
+    summary: "Répartit le temps estimé à consacrer aux tâches.",
+    detail: "Les tâches sont triées par durée décroissante puis affectées au participant dont le temps total normalisé par disponibilité est le plus faible. Aucun historique ni score de priorité n’est utilisé.",
+  },
+};
+
 function EngineSettingsPanel({
   api,
   user,
@@ -1660,6 +1683,11 @@ function EngineSettingsPanel({
       </section>
     );
 
+  const selectedEngine = engineInfo[settings.strategyName] ?? engineInfo.INTELLIGENT_V1;
+  const usesPriorityMultipliers = settings.strategyName === "INTELLIGENT_V1" || settings.strategyName === "BALANCED_POINTS";
+  const usesReferenceDuration = settings.strategyName !== "RANDOM";
+  const usesHistory = settings.strategyName === "INTELLIGENT_V1";
+
   return (
     <form className="settings-panel" onSubmit={submit}>
       <div className="panel-heading">
@@ -1671,29 +1699,21 @@ function EngineSettingsPanel({
           Enregistrer
         </button>
       </div>
-      <p className="settings-intro">
-        Ces paramètres pilotent le score des tâches et l’équilibre de la charge
-        pour les prochaines affectations.
-      </p>
+      <p className="settings-intro">Choisissez la logique utilisée lors de la prochaine affectation. Les paramètres affichés correspondent uniquement au moteur sélectionné.</p>
       <div className="settings-section">
         <span className="section-kicker">MOTEUR ACTIF</span>
-        <label>
-          Stratégie de répartition
-          <select value={settings.strategyName} onChange={(event) => update("strategyName", event.target.value)}>
+        <div className="engine-choice">
+          <label htmlFor="assignment-engine">Stratégie de répartition</label>
+          <select id="assignment-engine" value={settings.strategyName} onChange={(event) => update("strategyName", event.target.value)}>
             <option value="INTELLIGENT_V1">INTELLIGENT_V1</option>
             <option value="RANDOM">RANDOM</option>
             <option value="BALANCED_POINTS">BALANCED_POINTS</option>
             <option value="BALANCED_TIME">BALANCED_TIME</option>
           </select>
-          <small className="engine-description">
-            {settings.strategyName === "RANDOM" && "Répartit les tâches dans un ordre aléatoire, avec un nombre de tâches équilibré, sans historique ni calcul de charge."}
-            {settings.strategyName === "BALANCED_POINTS" && "Répartit les tâches de la semaine en équilibrant leur score de difficulté, sans utiliser l’historique."}
-            {settings.strategyName === "BALANCED_TIME" && "Répartit les tâches de la semaine en équilibrant leur durée estimée, sans utiliser l’historique."}
-            {settings.strategyName === "INTELLIGENT_V1" && "Équilibre la charge selon les points, la disponibilité et l’historique, avec pénalité anti-répétition."}
-          </small>
-        </label>
+          <div className="engine-summary"><strong>{selectedEngine.summary}</strong><p>{selectedEngine.detail}</p></div>
+        </div>
       </div>
-      <div className="settings-section">
+      {usesPriorityMultipliers && <div className="settings-section">
         <span className="section-kicker">MULTIPLICATEURS DE PRIORITÉ</span>
         <div className="settings-grid">
           <label>
@@ -1733,11 +1753,11 @@ function EngineSettingsPanel({
             />
           </label>
         </div>
-      </div>
-      <div className="settings-section">
-        <span className="section-kicker">ÉQUILIBRE HISTORIQUE</span>
+      </div>}
+      {usesReferenceDuration && <div className="settings-section">
+        <span className="section-kicker">{usesHistory ? "PARAMÈTRES DE CHARGE ET D’ÉQUITÉ" : settings.strategyName === "BALANCED_TIME" ? "PARAMÈTRE DE TEMPS" : "PARAMÈTRES DE SCORE"}</span>
         <div className="settings-grid">
-          <label>
+          {usesReferenceDuration && <label>
             Durée de référence (minutes)
             <input
               type="number"
@@ -1747,8 +1767,8 @@ function EngineSettingsPanel({
                 update("referenceDurationMinutes", event.target.value)
               }
             />
-          </label>
-          <label>
+          </label>}
+          {usesHistory && <label>
             Fenêtre d’équité (semaines)
             <input
               type="number"
@@ -1758,8 +1778,8 @@ function EngineSettingsPanel({
                 update("equityWindowWeeks", event.target.value)
               }
             />
-          </label>
-          <label>
+          </label>}
+          {usesHistory && <label>
             Pénalité anti-répétition
             <input
               type="number"
@@ -1770,9 +1790,10 @@ function EngineSettingsPanel({
                 update("repetitionPenaltyWeight", event.target.value)
               }
             />
-          </label>
+          </label>}
         </div>
-      </div>
+      </div>}
+      {settings.strategyName === "RANDOM" && <div className="engine-no-parameters"><strong>Aucun paramètre supplémentaire</strong><p>Ce moteur ne consulte ni l’historique, ni les points, ni les durées. Il équilibre uniquement le nombre de tâches.</p></div>}
       {error && <p className="form-error">{error}</p>}
       {saved && <p className="settings-saved">✓ Paramètres enregistrés</p>}
     </form>

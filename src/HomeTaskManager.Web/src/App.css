@@ -103,6 +103,9 @@ select:focus-visible {
   color: #af5f4f !important;
 }
 @media (max-width: 700px) {
+  .engine-choice {
+    grid-template-columns: 1fr;
+  }
   .task-filter-input,
   .task-filter-select,
   .task-filter-date {
@@ -1007,6 +1010,46 @@ nav {
 .settings-section {
   border-top: 1px solid var(--line);
   padding: 23px 0;
+}
+.engine-choice {
+  display: grid;
+  grid-template-columns: minmax(180px, 250px) minmax(220px, 300px);
+  gap: 8px 16px;
+  align-items: center;
+  margin-top: 14px;
+}
+.engine-choice > label {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.engine-summary {
+  grid-column: 1 / -1;
+  padding: 16px 18px;
+  border-left: 3px solid var(--teal);
+  background: #f1f8f5;
+}
+.engine-summary strong {
+  color: var(--teal);
+  font-family: "Space Grotesk";
+  font-size: 15px;
+}
+.engine-summary p,
+.engine-no-parameters p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.engine-no-parameters {
+  margin-top: 23px;
+  padding: 17px 18px;
+  border: 1px dashed #b7cec5;
+  background: #fbfdfc;
+}
+.engine-no-parameters strong {
+  color: var(--ink);
+  font-size: 12px;
 }
 .settings-grid {
   display: grid;
