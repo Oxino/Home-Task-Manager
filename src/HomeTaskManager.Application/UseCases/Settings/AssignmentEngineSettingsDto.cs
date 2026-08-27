@@ -6,4 +6,5 @@ public sealed record AssignmentEngineSettingsDto(
     decimal CriticalPriorityMultiplier,
     int ReferenceDurationMinutes,
     int EquityWindowWeeks,
-    decimal RepetitionPenaltyWeight);
+    decimal RepetitionPenaltyWeight,
+    string StrategyName);

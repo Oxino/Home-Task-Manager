@@ -7,7 +7,8 @@ public sealed record AssignmentEngineSettings(
     IReadOnlyDictionary<TaskPriority, decimal> PriorityMultipliers,
     int ReferenceDurationMinutes,
     int EquityWindowWeeks,
-    decimal RepetitionPenaltyWeight)
+    decimal RepetitionPenaltyWeight,
+    string StrategyName = "INTELLIGENT_V1")
 {
     public static AssignmentEngineSettings Default { get; } = new(
         new Dictionary<TaskPriority, decimal>
@@ -18,5 +19,6 @@ public sealed record AssignmentEngineSettings(
         },
         ReferenceDurationMinutes: 30,
         EquityWindowWeeks: 8,
-        RepetitionPenaltyWeight: 0.25m);
+        RepetitionPenaltyWeight: 0.25m,
+        StrategyName: "INTELLIGENT_V1");
 }

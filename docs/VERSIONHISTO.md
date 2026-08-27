@@ -211,7 +211,14 @@
   validation de la semaine à la clôture.
 - Les jours actifs sont persistés par migration EF et configurables dans les formulaires de
   création et de modification, avec une explication de fonctionnement pour chaque type.
-- Suite validée à **103 tests** : 84 Application et 19 Domain.
+- Ajout du choix administrable du moteur de répartition avec `INTELLIGENT_V1`, `RANDOM`,
+  `BALANCED_POINTS` et `BALANCED_TIME`. Chaque moteur dispose d'une explication dans la page
+  de paramétrage, et le choix est persisté dans `SystemSetting`.
+- `RANDOM` distribue les tâches sans historique ni charge, avec un nombre de tâches équilibré;
+  les moteurs équilibrés utilisent respectivement les points ou la durée estimée.
+- Analyse de conformité de `INTELLIGENT_V1` : score, disponibilité, historique, pénalité et
+  départage sont conformes à la documentation; les absences restent hors périmètre V1.
+- Suite validée à **106 tests** : 84 Application et 22 Domain.
 
 ---
 
@@ -234,6 +241,10 @@ par le rôle du profil auteur; la pagination API applique aussi ce filtre côté
 Les audits de génération d'instances (`Week/Generated`) et de modification des préférences
 (`UserPreferences/Updated`) sont désormais enregistrés explicitement.
 
+Le choix du moteur de répartition est désormais configurable et persistant. Les moteurs
+`RANDOM`, `BALANCED_POINTS` et `BALANCED_TIME` ont été ajoutés en complément de `INTELLIGENT_V1`;
+la page d'administration explique leurs règles et leurs étapes de décision.
+
 Les correctifs suivants ont complété cette évolution : compatibilité avec les anciennes
 variantes de nommage des événements de préférence et classification de toutes les entités de
 préférences comme actions utilisateur, quel que soit leur libellé historique.
@@ -246,7 +257,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
         → Notifications & Analytics
 ```
 
-- **84 tests unitaires** (Application), **19 tests** (Domain), tous verts.
+- **84 tests unitaires** (Application), **22 tests** (Domain), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
 - Les commentaires avancés couvrent désormais le threading et les réactions.

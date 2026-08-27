@@ -1572,6 +1572,7 @@ type EngineSettings = {
   referenceDurationMinutes: number;
   equityWindowWeeks: number;
   repetitionPenaltyWeight: number;
+  strategyName: string;
 };
 
 function EngineSettingsPanel({
@@ -1590,6 +1591,7 @@ function EngineSettingsPanel({
     referenceDurationMinutes: 30,
     equityWindowWeeks: 8,
     repetitionPenaltyWeight: 0.25,
+    strategyName: "INTELLIGENT_V1",
   });
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -1606,7 +1608,7 @@ function EngineSettingsPanel({
   }, [api]);
 
   function update(key: keyof EngineSettings, value: string) {
-    setSettings((current) => ({ ...current, [key]: Number(value) }));
+    setSettings((current) => ({ ...current, [key]: key === "strategyName" ? value : Number(value) }));
     setSaved(false);
   }
 
@@ -1662,6 +1664,24 @@ function EngineSettingsPanel({
         Ces paramètres pilotent le score des tâches et l’équilibre de la charge
         pour les prochaines affectations.
       </p>
+      <div className="settings-section">
+        <span className="section-kicker">MOTEUR ACTIF</span>
+        <label>
+          Stratégie de répartition
+          <select value={settings.strategyName} onChange={(event) => update("strategyName", event.target.value)}>
+            <option value="INTELLIGENT_V1">INTELLIGENT_V1</option>
+            <option value="RANDOM">RANDOM</option>
+            <option value="BALANCED_POINTS">BALANCED_POINTS</option>
+            <option value="BALANCED_TIME">BALANCED_TIME</option>
+          </select>
+          <small className="engine-description">
+            {settings.strategyName === "RANDOM" && "Répartit les tâches dans un ordre aléatoire, avec un nombre de tâches équilibré, sans historique ni calcul de charge."}
+            {settings.strategyName === "BALANCED_POINTS" && "Répartit les tâches de la semaine en équilibrant leur score de difficulté, sans utiliser l’historique."}
+            {settings.strategyName === "BALANCED_TIME" && "Répartit les tâches de la semaine en équilibrant leur durée estimée, sans utiliser l’historique."}
+            {settings.strategyName === "INTELLIGENT_V1" && "Équilibre la charge selon les points, la disponibilité et l’historique, avec pénalité anti-répétition."}
+          </small>
+        </label>
+      </div>
       <div className="settings-section">
         <span className="section-kicker">MULTIPLICATEURS DE PRIORITÉ</span>
         <div className="settings-grid">

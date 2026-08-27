@@ -7,4 +7,5 @@ public sealed record UpdateAssignmentEngineSettingsRequest(
     decimal CriticalPriorityMultiplier,
     int ReferenceDurationMinutes,
     int EquityWindowWeeks,
-    decimal RepetitionPenaltyWeight);
+    decimal RepetitionPenaltyWeight,
+    string StrategyName = "INTELLIGENT_V1");

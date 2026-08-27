@@ -33,7 +33,8 @@ public sealed class RunAssignmentEngineUseCase(
     IUnitOfWork unitOfWork,
     INotificationRepository? notificationRepository = null,
     IUserPreferencesRepository? userPreferencesRepository = null,
-    INotificationService? notificationService = null) : IRunAssignmentEngineUseCase
+    INotificationService? notificationService = null,
+    IEnumerable<IAssignmentStrategy>? assignmentStrategies = null) : IRunAssignmentEngineUseCase
 {
     public async Task<RunAssignmentEngineResult> ExecuteAsync(
         RunAssignmentEngineCommand command,
@@ -60,17 +61,22 @@ public sealed class RunAssignmentEngineUseCase(
             .Where(instance => !instance.IsCarryOver && instance.Status != TaskInstanceStatus.Cancelled)
             .ToList();
 
+        var settings = await settingsProvider.GetAsync(cancellationToken);
+        var selectedStrategy = assignmentStrategies?.FirstOrDefault(strategy => strategy.Name == settings.StrategyName) ?? assignmentStrategy;
+        if (assignmentStrategies is not null && !assignmentStrategies.Any(strategy => strategy.Name == settings.StrategyName))
+        {
+            throw new DomainValidationException($"The assignment engine '{settings.StrategyName}' is not registered.");
+        }
+
         var run = new AssignmentRun(
             week.Id,
-            assignmentStrategy.Name,
+            selectedStrategy.Name,
             requestingUser.Id,
             isAutomatic: false,
             notes: activeParticipants.Count == 0 ? "No active participant available." : null);
 
         if (activeParticipants.Count > 0 && assignableInstances.Count > 0)
         {
-            var settings = await settingsProvider.GetAsync(cancellationToken);
-
             // BR-053: equity window, defaults to 8 weeks before the target week; the run being (re)assigned is excluded.
             var since = week.StartDate.AddDays(-7 * settings.EquityWindowWeeks);
             var historicalInstances = (await taskInstanceRepository.GetAssignedSinceAsync(since, cancellationToken))
@@ -94,7 +100,7 @@ public sealed class RunAssignmentEngineUseCase(
                         group.GroupBy(i => i.TaskTemplateId).ToDictionary(g => g.Key, g => g.Count())));
 
             var context = new AssignmentContext(week, activeParticipants, assignableInstances, templatesById, historyByUserId, settings);
-            var result = assignmentStrategy.Assign(context);
+            var result = selectedStrategy.Assign(context);
             var instancesById = assignableInstances.ToDictionary(instance => instance.Id);
             var notifiedAssignments = new HashSet<(Guid UserId, Guid TaskTemplateId)>();
 

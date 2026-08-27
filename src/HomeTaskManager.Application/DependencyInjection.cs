@@ -42,8 +42,10 @@ public static class DependencyInjection
         services.AddScoped<IRemoveReactionUseCase, RemoveReactionUseCase>();
         services.AddScoped<IListReactionsForCommentUseCase, ListReactionsForCommentUseCase>();
 
-        // V1 default strategy per PRODUCT_VISION; RandomStrategy remains available as an alternate registration.
         services.AddScoped<IAssignmentStrategy, IntelligentV1Strategy>();
+        services.AddScoped<IAssignmentStrategy, RandomStrategy>();
+        services.AddScoped<IAssignmentStrategy, BalancedPointsStrategy>();
+        services.AddScoped<IAssignmentStrategy, BalancedTimeStrategy>();
         services.AddScoped<IAssignmentEngineSettingsProvider, AssignmentEngineSettingsProvider>();
         services.AddScoped<IGetAssignmentEngineSettingsUseCase, GetAssignmentEngineSettingsUseCase>();
         services.AddScoped<IUpdateAssignmentEngineSettingsUseCase, UpdateAssignmentEngineSettingsUseCase>();

@@ -14,7 +14,8 @@ public sealed record UpdateAssignmentEngineSettingsCommand(
     decimal CriticalPriorityMultiplier,
     int ReferenceDurationMinutes,
     int EquityWindowWeeks,
-    decimal RepetitionPenaltyWeight);
+    decimal RepetitionPenaltyWeight,
+    string StrategyName = "INTELLIGENT_V1");
 
 public interface IUpdateAssignmentEngineSettingsUseCase
 {
@@ -60,12 +61,19 @@ public sealed class UpdateAssignmentEngineSettingsUseCase(
             throw new DomainValidationException("The repetition penalty weight cannot be negative.");
         }
 
+        var strategyName = command.StrategyName.Trim().ToUpperInvariant();
+        if (strategyName is not ("INTELLIGENT_V1" or "RANDOM" or "BALANCED_POINTS" or "BALANCED_TIME"))
+        {
+            throw new DomainValidationException("The selected assignment engine is not supported.");
+        }
+
         await UpsertAsync(AssignmentEngineSettingKeys.LowPriorityMultiplier, command.LowPriorityMultiplier, requestingUser.Id, cancellationToken);
         await UpsertAsync(AssignmentEngineSettingKeys.NormalPriorityMultiplier, command.NormalPriorityMultiplier, requestingUser.Id, cancellationToken);
         await UpsertAsync(AssignmentEngineSettingKeys.CriticalPriorityMultiplier, command.CriticalPriorityMultiplier, requestingUser.Id, cancellationToken);
         await UpsertAsync(AssignmentEngineSettingKeys.ReferenceDurationMinutes, command.ReferenceDurationMinutes, requestingUser.Id, cancellationToken);
         await UpsertAsync(AssignmentEngineSettingKeys.EquityWindowWeeks, command.EquityWindowWeeks, requestingUser.Id, cancellationToken);
         await UpsertAsync(AssignmentEngineSettingKeys.RepetitionPenaltyWeight, command.RepetitionPenaltyWeight, requestingUser.Id, cancellationToken);
+        await UpsertAsync(AssignmentEngineSettingKeys.StrategyName, strategyName, requestingUser.Id, cancellationToken);
 
         // No single aggregate entity backs these settings; Guid.Empty identifies the singleton configuration.
         await auditLogger.LogAsync(
@@ -81,7 +89,8 @@ public sealed class UpdateAssignmentEngineSettingsUseCase(
             command.CriticalPriorityMultiplier,
             command.ReferenceDurationMinutes,
             command.EquityWindowWeeks,
-            command.RepetitionPenaltyWeight);
+            command.RepetitionPenaltyWeight,
+            strategyName);
     }
 
     private async Task UpsertAsync(string key, decimal value, Guid updatedByUserId, CancellationToken cancellationToken) =>

@@ -206,6 +206,8 @@ hors priorité immédiate.
   précis, avec adaptation automatique aux mois plus courts.
 - Les tâches hebdomadaires permettent de fixer leur échéance au début, au milieu ou à la fin
   de la semaine.
+- L'administrateur peut choisir entre `INTELLIGENT_V1`, `RANDOM`, `BALANCED_POINTS` et
+  `BALANCED_TIME`, avec une explication du fonctionnement de chaque moteur.
 
 ### Idées futures
 
@@ -225,3 +227,6 @@ hors priorité immédiate.
 -  reprendre ou approfondir le system de génération d'instance + affectation. 
 -  ~~Historique : faire la distinction entre les actions admin et utilsiateur. Pas si c'est un utilisateur avec role admin. Une action utilisateur est : complétion de tache, réouverture de tache, création de tache, modificaiton de tache, ajout de commentaire, ajout/modificaiton rappel ,configuration des préférences. admin : suppression tache, désactivation de tache, réactivation de tache, génération d'instance, lancé une affctation, cloturer la semaine. réaffectation d'instance de tache, annuler un tache, création ou modification de participan, modification du moteur d'affectaion~~ 
 - ~~quand on ouvre un formulaire type popup (formulaire création, modification de tache), si on modifie la valeur et qu'on ferme sans sauvegardé, la valeur modifier persiste.~~
+- ~~Choix du moteur de répartition de tâche.~~
+- déclaration absence pour un participant. (impact la réaffectation des taches)
+- Bug formulaire création de tache : le formulaire de création de tache et différent de modificaiton. => Dans la création il manque la partie 'configuration' de l'échéance, pour hebdomadaire, et mensuelle, vérrifie les autres type également.

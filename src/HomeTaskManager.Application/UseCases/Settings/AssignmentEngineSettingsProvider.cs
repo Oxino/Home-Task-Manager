@@ -37,6 +37,7 @@ public sealed class AssignmentEngineSettingsProvider(ISystemSettingRepository sy
             },
             ReadInt(AssignmentEngineSettingKeys.ReferenceDurationMinutes, defaults.ReferenceDurationMinutes),
             ReadInt(AssignmentEngineSettingKeys.EquityWindowWeeks, defaults.EquityWindowWeeks),
-            ReadDecimal(AssignmentEngineSettingKeys.RepetitionPenaltyWeight, defaults.RepetitionPenaltyWeight));
+            ReadDecimal(AssignmentEngineSettingKeys.RepetitionPenaltyWeight, defaults.RepetitionPenaltyWeight),
+            byKey.TryGetValue(AssignmentEngineSettingKeys.StrategyName, out var strategyName) ? strategyName : defaults.StrategyName);
     }
 }

@@ -19,6 +19,7 @@ public sealed class GetAssignmentEngineSettingsUseCase(IAssignmentEngineSettings
             settings.PriorityMultipliers[TaskPriority.Critical],
             settings.ReferenceDurationMinutes,
             settings.EquityWindowWeeks,
-            settings.RepetitionPenaltyWeight);
+            settings.RepetitionPenaltyWeight,
+            settings.StrategyName);
     }
 }

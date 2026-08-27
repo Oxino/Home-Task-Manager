@@ -1,6 +1,6 @@
 namespace HomeTaskManager.Domain.Engine;
 
-/// <summary>Baseline V1 strategy: assigns each task to a uniformly random active participant.</summary>
+/// <summary>Assigns shuffled tasks into balanced participant slots without history or load scoring.</summary>
 public sealed class RandomStrategy(Random? random = null) : IAssignmentStrategy
 {
     private readonly Random _random = random ?? Random.Shared;
@@ -9,16 +9,17 @@ public sealed class RandomStrategy(Random? random = null) : IAssignmentStrategy
 
     public AssignmentResult Assign(AssignmentContext context)
     {
-        if (context.ActiveParticipants.Count == 0)
+        var participants = context.ActiveParticipants.Where(participant => participant.AvailabilityPercentage > 0).ToList();
+        if (participants.Count == 0)
         {
             return new AssignmentResult([]);
         }
 
-        var assignments = context.TaskInstances
-            .Select(instance => new TaskAssignment(
-                instance.Id,
-                context.ActiveParticipants[_random.Next(context.ActiveParticipants.Count)].Id))
-            .ToList();
+        var shuffledInstances = context.TaskInstances.OrderBy(_ => _random.Next()).ToList();
+        var shuffledParticipants = participants.OrderBy(_ => _random.Next()).ToList();
+        var assignments = shuffledInstances.Select((instance, index) => new TaskAssignment(
+            instance.Id,
+            shuffledParticipants[index % shuffledParticipants.Count].Id)).ToList();
 
         return new AssignmentResult(assignments);
     }

@@ -36,7 +36,8 @@ public class AssignmentEngineSettingsController(
                 request.CriticalPriorityMultiplier,
                 request.ReferenceDurationMinutes,
                 request.EquityWindowWeeks,
-                request.RepetitionPenaltyWeight);
+                request.RepetitionPenaltyWeight,
+                request.StrategyName);
 
             var settings = await updateAssignmentEngineSettingsUseCase.ExecuteAsync(command, cancellationToken);
             return Ok(settings);

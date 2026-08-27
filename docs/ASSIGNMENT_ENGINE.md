@@ -15,9 +15,53 @@ Une tâche quotidienne obligatoire constitue une responsabilité hebdomadaire un
 instances sont affectées au même participant pour la semaine. L'équilibrage se fait entre les
 tâches, pas entre les jours d'une même tâche.
 
-## Version initiale
+## Moteurs disponibles
 
-INTELLIGENT_V1
+Le moteur actif est choisi par l'administrateur dans la page de paramétrage. Le choix est
+persisté dans `SystemSetting` sous `AssignmentEngine.StrategyName` et est appliqué lors de la
+prochaine exécution du moteur.
+
+### INTELLIGENT_V1
+
+Moteur par défaut. Il prend en compte les instances à affecter, la disponibilité, les scores de
+tâches, l'historique récent et la pénalité anti-répétition. Les instances reportées sont
+conservées avec leur propriétaire par le cas d'utilisation d'affectation, avant l'appel de la
+stratégie.
+
+### RANDOM
+
+Moteur minimaliste : il ignore l'historique, les scores, les durées et la charge existante. Les
+instances sont mélangées aléatoirement puis distribuées dans des créneaux de participants
+éligibles. Le nombre d'instances par participant diffère au maximum d'une tâche lorsque le
+nombre total n'est pas divisible par le nombre de participants.
+
+### BALANCED_POINTS
+
+Moteur sans historique. Il trie les tâches par score décroissant, puis affecte chaque tâche au
+participant dont la charge de points actuelle, rapportée à sa disponibilité, est la plus faible.
+Les reports sont exclus comme pour tout moteur via le cas d'utilisation; seules les instances
+assignables de la semaine courante sont prises en compte.
+
+### BALANCED_TIME
+
+Moteur sans historique. Il applique le même principe glouton que `BALANCED_POINTS`, mais la
+charge est la durée estimée en minutes. Une tâche sans durée utilise la durée de référence
+configurée. Les reports sont exclus et seules les instances assignables de la semaine courante
+sont équilibrées.
+
+Les quatre moteurs excluent les participants dont la disponibilité est nulle. La conservation
+des reports et l'écriture des notifications restent gérées par le cas d'utilisation
+d'affectation, indépendamment du moteur choisi. La règle de responsabilité unique des tâches
+quotidiennes obligatoires est actuellement appliquée par `INTELLIGENT_V1`; elle doit être
+généralisée aux nouveaux moteurs dans un prochain durcissement si ces tâches sont utilisées
+avec eux.
+
+## Analyse de conformité de INTELLIGENT_V1
+
+L'implémentation actuelle est conforme aux étapes documentées pour les scores, la disponibilité,
+l'historique sur huit semaines, la pénalité anti-répétition et les départages déterministes. Les
+absences restent volontairement non implémentées conformément au hors-périmètre V1. Les tâches
+reportées sont exclues de la stratégie et gardent leur propriétaire dans le cas d'utilisation.
 
 ## Ordre de traitement
 
