@@ -764,7 +764,7 @@ nav {
   display: grid;
   place-items: center;
   padding: 20px;
-  z-index: 4;
+  z-index: 100;
 }
 .task-modal {
   background: white;
@@ -772,8 +772,10 @@ nav {
   width: 100%;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
+  overflow-x: visible;
   padding: 34px;
   position: relative;
+  z-index: 101;
 }
 .task-modal h2 {
   font-size: 26px;
@@ -1186,6 +1188,7 @@ nav {
   position: relative;
   margin-left: 6px;
   vertical-align: middle;
+  z-index: 100;
 }
 .info-button {
   width: 16px;
@@ -1197,15 +1200,16 @@ nav {
   font-size: 10px;
   font-weight: 700;
   padding: 0;
+  cursor: pointer;
 }
 .info-tooltip {
   position: absolute;
-  z-index: 8;
-  right: 100%;
-  bottom: -8px;
-  margin-right: 8px;
+  z-index: 9999;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
   width: 200px;
-  max-width: calc(100vw - 20px);
+  max-width: calc(100vw - 40px);
   padding: 9px 10px;
   background: #203c36;
   color: white;
@@ -1217,7 +1221,7 @@ nav {
   word-wrap: break-word;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(4px);
+  transform: translateY(-4px);
   transition:
     opacity 0.16s ease,
     transform 0.16s ease;
