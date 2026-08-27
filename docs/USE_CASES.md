@@ -251,7 +251,7 @@ Chaque cas d'usage documente :
 
 ## UC-ENG-04 — Réaffecter manuellement une instance
 
-- **Acteur** : Administrateur
+- **Acteur** : Administrateur, ou participant actuellement responsable de l'instance
 - **Scénario** : changement de `AssignedUserId` sur une instance.
 - **Postconditions** : historisation de la réaffectation (BR-017, BR-022) et création d'une
   notification pour le nouveau responsable, mentionnant l'administrateur réaffecteur et

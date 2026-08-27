@@ -122,8 +122,10 @@ Optimisation UX
 - Responsive desktop et mobile.
 - Vue admin globale des affectations de la semaine.
 - Vue admin des instances avec réaffectation et annulation contrôlées.
+- Réaffectation possible par un participant uniquement pour ses propres instances, et par un
+  administrateur pour toute instance.
 - Notification automatique du nouveau responsable lors d'une réaffectation manuelle, avec le
-  nom de l'administrateur réaffecteur et un lien direct vers l'instance.
+  nom du réaffecteur et un lien direct vers l'instance.
 - Gestion admin des profils actifs et inactifs, avec réactivation.
 - Cycle de vie des modèles de tâches avec archivage logique, filtre des modèles actifs ou
   archivés et réactivation réservée à l'administration.

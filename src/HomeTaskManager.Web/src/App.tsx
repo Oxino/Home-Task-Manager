@@ -4178,7 +4178,7 @@ function App() {
                 </div>
               )}
             </div>
-            {currentUser.isAdmin && selected.status !== "Cancelled" && !isHistoricalWeek && (
+            {(currentUser.isAdmin || selected.assignedUserId === currentUser.id) && selected.status !== "Cancelled" && !isHistoricalWeek && (
               <div className="task-delegation">
                 <label htmlFor="task-delegation-select">Déléguer à un autre participant</label>
                 <select

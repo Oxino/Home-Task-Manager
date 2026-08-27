@@ -240,6 +240,15 @@
 - La notification contient un lien direct vers l'instance réaffectée.
 - Le comportement est couvert par un test Application ciblé.
 
+### V13.5 — Réaffectation par le responsable
+
+- Un participant peut désormais réaffecter une instance qui lui est attribuée à un autre
+  participant actif depuis le détail de la tâche.
+- Un administrateur conserve la possibilité de réaffecter n'importe quelle instance depuis la
+  page d'administration des instances.
+- L'autorisation est contrôlée côté API: un participant ne peut pas réaffecter l'instance d'un
+  autre participant.
+
 ---
 
 ## Etat actuel (fin V13.3)

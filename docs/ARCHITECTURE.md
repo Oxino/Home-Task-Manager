@@ -128,8 +128,9 @@ interfaces (inversion de dépendance).
   scheduler de production.
 - Les mutations admin d’instance sont exposées par `PUT /api/task-instances/{id}/assignment`
   et `PUT /api/task-instances/{id}/cancel`. Les deux actions sont contrôlées par le rôle et
-  historisées. Une réaffectation crée aussi une notification persistante pour le nouveau
-  responsable, avec le nom de l'administrateur et un lien vers l'instance.
+  historisées. Un administrateur peut réaffecter toute instance; un participant ne peut
+  réaffecter que sa propre instance. Toute réaffectation crée aussi une notification persistante
+  pour le nouveau responsable, avec le nom du réaffecteur et un lien vers l'instance.
 - L’endpoint `GET /api/audit-logs` est authentifié : un participant reçoit uniquement les
   événements qu’il a effectués ; un administrateur peut consulter l’historique global. Le
   frontend classe les événements par nature d'action (`user` ou `admin`), indépendamment du
@@ -405,7 +406,7 @@ précédent et ses snapshots restent conservés (historique).
 | Méthode | Route | Description | Accès |
 |---------|-------|-------------|-------|
 | POST | `/api/assignments/run` | Lancer/relancer (écrase la semaine) | admin |
-| PUT | `/api/task-instances/{id}/assignment` | Réaffectation manuelle | admin |
+| PUT | `/api/task-instances/{id}/assignment` | Réaffectation manuelle | propriétaire ou admin |
 | GET | `/api/assignments/runs?week=YYYY-Www` | Historique des exécutions | admin |
 | GET | `/api/strategies` | Stratégies disponibles | admin |
 | PUT | `/api/strategies/active` | Sélectionner la stratégie active | admin |

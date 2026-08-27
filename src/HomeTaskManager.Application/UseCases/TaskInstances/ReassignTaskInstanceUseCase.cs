@@ -28,10 +28,11 @@ public sealed class ReassignTaskInstanceUseCase(
     {
         var requestingUser = await userRepository.GetByIdAsync(command.RequestingUserId, cancellationToken)
             ?? throw new DomainValidationException("The requesting profile does not exist.");
-        if (!requestingUser.IsAdmin) throw new ForbiddenOperationException("Only an administrator can reassign a task instance.");
 
         var instance = await taskInstanceRepository.GetByIdAsync(command.TaskInstanceId, cancellationToken)
             ?? throw new DomainValidationException("The requested task instance does not exist.");
+        if (!requestingUser.IsAdmin && instance.AssignedUserId != requestingUser.Id)
+            throw new ForbiddenOperationException("Only the assigned participant or an administrator can reassign a task instance.");
         var week = await weekRepository.GetByIdAsync(instance.WeekId, cancellationToken)
             ?? throw new DomainValidationException("The instance's week does not exist.");
         if (week.Status == WeekStatus.Closed) throw new DomainValidationException("A closed week cannot be reassigned.");

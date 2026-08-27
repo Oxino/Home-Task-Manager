@@ -51,7 +51,7 @@ public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskIn
     }
 
     [HttpPut("{id:guid}/assignment")]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public async Task<ActionResult<TaskInstanceDto>> Reassign(Guid id, ReassignTaskInstanceRequest request, CancellationToken cancellationToken)
     {
         try

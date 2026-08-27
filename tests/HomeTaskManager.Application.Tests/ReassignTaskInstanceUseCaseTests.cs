@@ -10,15 +10,17 @@ namespace HomeTaskManager.Application.Tests;
 
 public sealed class ReassignTaskInstanceUseCaseTests
 {
-    private static async Task<(User Admin, User Owner, User Target, Week Week, TaskInstance Instance, ReassignTaskInstanceUseCase UseCase, InMemoryNotificationRepository Notifications)> CreateContext(bool closed = false, bool withNotifications = false)
+    private static async Task<(User Admin, User Owner, User Target, User Other, Week Week, TaskInstance Instance, ReassignTaskInstanceUseCase UseCase, InMemoryNotificationRepository Notifications)> CreateContext(bool closed = false, bool withNotifications = false)
     {
         var admin = new User("Admin", isAdmin: true);
         var owner = new User("Julie");
         var target = new User("Nicolas");
+        var other = new User("Camille");
         var users = new InMemoryUserRepository();
         users.Seed(admin);
         users.Seed(owner);
         users.Seed(target);
+        users.Seed(other);
         var week = new Week(new WeekKey(2026, 1));
         if (closed) week.Close();
         var weeks = new InMemoryWeekRepository();
@@ -31,7 +33,7 @@ public sealed class ReassignTaskInstanceUseCaseTests
         var instance = new TaskInstance(template.Id, null, week, owner.Id, week.StartDate, week.EndDate);
         await instances.AddRangeAsync([instance]);
         var useCase = new ReassignTaskInstanceUseCase(instances, weeks, users, new NoOpAuditLogger(), new NoOpUnitOfWork(), notifications, templates);
-        return (admin, owner, target, week, instance, useCase, notifications ?? new InMemoryNotificationRepository());
+        return (admin, owner, target, other, week, instance, useCase, notifications ?? new InMemoryNotificationRepository());
     }
 
     [Fact]
@@ -56,10 +58,20 @@ public sealed class ReassignTaskInstanceUseCaseTests
     }
 
     [Fact]
-    public async Task Non_admin_cannot_reassign_an_instance()
+    public async Task Assigned_non_admin_can_reassign_their_instance()
     {
         var context = await CreateContext();
-        var action = () => context.UseCase.ExecuteAsync(new ReassignTaskInstanceCommand(context.Instance.Id, context.Owner.Id, context.Target.Id));
+        var result = await context.UseCase.ExecuteAsync(new ReassignTaskInstanceCommand(context.Instance.Id, context.Owner.Id, context.Target.Id));
+        result.AssignedUserId.Should().Be(context.Target.Id);
+    }
+
+    [Fact]
+    public async Task Non_admin_cannot_reassign_another_users_instance()
+    {
+        var context = await CreateContext();
+
+        var action = () => context.UseCase.ExecuteAsync(new ReassignTaskInstanceCommand(context.Instance.Id, context.Other.Id, context.Target.Id));
+
         await action.Should().ThrowAsync<ForbiddenOperationException>();
     }
 

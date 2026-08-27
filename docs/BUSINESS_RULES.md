@@ -390,7 +390,8 @@ Le moteur d'affectation.
 
 ## Description
 
-Un administrateur peut modifier une affectation.
+Un administrateur peut modifier toute affectation. Un participant non administrateur peut modifier
+uniquement l'affectation d'une instance qui lui est actuellement attribuée.
 
 ## Conséquence
 
