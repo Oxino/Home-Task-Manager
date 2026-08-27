@@ -4178,21 +4178,21 @@ function App() {
                   }}
                 >
                   <option value="">Non attribuée</option>
+              {selected.isCompleted && selected.completedAt && (
+                <div className="completion-date-property">
+                  <span>Complétée le</span>
+                  <b>
+                    {new Date(selected.completedAt).toLocaleString("fr-FR", {
+                      dateStyle: "long",
+                      timeStyle: "short",
+                    })}
+                  </b>
+                </div>
+              )}
                   {users.filter((user) => user.isActive).map((user) => (
                     <option value={user.id} key={user.id}>{user.displayName}</option>
                   ))}
                 </select>
-              </div>
-            )}
-            {selected.isCompleted && selected.completedAt && (
-              <div className="completion-date-property">
-                <span>Complétée le</span>
-                <b>
-                  {new Date(selected.completedAt).toLocaleString("fr-FR", {
-                    dateStyle: "long",
-                    timeStyle: "short",
-                  })}
-                </b>
               </div>
             )}
             {template(selected.taskTemplateId) &&

@@ -2069,6 +2069,14 @@ nav {
   font-size: 11px;
   margin-top: 4px;
 }
+.task-properties .completion-date-property {
+  border-left: 3px solid var(--teal);
+  background: #e9f6f1;
+}
+.task-properties .completion-date-property b {
+  color: var(--teal);
+  font-size: 11px;
+}
 .reminder-list {
   display: grid;
   gap: 8px;
