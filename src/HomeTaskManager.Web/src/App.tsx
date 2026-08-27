@@ -1853,7 +1853,7 @@ function HistoryPanel({
   useEffect(() => {
     setLoading(true);
     fetch(
-      `${api}/api/audit-logs?page=${historyPage}&pageSize=${historyPageSize}${!isAdmin ? "&scope=personal" : actorFilter !== "all" ? `&category=${actorFilter}` : ""}`,
+      `${api}/api/audit-logs${isAdmin ? `?page=${historyPage}&pageSize=${historyPageSize}${actorFilter !== "all" ? `&category=${actorFilter}` : ""}` : `/mine?page=${historyPage}&pageSize=${historyPageSize}`}`,
     )
       .then(async (response) => {
         if (!response.ok) throw new Error("Lecture impossible");

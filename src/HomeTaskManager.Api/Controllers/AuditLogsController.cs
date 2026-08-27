@@ -10,6 +10,12 @@ namespace HomeTaskManager.Api.Controllers;
 [Authorize]
 public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEntityUseCase) : ControllerBase
 {
+    [HttpGet("mine")]
+    public async Task<ActionResult<object>> GetMine([FromQuery] int page = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+    {
+        return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(User.GetCurrentUserId(), null, Math.Max(1, page), Math.Clamp(pageSize, 1, 50), cancellationToken));
+    }
+
     [HttpGet]
     public async Task<ActionResult<object>> GetForEntity(
         [FromQuery] string? entityType,
