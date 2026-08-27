@@ -232,6 +232,14 @@
   (instant de complétion), exposée dans les DTO et l'interface.
 - Build frontend vérifié avec `npm run build`; aucune erreur TypeScript détectée.
 
+### V13.4 — Notification lors d'une réaffectation
+
+- Une réaffectation manuelle crée désormais une notification pour le nouveau responsable.
+- Le message mentionne le titre de la tâche et le nom de l'administrateur qui a effectué la
+  réaffectation.
+- La notification contient un lien direct vers l'instance réaffectée.
+- Le comportement est couvert par un test Application ciblé.
+
 ---
 
 ## Etat actuel (fin V13.3)

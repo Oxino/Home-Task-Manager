@@ -253,7 +253,9 @@ Chaque cas d'usage documente :
 
 - **Acteur** : Administrateur
 - **Scénario** : changement de `AssignedUserId` sur une instance.
-- **Postconditions** : historisation de la réaffectation (BR-017, BR-022).
+- **Postconditions** : historisation de la réaffectation (BR-017, BR-022) et création d'une
+  notification pour le nouveau responsable, mentionnant l'administrateur réaffecteur et
+  contenant un lien vers l'instance.
 
 ## UC-ENG-05 — Réaffectation automatique sur indisponibilité
 

@@ -394,7 +394,10 @@ Un administrateur peut modifier une affectation.
 
 ## Conséquence
 
-La modification doit être historisée.
+La modification doit être historisée. Le nouveau responsable doit également recevoir une
+notification persistante indiquant que la tâche lui a été réaffectée et identifiant
+l'administrateur à l'origine de l'action. La notification contient un lien direct vers
+l'instance concernée.
 
 ---
 

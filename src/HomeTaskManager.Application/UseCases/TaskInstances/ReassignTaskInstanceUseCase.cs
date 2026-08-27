@@ -1,6 +1,7 @@
 using HomeTaskManager.Application.Abstractions;
 using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Application.Exceptions;
+using HomeTaskManager.Domain.Entities;
 using HomeTaskManager.Application.UseCases.Weeks;
 using HomeTaskManager.Domain.Enums;
 using HomeTaskManager.Domain.Exceptions;
@@ -19,7 +20,9 @@ public sealed class ReassignTaskInstanceUseCase(
     IWeekRepository weekRepository,
     IUserRepository userRepository,
     IAuditLogger auditLogger,
-    IUnitOfWork unitOfWork) : IReassignTaskInstanceUseCase
+    IUnitOfWork unitOfWork,
+    INotificationRepository? notificationRepository = null,
+    ITaskTemplateRepository? taskTemplateRepository = null) : IReassignTaskInstanceUseCase
 {
     public async Task<TaskInstanceDto> ExecuteAsync(ReassignTaskInstanceCommand command, CancellationToken cancellationToken = default)
     {
@@ -39,6 +42,19 @@ public sealed class ReassignTaskInstanceUseCase(
 
         var previousUserId = instance.AssignedUserId;
         instance.Reassign(command.AssignedUserId);
+        if (notificationRepository is not null)
+        {
+            var taskTitle = taskTemplateRepository is null
+                ? "une tâche"
+                : (await taskTemplateRepository.GetByIdAsync(instance.TaskTemplateId, cancellationToken))?.Title ?? "une tâche";
+            var title = "Tâche réaffectée";
+            var message = $"La tâche {taskTitle} vous a été réaffectée par {requestingUser.DisplayName}.";
+            await notificationRepository.AddAsync(new Notification(
+                assignedUser.Id,
+                title,
+                message,
+                $"/week?year={week.Year}&week={week.WeekNumber}&instanceId={instance.Id}"), cancellationToken);
+        }
         await auditLogger.LogAsync(AuditEntityTypes.TaskInstance, instance.Id, AuditActions.Reassigned, requestingUser.Id,
             $"AssignedUserId={previousUserId}", $"AssignedUserId={assignedUser.Id}", cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
