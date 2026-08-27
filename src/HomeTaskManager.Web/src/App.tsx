@@ -70,6 +70,7 @@ type TaskComment = {
   content: string;
   createdAt: string;
 };
+type CommentReaction = { id: string; commentId: string; userId: string; reactionType: string; createdAt: string };
 type NotificationItem = {
   id: string;
   title: string;
@@ -2447,14 +2448,33 @@ function CommentsPanel({
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [reactions, setReactions] = useState<Record<string, CommentReaction[]>>({});
+  const reactionTypes = ["👍", "❤️", "😂", "💪"];
   useEffect(() => {
     fetch(`${api}/api/task-instances/${instanceId}/comments`)
       .then(async (response) => {
-        if (response.ok) setComments(await response.json());
+        if (response.ok) {
+          const loadedComments: TaskComment[] = await response.json();
+          setComments(loadedComments);
+          const loadedReactions = await Promise.all(loadedComments.map(async (comment) => {
+            const reactionResponse = await fetch(`${api}/api/comments/${comment.id}/reactions`);
+            return [comment.id, reactionResponse.ok ? await reactionResponse.json() : []] as const;
+          }));
+          setReactions(Object.fromEntries(loadedReactions));
+        }
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
   }, [api, instanceId]);
+  async function toggleReaction(commentId: string, reactionType: string) {
+    const existing = (reactions[commentId] ?? []).find((reaction) => reaction.userId === currentUser.id && reaction.reactionType === reactionType);
+    const response = existing
+      ? await fetch(`${api}/api/comments/reactions/${existing.id}`, { method: "DELETE" })
+      : await fetch(`${api}/api/comments/${commentId}/reactions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reactionType }) });
+    if (!response.ok) return;
+    const updated = existing ? (reactions[commentId] ?? []).filter((reaction) => reaction.id !== existing.id) : [...(reactions[commentId] ?? []), await response.json()];
+    setReactions((current) => ({ ...current, [commentId]: updated }));
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!content.trim()) return;
@@ -2496,7 +2516,7 @@ function CommentsPanel({
       ) : (
         <div className="comments-list">
           {comments.map((comment) => (
-            <div className="comment" key={comment.id}>
+              <div className="comment" key={comment.id}>
               <b>{author(comment.authorUserId)}</b>
               <p>{comment.content}</p>
               <time>
@@ -2505,6 +2525,13 @@ function CommentsPanel({
                   timeStyle: "short",
                 })}
               </time>
+                <div className="comment-reactions" aria-label="Réactions au commentaire">
+                  {reactionTypes.map((reactionType) => {
+                    const matching = (reactions[comment.id] ?? []).filter((reaction) => reaction.reactionType === reactionType);
+                    const mine = matching.some((reaction) => reaction.userId === currentUser.id);
+                    return <button type="button" className={mine ? "reaction-button selected" : "reaction-button"} onClick={() => void toggleReaction(comment.id, reactionType)} key={reactionType} aria-pressed={mine}>{reactionType}{matching.length > 0 && <small>{matching.length}</small>}</button>;
+                  })}
+                </div>
             </div>
           ))}
         </div>
