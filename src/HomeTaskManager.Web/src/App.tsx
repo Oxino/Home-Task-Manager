@@ -3051,6 +3051,7 @@ function App() {
 
   async function openHistoryEntry(entry: AuditLog) {
     if (entry.entityType === "TaskInstance") {
+      const weekMatch = entry.newValue?.match(/WeekYear=(\d{4}); WeekNumber=(\d{1,2})/);
       try {
         const response = await fetch(`${api}/api/task-instances/${entry.entityId}`);
         if (!response.ok) throw new Error();
@@ -3063,6 +3064,10 @@ function App() {
         }
       } catch {
         setNotice("La semaine de cette tâche n'est plus disponible.");
+      }
+      if (weekMatch) {
+        navigate(`/week?year=${weekMatch[1]}&week=${weekMatch[2]}`);
+        return;
       }
       navigate("/week");
       return;

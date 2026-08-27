@@ -45,7 +45,7 @@ public sealed class SetTaskInstanceCompletionUseCase(
 
         await auditLogger.LogAsync(
             AuditEntityTypes.TaskInstance, instance.Id, AuditActions.CompletionChanged, requestingUser.Id,
-            $"IsCompleted={wasCompleted}", $"IsCompleted={instance.IsCompleted}", cancellationToken);
+            $"IsCompleted={wasCompleted}", $"IsCompleted={instance.IsCompleted}; WeekYear={week.Year}; WeekNumber={week.WeekNumber}", cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
