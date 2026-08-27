@@ -9,7 +9,7 @@ public interface IGetAuditLogsForEntityUseCase
     Task<IReadOnlyList<AuditLogDto>> ExecuteAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditLogDto>> ExecuteForPerformerAsync(Guid performerId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditLogDto>> ExecuteForPeriodAsync(DateTime from, DateTime to, string? action = null, CancellationToken cancellationToken = default);
-    Task<PagedResult<AuditLogDto>> ExecutePageAsync(Guid? performerId, string? category, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<PagedResult<AuditLogDto>> ExecutePageAsync(Guid? performerId, string? category, string? entityType, string? action, string? sort, int page, int pageSize, CancellationToken cancellationToken = default);
 }
 
 /// <summary>BR-033: exposes the audit trail of a given entity for explanation purposes.</summary>
@@ -43,9 +43,9 @@ public sealed class GetAuditLogsForEntityUseCase(IAuditLogRepository auditLogRep
         return Map(entries);
     }
 
-    public async Task<PagedResult<AuditLogDto>> ExecutePageAsync(Guid? performerId, string? category, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<AuditLogDto>> ExecutePageAsync(Guid? performerId, string? category, string? entityType, string? action, string? sort, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var result = await auditLogRepository.GetPageAsync(performerId, category, page, pageSize, cancellationToken);
+        var result = await auditLogRepository.GetPageAsync(performerId, category, entityType, action, sort, page, pageSize, cancellationToken);
         return new PagedResult<AuditLogDto>(Map(result.Items), page, pageSize, result.TotalCount);
     }
 

@@ -132,7 +132,8 @@ interfaces (inversion de dépendance).
   frontend classe les événements par nature d'action (`user` ou `admin`), indépendamment du
   rôle du profil auteur; le paramètre `category` conserve cette pagination côté API. `/history`
   force la portée personnelle, y compris pour un administrateur, tandis que `/admin-history`
-  expose le journal global aux administrateurs.
+  expose le journal global aux administrateurs. Le journal admin n'effectue pas de chargement de
+  semaines et accepte aussi `entityType`, `action` et `sort=oldest|newest` avant pagination.
   Les préférences existantes restent compatibles avec les variantes historiques de leur
   `EntityType`.
 - Les rappels sont configurés au niveau du modèle via `GET/POST /api/task-templates/{id}/reminders`.

@@ -13,7 +13,7 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
     [HttpGet("mine")]
     public async Task<ActionResult<object>> GetMine([FromQuery] int page = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(User.GetCurrentUserId(), null, Math.Max(1, page), Math.Clamp(pageSize, 1, 50), cancellationToken));
+        return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(User.GetCurrentUserId(), null, null, null, null, Math.Max(1, page), Math.Clamp(pageSize, 1, 50), cancellationToken));
     }
 
     [HttpGet]
@@ -25,6 +25,7 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
         [FromQuery] string? action,
         [FromQuery] string? category,
         [FromQuery] string? scope,
+        [FromQuery] string? sort,
         CancellationToken cancellationToken)
     {
         if ((!from.HasValue || !to.HasValue) && entityType is null && !entityId.HasValue)
@@ -33,7 +34,7 @@ public class AuditLogsController(IGetAuditLogsForEntityUseCase getAuditLogsForEn
             var pageSize = Request.Query.TryGetValue("pageSize", out var sizeValue) && int.TryParse(sizeValue, out var parsedSize) ? parsedSize : 10;
             page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 50);
             var personalScope = scope == "personal";
-            return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(personalScope || !User.IsInRole("Admin") ? User.GetCurrentUserId() : null, personalScope ? null : category, page, pageSize, cancellationToken));
+            return Ok(await getAuditLogsForEntityUseCase.ExecutePageAsync(personalScope || !User.IsInRole("Admin") ? User.GetCurrentUserId() : null, personalScope ? null : category, entityType, action, sort, page, pageSize, cancellationToken));
         }
         var entries = !User.IsInRole("Admin")
             ? await getAuditLogsForEntityUseCase.ExecuteForPerformerAsync(User.GetCurrentUserId(), cancellationToken)

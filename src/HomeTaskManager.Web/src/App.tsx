@@ -1848,12 +1848,15 @@ function HistoryPanel({
   const [historyPageCount, setHistoryPageCount] = useState(1);
   const [historyTotalCount, setHistoryTotalCount] = useState(0);
   const [actorFilter, setActorFilter] = useState("all");
+  const [entityFilter, setEntityFilter] = useState("all");
+  const [actionFilter, setActionFilter] = useState("all");
+  const [historySort, setHistorySort] = useState("newest");
   const [historyTargets, setHistoryTargets] = useState<Record<string, { instance: Instance; week: { year: number; weekNumber: number } }>>({});
   const historyPageSize = 10;
   useEffect(() => {
     setLoading(true);
     fetch(
-      `${api}/api/audit-logs${isAdmin ? `?page=${historyPage}&pageSize=${historyPageSize}${actorFilter !== "all" ? `&category=${actorFilter}` : ""}` : `/mine?page=${historyPage}&pageSize=${historyPageSize}`}`,
+      `${api}/api/audit-logs${isAdmin ? `?page=${historyPage}&pageSize=${historyPageSize}${actorFilter !== "all" ? `&category=${actorFilter}` : ""}${entityFilter !== "all" ? `&entityType=${entityFilter}` : ""}${actionFilter !== "all" ? `&action=${actionFilter}` : ""}${historySort !== "newest" ? `&sort=${historySort}` : ""}` : `/mine?page=${historyPage}&pageSize=${historyPageSize}`}`,
     )
       .then(async (response) => {
         if (!response.ok) throw new Error("Lecture impossible");
@@ -1864,7 +1867,7 @@ function HistoryPanel({
       })
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
-  }, [api, historyPage, actorFilter, isAdmin]);
+  }, [api, historyPage, actorFilter, entityFilter, actionFilter, historySort, isAdmin]);
   useEffect(() => {
     const instanceEntries = entries.filter((entry) => entry.entityType === "TaskInstance");
     if (instanceEntries.length === 0) return;
@@ -1880,6 +1883,10 @@ function HistoryPanel({
     })).then((results) => setHistoryTargets((current) => ({ ...current, ...Object.fromEntries(results.filter((result): result is readonly [string, { instance: Instance; week: { year: number; weekNumber: number } }] => result !== null)) })));
   }, [api, entries]);
   useEffect(() => {
+    if (isAdmin) {
+      setWeeks([]);
+      return;
+    }
     const loadWeeks = async () => {
       const requests = Array.from({ length: 8 }, (_, index) => {
         const date = new Date();
@@ -1909,7 +1916,7 @@ function HistoryPanel({
       );
     };
     loadWeeks();
-  }, [api, currentUserId]);
+  }, [api, currentUserId, isAdmin]);
   useEffect(() => {
     document
       .querySelectorAll<HTMLElement>(".week-history-card")
@@ -1996,7 +2003,8 @@ function HistoryPanel({
           <span className="history-count">
             {historyTotalCount} événement{historyTotalCount > 1 ? "s" : ""}
           </span>
-          {isAdmin && <select
+          {isAdmin && <div className="audit-filters">
+          <select
             className="history-actor-filter"
             value={actorFilter}
             onChange={(event) => { setActorFilter(event.target.value); setHistoryPage(1); }}
@@ -2005,10 +2013,14 @@ function HistoryPanel({
             <option value="all">Toutes les actions</option>
             <option value="user">Actions utilisateur</option>
             <option value="admin">Actions administration</option>
-          </select>}
+          </select>
+          <select value={entityFilter} onChange={(event) => { setEntityFilter(event.target.value); setHistoryPage(1); }} aria-label="Filtrer par type d’entité"><option value="all">Toutes les entités</option><option value="TaskInstance">Instances</option><option value="TaskTemplate">Modèles</option><option value="User">Profils</option><option value="Week">Semaines</option><option value="UserPreferences">Préférences</option></select>
+          <select value={actionFilter} onChange={(event) => { setActionFilter(event.target.value); setHistoryPage(1); }} aria-label="Filtrer par action"><option value="all">Toutes les actions</option><option value="Created">Création</option><option value="Updated">Modification</option><option value="CompletionChanged">Complétude</option><option value="CommentAdded">Commentaire</option><option value="Reassigned">Réaffectation</option><option value="Cancelled">Annulation</option><option value="Generated">Génération</option><option value="Executed">Affectation</option><option value="Closed">Clôture</option></select>
+          <select value={historySort} onChange={(event) => { setHistorySort(event.target.value); setHistoryPage(1); }} aria-label="Trier l’historique"><option value="newest">Plus récent</option><option value="oldest">Plus ancien</option></select>
+          </div>}
         </div>
       </div>
-      <section className="history-periods">
+      {!isAdmin && <section className="history-periods">
         <div className="history-section-heading"><div><span className="section-kicker">NAVIGATION TEMPORELLE</span><h3>Mes semaines passées</h3></div><p>Ouvre le dashboard d’une semaine sans ouvrir une activité particulière.</p></div>
         <div className="week-history-grid">
           {weeks.map((period, index) => (
@@ -2040,7 +2052,7 @@ function HistoryPanel({
             </button>
           ))}
         </div>
-      </section>
+      </section>}
       <ActivityCalendar entries={visibleEntries} />
       {loading ? (
         <HistoryActivitySkeleton />

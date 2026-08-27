@@ -235,3 +235,4 @@ hors priorité immédiate.
 - déclaration absence pour un participant. (impact la réaffectation des taches)
 - ~~Bug formulaire création de tache : le formulaire de création de tache et différent de modificaiton. => Dans la création il manque la partie 'configuration' de l'échéance, pour hebdomadaire, et mensuelle, vérrifie les autres type également.~~
 - ~~Modifier toutes les dropdowns de l'application du méme style graphique~~
+- ~~Journal d'audit : page dédiée à la consultation de l'audit log administrateur, sans navigation temporelle, avec filtres par catégorie, entité et action, et tri chronologique.~~

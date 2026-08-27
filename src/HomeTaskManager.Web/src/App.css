@@ -1183,6 +1183,24 @@ nav {
   margin-top: 0;
 }
 .history-count {
+  .audit-filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .audit-filters select {
+    min-width: 145px;
+  }
+  @media (max-width: 700px) {
+    .audit-filters {
+      width: 100%;
+      justify-content: stretch;
+    }
+    .audit-filters select {
+      flex: 1 1 140px;
+    }
+  }
   color: var(--muted);
   font-size: 11px;
 }

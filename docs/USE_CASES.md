@@ -356,7 +356,8 @@ couverture.
   effectués. Ce comportement s'applique aussi à un profil administrateur.
 - **Journal d'audit (`/admin-history`)** : réservé aux administrateurs, il affiche tous les
   événements du foyer et conserve les filtres de catégorie utilisateur/administration ainsi que
-  la pagination serveur.
+  les filtres d'entité/action, le tri chronologique et la pagination serveur. Il ne contient pas
+  le module de navigation des semaines passées.
 
 ---
 

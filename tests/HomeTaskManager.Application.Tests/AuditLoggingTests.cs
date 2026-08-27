@@ -49,7 +49,7 @@ public sealed class InMemoryAuditLogRepository : IAuditLogRepository
     public Task<IReadOnlyList<AuditLog>> GetByPeriodAsync(DateTime from, DateTime to, string? action = null, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<AuditLog>>(_entries.Where(entry => entry.PerformedAt >= from && entry.PerformedAt < to && (action == null || entry.Action == action)).OrderByDescending(entry => entry.PerformedAt).ToList());
 
-    public Task<(IReadOnlyList<AuditLog> Items, int TotalCount)> GetPageAsync(Guid? performerId, string? category, int page, int pageSize, CancellationToken cancellationToken = default)
+    public Task<(IReadOnlyList<AuditLog> Items, int TotalCount)> GetPageAsync(Guid? performerId, string? category, string? entityType, string? action, string? sort, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = performerId.HasValue ? _entries.Where(entry => entry.PerformedByUserId == performerId.Value) : _entries;
         var ordered = query.OrderByDescending(entry => entry.PerformedAt).ToList();

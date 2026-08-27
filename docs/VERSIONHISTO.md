@@ -257,6 +257,10 @@ la même règle et le même audit que la vue d'administration des instances.
 Les historiques sont séparés en deux routes : `/history` pour les actions du profil courant et
 `/admin-history` pour le journal global réservé aux administrateurs.
 
+Le journal administrateur est désormais dédié aux audit logs: la navigation temporelle en a été
+retirée et les filtres par catégorie, entité, action et ordre chronologique sont appliqués côté
+API avant pagination.
+
 Le choix du moteur de répartition est désormais configurable et persistant. Les moteurs
 `RANDOM`, `BALANCED_POINTS` et `BALANCED_TIME` ont été ajoutés en complément de `INTELLIGENT_V1`;
 la page d'administration explique leurs règles et leurs étapes de décision.
