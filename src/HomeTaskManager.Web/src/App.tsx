@@ -4141,6 +4141,17 @@ function App() {
                   }}
                 >
                   <option value="">Non attribuée</option>
+              {selected.isCompleted && selected.completedAt && (
+                <div>
+                  <span>Complétée le</span>
+                  <b>
+                    {new Date(selected.completedAt).toLocaleString("fr-FR", {
+                      dateStyle: "long",
+                      timeStyle: "short",
+                    })}
+                  </b>
+                </div>
+              )}
                   {users.filter((user) => user.isActive).map((user) => (
                     <option value={user.id} key={user.id}>{user.displayName}</option>
                   ))}
