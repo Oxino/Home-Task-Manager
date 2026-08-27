@@ -3339,6 +3339,29 @@ function App() {
           ),
         );
       }
+      const updated = await response.json();
+      setInstances((items) =>
+        items.map((entry) =>
+          entry.id === item.id
+            ? {
+                ...entry,
+                isCompleted: updated.isCompleted,
+                completedAt: updated.completedAt,
+                status: updated.status,
+              }
+            : entry,
+        ),
+      );
+      setSelected((entry) =>
+        entry?.id === item.id
+          ? {
+              ...entry,
+              isCompleted: updated.isCompleted,
+              completedAt: updated.completedAt,
+              status: updated.status,
+            }
+          : entry,
+      );
     } catch (reason) {
       setInstances((items) =>
         items.map((entry) =>
