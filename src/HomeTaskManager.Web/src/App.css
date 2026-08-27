@@ -51,6 +51,23 @@
   font: inherit;
   font-size: 11px;
 }
+select {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 32px 8px 10px;
+  background-color: #fbfcfb;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+select:focus-visible {
+  border-color: var(--teal);
+  outline: 2px solid rgba(33, 125, 117, 0.2);
+  outline-offset: 1px;
+}
 .task-filter-input {
   min-width: 130px;
   flex: 1 1 130px;

@@ -229,4 +229,5 @@ hors priorité immédiate.
 - ~~quand on ouvre un formulaire type popup (formulaire création, modification de tache), si on modifie la valeur et qu'on ferme sans sauvegardé, la valeur modifier persiste.~~
 - ~~Choix du moteur de répartition de tâche.~~
 - déclaration absence pour un participant. (impact la réaffectation des taches)
-- Bug formulaire création de tache : le formulaire de création de tache et différent de modificaiton. => Dans la création il manque la partie 'configuration' de l'échéance, pour hebdomadaire, et mensuelle, vérrifie les autres type également.
+- ~~Bug formulaire création de tache : le formulaire de création de tache et différent de modificaiton. => Dans la création il manque la partie 'configuration' de l'échéance, pour hebdomadaire, et mensuelle, vérrifie les autres type également.~~
+- ~~Modifier toutes les dropdowns de l'application du méme style graphique~~

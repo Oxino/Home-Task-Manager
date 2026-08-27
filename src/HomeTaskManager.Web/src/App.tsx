@@ -575,7 +575,10 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("Normal");
   const [frequencyType, setFrequencyType] = useState("Weekly");
+  const [weeklyScheduleType, setWeeklyScheduleType] = useState("EndOfWeek");
   const [activeWeekDays, setActiveWeekDays] = useState<number[]>([1]);
+  const [monthlyScheduleType, setMonthlyScheduleType] = useState("StartOfMonth");
+  const [monthlyDay, setMonthlyDay] = useState("1");
   const [difficulty, setDifficulty] = useState("50");
   const [duration, setDuration] = useState("30");
   const [reminderEnabled, setReminderEnabled] = useState(false);
@@ -589,7 +592,10 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
     setDescription("");
     setPriority("Normal");
     setFrequencyType("Weekly");
+    setWeeklyScheduleType("EndOfWeek");
     setActiveWeekDays([1]);
+    setMonthlyScheduleType("StartOfMonth");
+    setMonthlyDay("1");
     setDifficulty("50");
     setDuration("30");
     setReminderEnabled(false);
@@ -626,6 +632,9 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
       priority,
       estimatedDurationMinutes: Number(duration) || null,
       activeWeekDays: frequencyType === "WeeklyFlexible" ? activeWeekDays : [],
+      monthlyScheduleType,
+      monthlyDay: frequencyType === "Monthly" && monthlyScheduleType === "SpecificDay" ? Number(monthlyDay) : null,
+      weeklyScheduleType,
       createdByUserId: user.id,
     };
     try {
@@ -761,6 +770,8 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
                   </div>
                 </fieldset>
               )}
+              {frequencyType === "Monthly" && <MonthlyScheduleField scheduleType={monthlyScheduleType} day={monthlyDay} onScheduleTypeChange={setMonthlyScheduleType} onDayChange={setMonthlyDay} />}
+              {frequencyType === "Weekly" && <WeeklyScheduleField value={weeklyScheduleType} onChange={setWeeklyScheduleType} />}
               <label>
                 Pénibilité
                 <FieldInfo text="Score entier obligatoire compris entre 1 et 100. Plus il est élevé, plus la tâche pèse dans l’équilibrage." />
