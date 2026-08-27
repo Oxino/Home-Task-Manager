@@ -971,7 +971,7 @@ function EditTaskDialog({
   return (
     <>
       <button className="secondary-button" onClick={() => { resetForm(); setOpen(true); }}>
-        Modifier
+        Modifier le modèle
       </button>
       {open && (
         <div className="modal-backdrop" onClick={closeForm}>
@@ -3852,6 +3852,20 @@ function App() {
                       >
                         {item.isCompleted ? "✓" : ""}
                       </button>
+                      {item.isCompleted && (
+                        <span className="task-completed-status">
+                          <b>Terminée</b>
+                          {item.completedAt && (
+                            <small>
+                              {new Date(item.completedAt).toLocaleDateString("fr-FR", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </small>
+                          )}
+                        </span>
+                      )}
                       <div className="task-main">
                         <div className="task-title-line">
                           <h3>

@@ -541,6 +541,25 @@ nav {
   background: var(--teal);
   border-color: var(--teal);
 }
+.task-completed-status {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 82px;
+  padding: 6px 8px;
+  border-left: 2px solid #3d9b7d;
+  color: #27745f;
+  background: #e9f6f0;
+  border-radius: 3px;
+}
+.task-completed-status b {
+  font-size: 10px;
+}
+.task-completed-status small {
+  color: #5d8f7f;
+  font-size: 9px;
+  white-space: nowrap;
+}
 .task-main {
   min-width: 0;
   flex: 1;
