@@ -783,6 +783,21 @@ nav {
 .task-delegation select {
   width: 100%;
 }
+.completion-date-property {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--teal);
+  background: #eef8f4;
+}
+.completion-date-property span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.completion-date-property b {
+  color: var(--teal);
+  font-size: 13px;
+}
 .modal-close {
   position: absolute;
   right: 17px;
