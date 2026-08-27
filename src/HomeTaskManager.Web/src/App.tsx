@@ -3049,15 +3049,30 @@ function App() {
     }
   }
 
-  function openHistoryEntry(entry: AuditLog) {
+  async function openHistoryEntry(entry: AuditLog) {
+    if (entry.entityType === "TaskInstance") {
+      try {
+        const response = await fetch(`${api}/api/task-instances/${entry.entityId}`);
+        if (!response.ok) throw new Error();
+        const result = await response.json();
+        const year = result.week?.year;
+        const weekNumber = result.week?.weekNumber;
+        if (Number.isInteger(year) && Number.isInteger(weekNumber)) {
+          navigate(`/week?year=${year}&week=${weekNumber}&instanceId=${encodeURIComponent(entry.entityId)}`);
+          return;
+        }
+      } catch {
+        setNotice("La semaine de cette tâche n'est plus disponible.");
+      }
+      navigate("/week");
+      return;
+    }
     const target =
       entry.entityType === "User"
         ? `/participants?userId=${entry.entityId}`
         : entry.entityType === "TaskTemplate"
           ? `/tasks?templateId=${entry.entityId}${entry.newValue?.includes("Reminder") ? "&reminders=1" : ""}`
-          : entry.entityType === "TaskInstance"
-            ? `/instances?instanceId=${entry.entityId}`
-            : entry.entityType === "AssignmentRun"
+          : entry.entityType === "AssignmentRun"
               ? "/assignments"
               : entry.entityType === "AssignmentEngineSettings"
                 ? "/assignment-engine"

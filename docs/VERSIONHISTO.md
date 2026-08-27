@@ -241,6 +241,10 @@ par le rôle du profil auteur; la pagination API applique aussi ce filtre côté
 Les audits de génération d'instances (`Week/Generated`) et de modification des préférences
 (`UserPreferences/Updated`) sont désormais enregistrés explicitement.
 
+Les actions d'historique liées à une tâche retournent désormais vers le dashboard de la semaine
+concernée, avec sélection de l'instance; les cartes de semaines récentes restent un parcours
+séparé de navigation temporelle.
+
 Le choix du moteur de répartition est désormais configurable et persistant. Les moteurs
 `RANDOM`, `BALANCED_POINTS` et `BALANCED_TIME` ont été ajoutés en complément de `INTELLIGENT_V1`;
 la page d'administration explique leurs règles et leurs étapes de décision.

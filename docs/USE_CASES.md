@@ -341,6 +341,15 @@ les changements d'activation sont encore encodés comme `Updated` et identifiés
 Les réactions et les exécutions flexibles doivent encore être journalisées pour compléter la
 couverture.
 
+## UC-HIS-05 — Revenir au dashboard depuis une action de tâche
+
+- **Acteur** : Participant ou Administrateur.
+- **Règle** : une entrée d'audit liée à une `TaskInstance` ouvre le dashboard de la semaine de
+  l'instance, avec l'instance sélectionnée si elle est encore accessible.
+- **Distinction** : les cartes des semaines récentes ouvrent un dashboard de période sans
+  sélection d'instance; elles restent distinctes de la liste des actions d'audit.
+- **Accès** : la page `/instances` reste réservée à l'administration.
+
 ---
 
 # Domaine : Notifications

@@ -145,6 +145,9 @@ interfaces (inversion de dépendance).
   `GET /api/analytics/completion` et `GET /api/analytics/load-distribution`.
 - Les réactions de commentaires sont exposées par `POST /api/comments/{commentId}/reactions`,
   `DELETE /api/comments/reactions/{reactionId}` et `GET /api/comments/{commentId}/reactions`.
+- La lecture authentifiée de `GET /api/task-instances/{id}` renvoie l'instance et sa semaine;
+  elle permet à l'historique de rejoindre `/week?year=&week=&instanceId=` sans exposer la page
+  d'administration des instances aux participants.
 - Une affectation produite par le moteur crée une notification personnelle pour le participant
   retenu, avec un lien vers la semaine et l'instance concernées.
 - Aucune règle métier complexe : l'interface présente les états et déclenche les cas d'usage

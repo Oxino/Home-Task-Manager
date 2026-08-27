@@ -2,6 +2,7 @@ using HomeTaskManager.Api.Contracts.TaskInstances;
 using HomeTaskManager.Application.Exceptions;
 using HomeTaskManager.Application.UseCases.TaskInstances;
 using HomeTaskManager.Application.UseCases.Weeks;
+using HomeTaskManager.Application.Abstractions.Repositories;
 using HomeTaskManager.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -11,8 +12,21 @@ namespace HomeTaskManager.Api.Controllers;
 
 [ApiController]
 [Route("api/task-instances")]
-public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskInstanceCompletionUseCase, IReassignTaskInstanceUseCase reassignTaskInstanceUseCase, ICancelTaskInstanceUseCase cancelTaskInstanceUseCase, ITaskCommentUseCase taskCommentUseCase, IExecuteDailyFlexibleTaskUseCase executeDailyFlexibleTaskUseCase) : ControllerBase
+public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskInstanceCompletionUseCase, IReassignTaskInstanceUseCase reassignTaskInstanceUseCase, ICancelTaskInstanceUseCase cancelTaskInstanceUseCase, ITaskCommentUseCase taskCommentUseCase, IExecuteDailyFlexibleTaskUseCase executeDailyFlexibleTaskUseCase, ITaskInstanceRepository taskInstanceRepository, IWeekRepository weekRepository, IUserRepository userRepository) : ControllerBase
 {
+    [HttpGet("{id:guid}")]
+    [Authorize]
+    public async Task<ActionResult<object>> Get(Guid id, CancellationToken cancellationToken)
+    {
+        var instance = await taskInstanceRepository.GetByIdAsync(id, cancellationToken);
+        if (instance is null) return NotFound();
+        var user = await userRepository.GetByIdAsync(User.GetCurrentUserId(), cancellationToken);
+        if (user is null || (!user.IsAdmin && instance.AssignedUserId != user.Id)) return Forbid();
+        var week = await weekRepository.GetByIdAsync(instance.WeekId, cancellationToken);
+        if (week is null) return NotFound();
+        return Ok(new { instance = WeekMapper.ToDto(instance), week = WeekMapper.ToDto(week) });
+    }
+
     [HttpPut("{id:guid}/completion")]
     [Authorize]
     public async Task<ActionResult<TaskInstanceDto>> SetCompletion(
