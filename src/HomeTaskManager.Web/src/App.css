@@ -865,7 +865,6 @@ nav {
   margin-top: 22px;
 }
 .form-modal {
-  max-width: 100%;
   width: 100%;
   display: grid;
   gap: 13px;
