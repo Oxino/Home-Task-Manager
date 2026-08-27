@@ -2186,41 +2186,48 @@ function PreferencesPanel({
       <p className="settings-intro">
         Choisis l’affichage des échéances sur le dashboard.
       </p>
-      <div className="notification-preference">
-        <label htmlFor="notification-preference">Niveau de notification</label>
-        <select
-          id="notification-preference"
-          value={notificationPreference}
-          disabled={loading || saving}
-          onChange={(event) => {
-            const preference = event.target.value as "All" | "Important" | "None";
-            void savePreferences(preference, selectedFormat);
-          }}
-        >
-          <option value="All">Toutes les notifications (rappels + affectations)</option>
-          <option value="Important">Notifications importantes seulement (réaffectations)</option>
-          <option value="None">Aucune notification</option>
-        </select>
-        <small>
-          {notificationPreference === "All" && "Tu reçois tous les rappels et affectations."}
-          {notificationPreference === "Important" && "Tu reçois uniquement les réaffectations manuelles."}
-          {notificationPreference === "None" && "Tu ne reçois aucune notification."}
-        </small>
-      </div>
-      <div className="date-format-preference">
-        <label htmlFor="date-display-format">Format des dates</label>
-        <select
-          id="date-display-format"
-          value={selectedFormat}
-          disabled={loading || saving}
-          onChange={(event) => {
-            const format = event.target.value as "Weekday" | "Numeric";
-            void savePreferences(notificationPreference, format);
-          }}
-        >
-          <option value="Weekday">Nom du jour (lundi)</option>
-          <option value="Numeric">Date numérique (dd/mm/yyyy)</option>
-        </select>
+      <div className="preferences-content">
+        <div className="notification-preference">
+          <label htmlFor="notification-preference">
+            Niveau de notification
+            <span className="field-info">
+              <button className="info-button" type="button">i</button>
+              <div className="info-tooltip">
+                {notificationPreference === "All" && "Tu reçois tous les rappels et affectations."}
+                {notificationPreference === "Important" && "Tu reçois uniquement les réaffectations manuelles."}
+                {notificationPreference === "None" && "Tu ne reçois aucune notification."}
+              </div>
+            </span>
+          </label>
+          <select
+            id="notification-preference"
+            value={notificationPreference}
+            disabled={loading || saving}
+            onChange={(event) => {
+              const preference = event.target.value as "All" | "Important" | "None";
+              void savePreferences(preference, selectedFormat);
+            }}
+          >
+            <option value="All">Toutes les notifications</option>
+            <option value="Important">Notifications importantes</option>
+            <option value="None">Aucune</option>
+          </select>
+        </div>
+        <div className="date-format-preference">
+          <label htmlFor="date-display-format">Format des dates</label>
+          <select
+            id="date-display-format"
+            value={selectedFormat}
+            disabled={loading || saving}
+            onChange={(event) => {
+              const format = event.target.value as "Weekday" | "Numeric";
+              void savePreferences(notificationPreference, format);
+            }}
+          >
+            <option value="Weekday">Nom du jour (lundi)</option>
+            <option value="Numeric">Date numérique (dd/mm/yyyy)</option>
+          </select>
+        </div>
       </div>
       <p className="preference-status">
         {loading
