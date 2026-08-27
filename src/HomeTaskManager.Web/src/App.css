@@ -763,19 +763,20 @@ nav {
   background: #1b302b73;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: 30px;
   z-index: 100;
 }
 .task-modal {
   background: white;
-  max-width: 430px;
+  max-width: 400px;
   width: 100%;
-  max-height: calc(100vh - 32px);
+  max-height: calc(100vh - 60px);
   overflow-y: auto;
-  overflow-x: visible;
-  padding: 34px;
+  overflow-x: hidden;
+  padding: 40px;
   position: relative;
   z-index: 101;
+  box-sizing: border-box;
 }
 .task-modal h2 {
   font-size: 26px;
@@ -864,9 +865,11 @@ nav {
   margin-top: 22px;
 }
 .form-modal {
-  max-width: 520px;
+  max-width: 100%;
+  width: 100%;
   display: grid;
   gap: 13px;
+  box-sizing: border-box;
 }
 .form-modal label {
   display: grid;
@@ -1208,8 +1211,8 @@ nav {
   left: 0;
   top: 100%;
   margin-top: 8px;
-  width: 200px;
-  max-width: calc(100vw - 40px);
+  width: 180px;
+  max-width: calc(100vw - 80px);
   padding: 9px 10px;
   background: #203c36;
   color: white;
