@@ -802,6 +802,38 @@ nav {
 .task-delegation select {
   width: 100%;
 }
+.task-delegation-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+.reassign-button,
+.edit-template-button {
+  border: 1px solid var(--teal);
+  background: var(--teal);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+.reassign-button:hover,
+.edit-template-button:hover {
+  background: #176f69;
+}
+.reassign-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.edit-template-button {
+  box-shadow: 0 3px 0 #b8d9d1;
+  margin: 4px 0 2px;
+}
+.edit-template-button:active {
+  box-shadow: none;
+  transform: translateY(2px);
+}
 .completion-date-property {
   display: grid;
   gap: 4px;

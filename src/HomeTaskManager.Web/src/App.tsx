@@ -970,7 +970,7 @@ function EditTaskDialog({
 
   return (
     <>
-      <button className="secondary-button" onClick={() => { resetForm(); setOpen(true); }}>
+      <button className="edit-template-button" onClick={() => { resetForm(); setOpen(true); }}>
         Modifier le modèle
       </button>
       {open && (
@@ -2924,6 +2924,7 @@ function App() {
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [taskSort, setTaskSort] = useState("dueDate");
   const [selected, setSelected] = useState<Instance | null>(null);
+  const [delegationTargetId, setDelegationTargetId] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [locationSearch, setLocationSearch] = useState(
@@ -2964,6 +2965,10 @@ function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    setDelegationTargetId(selected?.assignedUserId ?? "");
+  }, [selected?.id, selected?.assignedUserId]);
 
   function navigate(path: string) {
     const target = new URL(path, window.location.origin);
@@ -4181,18 +4186,26 @@ function App() {
             {(currentUser.isAdmin || selected.assignedUserId === currentUser.id) && selected.status !== "Cancelled" && !isHistoricalWeek && (
               <div className="task-delegation">
                 <label htmlFor="task-delegation-select">Déléguer à un autre participant</label>
-                <select
-                  id="task-delegation-select"
-                  value={selected.assignedUserId ?? ""}
-                  onChange={(event) => {
-                    if (event.target.value) void reassignInstance(selected.id, event.target.value);
-                  }}
-                >
-                  <option value="">Non attribuée</option>
-                  {users.filter((user) => user.isActive).map((user) => (
-                    <option value={user.id} key={user.id}>{user.displayName}</option>
-                  ))}
-                </select>
+                <div className="task-delegation-controls">
+                  <select
+                    id="task-delegation-select"
+                    value={delegationTargetId}
+                    onChange={(event) => setDelegationTargetId(event.target.value)}
+                  >
+                    <option value="">Non attribuée</option>
+                    {users.filter((user) => user.isActive).map((user) => (
+                      <option value={user.id} key={user.id}>{user.displayName}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="reassign-button"
+                    type="button"
+                    disabled={!delegationTargetId || delegationTargetId === selected.assignedUserId}
+                    onClick={() => void reassignInstance(selected.id, delegationTargetId)}
+                  >
+                    Réaffecter
+                  </button>
+                </div>
               </div>
             )}
             {template(selected.taskTemplateId) &&
