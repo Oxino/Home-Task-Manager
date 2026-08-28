@@ -48,7 +48,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         modelBuilder.Entity<Week>(entity =>
         {
             entity.HasKey(week => week.Id);
-            entity.HasIndex(week => new { week.Year, week.WeekNumber }).IsUnique();
+            entity.HasIndex(week => new { week.Year, week.WeekNumber, week.SegmentNumber }).IsUnique();
         });
 
         modelBuilder.Entity<TaskInstance>(entity =>

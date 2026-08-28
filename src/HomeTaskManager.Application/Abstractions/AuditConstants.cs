@@ -23,4 +23,5 @@ public static class AuditActions
     public const string CommentAdded = "CommentAdded";
     public const string Executed = "Executed";
     public const string Generated = "Generated";
+    public const string Recovered = "Recovered";
 }

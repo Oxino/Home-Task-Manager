@@ -9,5 +9,7 @@ public interface IWeekRepository
 
     Task<Week?> GetByKeyAsync(WeekKey key, CancellationToken cancellationToken = default);
 
+    Task<int> GetNextSegmentNumberAsync(WeekKey key, CancellationToken cancellationToken = default);
+
     Task AddAsync(Week week, CancellationToken cancellationToken = default);
 }

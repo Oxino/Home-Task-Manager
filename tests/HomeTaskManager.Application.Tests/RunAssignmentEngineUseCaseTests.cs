@@ -189,4 +189,26 @@ public class RunAssignmentEngineUseCaseTests
 
         carriedOver.AssignedUserId.Should().Be(originalOwner.Id);
     }
+
+    [Fact]
+    public async Task Orphaned_carried_over_instances_are_assigned_by_the_engine()
+    {
+        var userRepository = new InMemoryUserRepository();
+        var admin = new User("Nicolas", isAdmin: true);
+        var participant = new User("Julie");
+        userRepository.Seed(admin);
+        userRepository.Seed(participant);
+        var weekRepository = new InMemoryWeekRepository();
+        var week = new Week(new WeekKey(2026, 1));
+        await weekRepository.AddAsync(week);
+        var instanceRepository = new InMemoryTaskInstanceRepository();
+        var carriedOver = new TaskInstance(
+            Guid.NewGuid(), null, week, null, week.StartDate, week.EndDate, isCarryOver: true);
+        await instanceRepository.AddRangeAsync([carriedOver]);
+        var useCase = CreateUseCase(userRepository, weekRepository, instanceRepository);
+
+        await useCase.ExecuteAsync(new RunAssignmentEngineCommand(2026, 1, admin.Id));
+
+        carriedOver.AssignedUserId.Should().NotBeNull();
+    }
 }

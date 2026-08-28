@@ -477,7 +477,19 @@ namespace HomeTaskManager.Infrastructure.Migrations
                     b.Property<DateOnly>("EndDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("EndsAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IgnoreHistoryForAssignment")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SegmentNumber")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateOnly>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartsAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
@@ -491,7 +503,7 @@ namespace HomeTaskManager.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Year", "WeekNumber")
+                    b.HasIndex("Year", "WeekNumber", "SegmentNumber")
                         .IsUnique();
 
                     b.ToTable("Weeks");

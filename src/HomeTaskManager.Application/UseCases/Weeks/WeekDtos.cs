@@ -16,4 +16,15 @@ public sealed record TaskInstanceDto(
     int? OriginalWeekNumber = null,
     DateOnly? OriginalDueDate = null);
 
-public sealed record WeekDto(Guid Id, int Year, int WeekNumber, DateOnly StartDate, DateOnly EndDate, string Status);
+public sealed record WeekDto(
+    Guid Id,
+    int Year,
+    int WeekNumber,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    string Status,
+    int SegmentNumber = 1,
+    bool IgnoreHistoryForAssignment = false,
+    DateTime? StartsAt = null,
+    DateTime? EndsAt = null,
+    DateTime? ClosedAt = null);

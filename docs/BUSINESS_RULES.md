@@ -386,6 +386,31 @@ Le moteur d'affectation.
 
 ---
 
+# BR-021a - Clôture anticipée et segment de période
+
+## Description
+
+Un administrateur peut clôturer une période avant le dimanche. La partie clôturée est immédiatement
+en lecture seule. Le système crée alors une nouvelle période active dans la même semaine ISO, du
+lendemain de la clôture jusqu'au dimanche.
+
+## Règles
+
+- Une période clôturée conserve ses instances et son historique.
+- La période restante possède un numéro de segment distinct, tout en conservant la même année et
+  le même numéro de semaine ISO.
+- Les tâches régulières de la période restante sont créées uniquement après l'action explicite de
+  génération des instances.
+- Par défaut, les tâches inachevées sont reportées dans la période restante et conservent leur
+  propriétaire.
+- L'administrateur peut choisir d'annuler les tâches inachevées au lieu de les reporter. Elles
+  passent alors à l'état `Cancelled`, et l'affectation de la période restante ignore l'historique
+  des périodes précédentes.
+- À une clôture réalisée le dimanche ou après la période entière, les reports éventuels restent
+  dirigés vers la semaine ISO suivante.
+
+---
+
 # BR-022 - Réaffectation manuelle
 
 ## Description

@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IGenerateWeekInstancesUseCase, GenerateWeekInstancesUseCase>();
         services.AddScoped<IGetWeekInstancesUseCase, GetWeekInstancesUseCase>();
         services.AddScoped<ICloseWeekUseCase, CloseWeekUseCase>();
+        services.AddScoped<IRecoverWeekContinuationUseCase, RecoverWeekContinuationUseCase>();
         services.AddScoped<ISetTaskInstanceCompletionUseCase, SetTaskInstanceCompletionUseCase>();
         services.AddScoped<IReassignTaskInstanceUseCase, ReassignTaskInstanceUseCase>();
         services.AddScoped<ICancelTaskInstanceUseCase, CancelTaskInstanceUseCase>();

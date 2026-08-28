@@ -59,13 +59,13 @@ public sealed class GenerateWeekInstancesUseCase(
                 var dueDate = template.FrequencyType switch
                 {
                     FrequencyType.DailyMandatory or FrequencyType.Monthly => plannedDate,
-                    FrequencyType.Weekly => week.StartDate.AddDays(template.WeeklyScheduleType switch
+                    FrequencyType.Weekly => Max(plannedDate, Min(week.EndDate, new WeekKey(week.Year, week.WeekNumber).StartDate.AddDays(template.WeeklyScheduleType switch
                     {
                         WeeklyScheduleType.StartOfWeek => 0,
                         WeeklyScheduleType.MiddleOfWeek => 3,
                         WeeklyScheduleType.EndOfWeek => 6,
                         _ => 6,
-                    }),
+                    }))),
                     _ => week.EndDate,
                 };
                 newInstances.Add(new TaskInstance(template.Id, null, week, null, plannedDate, dueDate));
@@ -97,7 +97,7 @@ public sealed class GenerateWeekInstancesUseCase(
         switch (template.FrequencyType)
         {
             case FrequencyType.DailyMandatory:
-                return Enumerable.Range(0, 7).Select(week.StartDate.AddDays).ToList();
+                return Enumerable.Range(0, week.EndDate.DayNumber - week.StartDate.DayNumber + 1).Select(week.StartDate.AddDays).ToList();
 
             case FrequencyType.DailyFlexible:
             case FrequencyType.Weekly:
@@ -134,6 +134,10 @@ public sealed class GenerateWeekInstancesUseCase(
             .Distinct()
             .ToList();
     }
+
+    private static DateOnly Min(DateOnly first, DateOnly second) => first < second ? first : second;
+
+    private static DateOnly Max(DateOnly first, DateOnly second) => first > second ? first : second;
 
     private static DateOnly GetMonthlyDate(TaskTemplate template, DateOnly month)
     {

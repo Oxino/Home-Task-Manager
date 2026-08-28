@@ -1,3 +1,3 @@
 namespace HomeTaskManager.Api.Contracts.Weeks;
 
-public sealed record CloseWeekRequest(Guid RequestingUserId);
+public sealed record CloseWeekRequest(bool CancelIncompleteTasks = false);

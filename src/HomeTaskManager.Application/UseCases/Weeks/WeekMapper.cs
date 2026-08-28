@@ -5,7 +5,7 @@ namespace HomeTaskManager.Application.UseCases.Weeks;
 public static class WeekMapper
 {
     public static WeekDto ToDto(Week week) =>
-        new(week.Id, week.Year, week.WeekNumber, week.StartDate, week.EndDate, week.Status.ToString());
+        new(week.Id, week.Year, week.WeekNumber, week.StartDate, week.EndDate, week.Status.ToString(), week.SegmentNumber, week.IgnoreHistoryForAssignment, week.StartsAt, week.EndsAt, week.ClosedAt);
 
     public static TaskInstanceDto ToDto(TaskInstance instance) => new(
         instance.Id,

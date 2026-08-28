@@ -13,7 +13,8 @@ namespace HomeTaskManager.Api.Controllers;
 public class WeeksController(
     IGenerateWeekInstancesUseCase generateWeekInstancesUseCase,
     IGetWeekInstancesUseCase getWeekInstancesUseCase,
-    ICloseWeekUseCase closeWeekUseCase) : ControllerBase
+    ICloseWeekUseCase closeWeekUseCase,
+    IRecoverWeekContinuationUseCase recoverWeekContinuationUseCase) : ControllerBase
 {
     [HttpPost("generate")]
     [Authorize(Roles = "Admin")]
@@ -66,9 +67,32 @@ public class WeeksController(
     {
         try
         {
-            var command = new CloseWeekCommand(year, weekNumber, User.GetCurrentUserId());
+            var command = new CloseWeekCommand(year, weekNumber, User.GetCurrentUserId(), request.CancelIncompleteTasks);
             var result = await closeWeekUseCase.ExecuteAsync(command, cancellationToken);
             return Ok(result);
+        }
+        catch (ForbiddenOperationException exception)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message });
+        }
+        catch (DomainValidationException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+    }
+
+    [HttpPost("{year:int}/{weekNumber:int}/recover-continuation")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<WeekDto>> RecoverContinuation(
+        int year,
+        int weekNumber,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await recoverWeekContinuationUseCase.ExecuteAsync(
+                new RecoverWeekContinuationCommand(year, weekNumber, User.GetCurrentUserId()),
+                cancellationToken));
         }
         catch (ForbiddenOperationException exception)
         {

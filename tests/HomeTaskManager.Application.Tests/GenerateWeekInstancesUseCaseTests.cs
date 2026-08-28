@@ -15,7 +15,18 @@ public sealed class InMemoryWeekRepository : IWeekRepository
         Task.FromResult(_weeks.SingleOrDefault(week => week.Id == id));
 
     public Task<Week?> GetByKeyAsync(WeekKey key, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_weeks.SingleOrDefault(week => week.Year == key.Year && week.WeekNumber == key.WeekNumber));
+        Task.FromResult(_weeks
+            .Where(week => week.Year == key.Year && week.WeekNumber == key.WeekNumber)
+            .OrderByDescending(week => week.Status == WeekStatus.Active)
+            .ThenByDescending(week => week.SegmentNumber)
+            .FirstOrDefault());
+
+    public Task<int> GetNextSegmentNumberAsync(WeekKey key, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_weeks
+            .Where(week => week.Year == key.Year && week.WeekNumber == key.WeekNumber)
+            .Select(week => week.SegmentNumber)
+            .DefaultIfEmpty()
+            .Max() + 1);
 
     public Task AddAsync(Week week, CancellationToken cancellationToken = default)
     {
@@ -68,6 +79,25 @@ public class GenerateWeekInstancesUseCaseTests
 
         result.CreatedInstances.Should().HaveCount(7);
         result.CreatedInstances.Select(i => i.PlannedDate).Distinct().Should().HaveCount(7);
+    }
+
+    [Fact]
+    public async Task DailyMandatory_task_generates_only_the_days_in_an_active_remaining_segment()
+    {
+        var taskTemplateRepository = new InMemoryTaskTemplateRepository();
+        taskTemplateRepository.Seed(CreateTemplate(FrequencyType.DailyMandatory));
+        var weekRepository = new InMemoryWeekRepository();
+        await weekRepository.AddAsync(new Week(new WeekKey(2026, 2)));
+        await weekRepository.AddAsync(new Week(new WeekKey(2026, 2), 2, new DateOnly(2026, 1, 9), new DateOnly(2026, 1, 11)));
+        var useCase = new GenerateWeekInstancesUseCase(
+            weekRepository, taskTemplateRepository, new InMemoryTaskInstanceRepository(), new NoOpUnitOfWork());
+
+        var result = await useCase.ExecuteAsync(new GenerateWeekInstancesCommand(2026, 2));
+
+        result.Week.SegmentNumber.Should().Be(2);
+        result.CreatedInstances.Should().HaveCount(3);
+        result.CreatedInstances.Select(instance => instance.PlannedDate.DayOfWeek)
+            .Should().BeEquivalentTo([DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday]);
     }
 
     [Theory]

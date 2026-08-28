@@ -93,6 +93,19 @@ type WeekSummary = {
   endDate: string;
 };
 type WeekStatus = "Active" | "Closed";
+type WeekPeriod = {
+  id: string;
+  year: number;
+  weekNumber: number;
+  startDate: string;
+  endDate: string;
+  status: WeekStatus;
+  segmentNumber: number;
+  ignoreHistoryForAssignment: boolean;
+  startsAt?: string;
+  endsAt?: string;
+  closedAt?: string;
+};
 
 type TaskFormProps = {
   api: string;
@@ -211,6 +224,18 @@ function weekPeriodLabel(year: number, week: number) {
   const start = weekStart(year, week);
   const end = new Date(start.getTime() + 6 * 86400000);
   return `S${String(week).padStart(2, "0")} · ${start.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} - ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
+}
+
+function periodLabel(period: WeekPeriod) {
+  const start = new Date(period.startDate);
+  const end = new Date(period.endDate);
+  return `S${String(period.weekNumber).padStart(2, "0")} · ${start.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} - ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
+}
+
+function periodTimeLabel(value?: string) {
+  return value
+    ? new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })
+    : null;
 }
 
 function formatTaskDate(
@@ -2634,21 +2659,48 @@ function AssignmentsPanel({
   users,
   year,
   weekNumber,
+  weekStatus,
+  period,
+  continuationPeriod,
+  activeWeek,
   api,
   busyAction,
+  newlyGeneratedCount,
   onAction,
+  onOpenContinuation,
+  onRecoverContinuation,
 }: {
   instances: Instance[];
   templates: Template[];
   users: User[];
   year: number;
   weekNumber: number;
+  weekStatus: WeekStatus;
+  period: WeekPeriod | null;
+  continuationPeriod: WeekPeriod | null;
+  activeWeek: { year: number; week: number };
   api: string;
   busyAction: string;
-  onAction: (action: "generate" | "assign" | "close") => void;
+  newlyGeneratedCount: number;
+  onAction: (action: "generate" | "assign" | "close", cancelIncompleteTasks?: boolean) => void;
+  onOpenContinuation: () => void;
+  onRecoverContinuation: () => void;
 }) {
   const [runs, setRuns] = useState<AssignmentRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelIncompleteTasks, setCancelIncompleteTasks] = useState(false);
+  const followingWeek = isoWeek(new Date(weekStart(year, weekNumber).getTime() + 7 * 86400000));
+  const displayedPeriod = period ?? {
+    id: "",
+    year,
+    weekNumber,
+    startDate: weekStart(year, weekNumber).toISOString().slice(0, 10),
+    endDate: new Date(weekStart(year, weekNumber).getTime() + 6 * 86400000).toISOString().slice(0, 10),
+    status: weekStatus,
+    segmentNumber: 1,
+    ignoreHistoryForAssignment: false,
+  };
+  const isCalendarCurrentWeek = year === activeWeek.year && weekNumber === activeWeek.week;
   useEffect(() => {
     fetch(`${api}/api/assignments/runs?year=${year}&weekNumber=${weekNumber}`)
       .then(async (response) => {
@@ -2697,13 +2749,84 @@ function AssignmentsPanel({
           </button>
           <button
             className="danger-button"
-            disabled={Boolean(busyAction)}
-            onClick={() => onAction("close")}
+            disabled={Boolean(busyAction) || weekStatus === "Closed"}
+            onClick={() => onAction("close", cancelIncompleteTasks)}
           >
             {busyAction === "close" ? "Clôture..." : "Clôturer"}
           </button>
         </div>
       </div>
+      <section className="assignment-week-status" aria-label="Période administrée">
+        <div>
+          <span className="section-kicker">SEMAINE AFFICHÉE</span>
+          <b>{periodLabel(displayedPeriod)}</b>
+          <small>Partie {displayedPeriod.segmentNumber}</small>
+          {(periodTimeLabel(displayedPeriod.startsAt) || periodTimeLabel(displayedPeriod.endsAt)) && (
+            <small className="period-boundaries">
+              Début : {periodTimeLabel(displayedPeriod.startsAt) ?? "non renseigné"}<br />
+              Fin : {periodTimeLabel(displayedPeriod.endsAt) ?? "non renseignée"}
+            </small>
+          )}
+          {weekStatus === "Closed" ? (
+            <small className="period-closed-at">Clôturée le {periodTimeLabel(displayedPeriod.closedAt) ?? "date non renseignée"}.</small>
+          ) : (
+            <small>Active : les tâches peuvent encore être réalisées ou modifiées.</small>
+          )}
+        </div>
+        <div>
+          <span className="section-kicker">SEMAINE CALENDAIRE ACTUELLE</span>
+          <b>{weekPeriodLabel(activeWeek.year, activeWeek.week)}</b>
+          <small>{isCalendarCurrentWeek ? "C'est la semaine actuellement administrée." : "Vous consultez une autre semaine."}</small>
+        </div>
+        <div>
+          <span className="section-kicker">APRÈS LA CLÔTURE</span>
+          <b>{continuationPeriod ? periodLabel(continuationPeriod) : weekPeriodLabel(followingWeek.year, followingWeek.week)}</b>
+          <small>{continuationPeriod ? "Période de continuation créée par cette clôture." : "Les tâches inachevées y seront reportées. Les tâches régulières doivent ensuite être générées."}</small>
+        </div>
+      </section>
+      {weekStatus === "Closed" && (
+        <div className="assignment-closed-notice" role="status">
+          <div>
+            <b>Cette semaine est clôturée</b>
+            <span>{continuationPeriod?.ignoreHistoryForAssignment ? "Les tâches ouvertes ont été annulées. Cette période repart sans report ni prise en compte de l'historique." : "Les éventuels reports sont dans la période suivante. Génère ensuite ses tâches régulières puis lance leur affectation."}</span>
+          </div>
+          {continuationPeriod ? (
+            <button className="primary-button" onClick={onOpenContinuation}>Ouvrir la période suivante</button>
+          ) : (
+            <button className="primary-button" disabled={Boolean(busyAction)} onClick={onRecoverContinuation}>
+              {busyAction === "recover" ? "Création..." : "Créer la période suivante"}
+            </button>
+          )}
+        </div>
+      )}
+      {weekStatus !== "Closed" && (
+        <label className="close-option">
+          <input type="checkbox" checked={cancelIncompleteTasks} onChange={(event) => setCancelIncompleteTasks(event.target.checked)} />
+          <span><b>Annuler les tâches inachevées à la clôture</b><small>Sans cette option, elles seront reportées dans la période suivante avec leur propriétaire. Avec cette option, elles seront annulées et l'affectation suivante repartira sans historique.</small></span>
+        </label>
+      )}
+      <section className="assignment-guide" aria-label="Étapes de gestion de la semaine">
+        <div className="assignment-guide-intro">
+          <span className="section-kicker">MODE D'EMPLOI</span>
+          <p>Prépare la semaine dans cet ordre : créer les occurrences, les attribuer, puis la clôturer une fois terminée.</p>
+        </div>
+        <ol className="assignment-guide-steps">
+          <li><b>1. Générer les instances</b><span>Crée les tâches prévues pour cette semaine à partir des modèles actifs. Elles n'ont pas encore de propriétaire.</span></li>
+          <li><b>2. Lancer l'affectation</b><span>Répartit les tâches non attribuées entre les participants selon le moteur choisi.</span></li>
+          <li><b>3. Clôturer</b><span>Fige la semaine et reporte les tâches ouvertes vers la semaine suivante.</span></li>
+        </ol>
+      </section>
+      {newlyGeneratedCount > 0 && (
+        <div className="assignment-generation-notice" role="status">
+          <div>
+            <b>{newlyGeneratedCount} nouvelle{newlyGeneratedCount > 1 ? "s" : ""} instance{newlyGeneratedCount > 1 ? "s" : ""} créée{newlyGeneratedCount > 1 ? "s" : ""}</b>
+            <span>Les instances sont visibles ci-dessous et restent non attribuées jusqu'au lancement de l'affectation.</span>
+          </div>
+          <button className="primary-button" disabled={Boolean(busyAction)} onClick={() => onAction("assign")}>
+            Lancer l'affectation
+          </button>
+        </div>
+      )}
       <div className="assignment-summary">
         <b>{instances.length}</b>
         <span>instances cette semaine</span>
@@ -2940,7 +3063,11 @@ function App() {
     () => window.location.search,
   );
   const [busyAction, setBusyAction] = useState("");
+  const [newlyGeneratedCount, setNewlyGeneratedCount] = useState(0);
   const [weekStatus, setWeekStatus] = useState<WeekStatus>("Active");
+  const [currentPeriod, setCurrentPeriod] = useState<WeekPeriod | null>(null);
+  const [continuationPeriod, setContinuationPeriod] = useState<WeekPeriod | null>(null);
+  const [periodRefresh, setPeriodRefresh] = useState(0);
   const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
   const [apiError, setApiError] = useState(false);
   const [apiMessage, setApiMessage] = useState("");
@@ -3046,6 +3173,8 @@ function App() {
 
         setWeekStatus(instanceData?.week?.status ?? "Active");
         setCurrentWeekId(instanceData?.week?.id ?? null);
+        setCurrentPeriod(instanceData?.week ?? null);
+        setContinuationPeriod(null);
         setInstances(loadedInstances);
 
         const requestedInstanceId = queryInstanceId;
@@ -3094,6 +3223,7 @@ function App() {
     api,
     week.year,
     week.week,
+    periodRefresh,
     queryInstanceId,
     pendingNotificationTaskTitle,
   ]);
@@ -3199,11 +3329,16 @@ function App() {
     return () => window.clearInterval(timer);
   }, [api, currentUser]);
 
-  async function runWeekAction(action: "generate" | "assign" | "close") {
+  async function runWeekAction(action: "generate" | "assign" | "close", cancelIncompleteTasks = false) {
+    const closureDate = new Date();
+    const periodStartDate = currentPeriod
+      ? new Date(currentPeriod.startDate)
+      : weekStart(week.year, week.week);
+    const closurePeriodLabel = `S${String(week.week).padStart(2, "0")} · ${periodStartDate.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} - ${closureDate.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
     if (
       action === "close" &&
       !window.confirm(
-        "Clôturer cette semaine ? La complétude sera figée et les tâches non terminées seront reportées.",
+        `Clôturer ${closurePeriodLabel} ? Elle sera immédiatement figée. ${cancelIncompleteTasks ? "Les tâches inachevées seront annulées." : "Les tâches inachevées seront reportées."}`,
       )
     )
       return;
@@ -3224,7 +3359,7 @@ function App() {
                 weekNumber: week.week,
                 triggeredByUserId: currentUser?.id,
               }
-            : { requestingUserId: currentUser?.id };
+            : { cancelIncompleteTasks };
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -3234,17 +3369,45 @@ function App() {
         throw new Error((await response.json()).error ?? "Action impossible");
       const result = await response.json();
       if (result.week?.status) setWeekStatus(result.week.status);
-      const refreshed =
-        result.instances ??
-        result.createdInstances ??
-        result.carriedOverInstances;
-      if (Array.isArray(refreshed)) setInstances(refreshed);
+      if (action === "generate") {
+        const createdInstances = Array.isArray(result.createdInstances)
+          ? result.createdInstances
+          : [];
+        setNewlyGeneratedCount(createdInstances.length);
+
+        const instancesResponse = await fetch(
+          `${api}/api/weeks/${week.year}/${week.week}/instances`,
+        );
+        if (!instancesResponse.ok) {
+          throw new Error(
+            await readApiError(
+              instancesResponse,
+              "Lecture des instances générées impossible.",
+            ),
+          );
+        }
+        const instanceData = await instancesResponse.json();
+        setWeekStatus(instanceData?.week?.status ?? "Active");
+        setCurrentWeekId(instanceData?.week?.id ?? null);
+        setCurrentPeriod(instanceData?.week ?? null);
+        setInstances(instanceData?.instances ?? []);
+      } else {
+        if (action === "assign" && Array.isArray(result.instances)) {
+          setInstances(result.instances);
+        }
+        if (action === "assign") setNewlyGeneratedCount(0);
+        if (action === "close") setContinuationPeriod(result.nextPeriod ?? null);
+      }
       setNotice(
         action === "generate"
-          ? "Instances de la semaine générées"
+          ? result.createdInstances?.length > 0
+            ? `${result.createdInstances.length} instance(s) générée(s). Lance l'affectation pour les attribuer.`
+            : "Aucune nouvelle instance à créer : toutes les instances de la semaine sont déjà affichées."
           : action === "assign"
             ? "Affectation de la semaine terminée"
-            : "Semaine clôturée, les tâches ouvertes sont reportées",
+            : cancelIncompleteTasks
+              ? "Période clôturée : les tâches inachevées ont été annulées."
+              : "Période clôturée : les tâches ouvertes sont reportées.",
       );
     } catch (reason) {
       setNotice(reason instanceof Error ? reason.message : "Action impossible");
@@ -3254,7 +3417,49 @@ function App() {
     }
   }
 
+  async function recoverContinuationPeriod() {
+    setBusyAction("recover");
+    try {
+      const response = await fetch(
+        `${api}/api/weeks/${week.year}/${week.week}/recover-continuation`,
+        { method: "POST" },
+      );
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "Création de la période suivante impossible."));
+      }
+      const recoveredPeriod = await response.json() as WeekPeriod;
+      setContinuationPeriod(recoveredPeriod);
+      setNotice("Période suivante créée. Ouverture en cours.");
+      navigate(`/assignments?year=${recoveredPeriod.year}&week=${recoveredPeriod.weekNumber}`);
+      setPeriodRefresh((value) => value + 1);
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Création de la période suivante impossible.");
+    } finally {
+      setBusyAction("");
+    }
+  }
+
   const template = (id: string) => templates.find((item) => item.id === id);
+  function openContinuationPeriod() {
+    if (continuationPeriod) {
+      const path = `/assignments?year=${continuationPeriod.year}&week=${continuationPeriod.weekNumber}`;
+      navigate(path);
+      setPeriodRefresh((value) => value + 1);
+      setNotice("Période suivante ouverte.");
+      return;
+    }
+
+    const today = new Date();
+    const currentPeriodEnd = currentPeriod ? new Date(currentPeriod.endDate) : new Date(weekStart(week.year, week.week).getTime() + 6 * 86400000);
+    const currentPeriodStart = currentPeriod ? new Date(currentPeriod.startDate) : weekStart(week.year, week.week);
+    const isEarlyClosure = today >= currentPeriodStart && today < currentPeriodEnd;
+    const target = isEarlyClosure
+      ? { year: week.year, week: week.week }
+      : isoWeek(new Date(weekStart(week.year, week.week).getTime() + 7 * 86400000));
+    navigate(`/assignments?year=${target.year}&week=${target.week}`);
+    setPeriodRefresh((value) => value + 1);
+    setNotice("Recherche de la période active suivante.");
+  }
   const visible = useMemo(() => {
     const mine = instances.filter(
       (item) => item.assignedUserId === currentUser?.id,
@@ -4014,9 +4219,16 @@ function App() {
             users={users}
             year={week.year}
             weekNumber={week.week}
+            weekStatus={weekStatus}
+            period={currentPeriod}
+            continuationPeriod={continuationPeriod}
+            activeWeek={activeWeek}
             api={api}
             busyAction={busyAction}
+            newlyGeneratedCount={newlyGeneratedCount}
             onAction={runWeekAction}
+            onOpenContinuation={openContinuationPeriod}
+            onRecoverContinuation={recoverContinuationPeriod}
           />
         ) : view === "Instances" ? (
           <InstanceAdminPanel

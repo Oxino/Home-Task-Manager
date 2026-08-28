@@ -318,3 +318,25 @@ et le détail d'une instance. Le placement hors du `<select>` garantit que le na
 supprime pas le bloc HTML.
 
 Statut : validé.
+
+---
+
+## ADR-021
+
+Décision :
+
+Une clôture anticipée segmente une semaine ISO en périodes successives. La période clôturée se
+termine le jour de la clôture et la période active suivante commence le lendemain, jusqu'au
+dimanche. Chaque période possède son propre `Week.Id` et `SegmentNumber`, tout en partageant
+`Year` et `WeekNumber`.
+
+L'administrateur peut cocher une option pour annuler les instances inachevées. Dans ce cas, aucun
+report n'est créé et la première affectation de la période suivante ignore l'historique de charge
+et de répétition.
+
+Justification :
+
+Permet de redémarrer l'organisation d'une semaine en cours sans modifier l'historique de sa
+première partie, ni rendre une même journée simultanément active et clôturée.
+
+Statut : validé.

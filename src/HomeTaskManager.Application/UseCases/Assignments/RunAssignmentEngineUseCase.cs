@@ -56,9 +56,10 @@ public sealed class RunAssignmentEngineUseCase(
         var activeParticipants = await userRepository.GetActiveAsync(cancellationToken);
         var allInstances = await taskInstanceRepository.GetByWeekAsync(week.Id, cancellationToken);
 
-        // ADR-005: carried-over instances keep their original owner and are not touched by the engine.
+        // ADR-005: carried-over instances keep their original owner; only orphaned carry-overs need assignment.
         var assignableInstances = allInstances
-            .Where(instance => !instance.IsCarryOver && instance.Status != TaskInstanceStatus.Cancelled)
+            .Where(instance => instance.Status != TaskInstanceStatus.Cancelled)
+            .Where(instance => !instance.IsCarryOver || instance.AssignedUserId is null)
             .ToList();
 
         var settings = await settingsProvider.GetAsync(cancellationToken);
@@ -79,9 +80,11 @@ public sealed class RunAssignmentEngineUseCase(
         {
             // BR-053: equity window, defaults to 8 weeks before the target week; the run being (re)assigned is excluded.
             var since = week.StartDate.AddDays(-7 * settings.EquityWindowWeeks);
-            var historicalInstances = (await taskInstanceRepository.GetAssignedSinceAsync(since, cancellationToken))
-                .Where(instance => instance.WeekId != week.Id && !instance.IsCarryOver)
-                .ToList();
+            var historicalInstances = week.IgnoreHistoryForAssignment
+                ? []
+                : (await taskInstanceRepository.GetAssignedSinceAsync(since, cancellationToken))
+                    .Where(instance => instance.WeekId != week.Id && !instance.IsCarryOver)
+                    .ToList();
 
             var templateIds = assignableInstances.Select(i => i.TaskTemplateId)
                 .Concat(historicalInstances.Select(i => i.TaskTemplateId))
