@@ -471,7 +471,8 @@ et l'envoi Web Push sont des responsabilités séparées du scheduler.
 
 # Week
 
-Représente une semaine ISO-8601 servant de période de référence.
+Représente une période de travail rattachée à une semaine ISO-8601. Une semaine normale possède
+une seule période ; une clôture anticipée peut créer plusieurs segments dans la même semaine ISO.
 
 ## Week
 
@@ -480,15 +481,25 @@ Représente une semaine ISO-8601 servant de période de référence.
 | Id | Guid | Oui |
 | Year | int | Oui |
 | WeekNumber | int | Oui |
+| SegmentNumber | int | Oui |
 | StartDate | DateOnly | Oui |
 | EndDate | DateOnly | Oui |
+| StartsAt | DateTime | Oui |
+| EndsAt | DateTime | Oui |
+| IgnoreHistoryForAssignment | bool | Oui |
 | Status | enum | Oui |
 | ClosedAt | DateTime | Non |
 
 ## Contraintes
 
-- `(Year, WeekNumber)` unique, conforme ISO-8601 (années à 53 semaines gérées).
+- `(Year, WeekNumber, SegmentNumber)` unique, conforme ISO-8601 (années à 53 semaines gérées).
 - Référencée par `AssignmentRun` et `TaskInstance` (BR-038, R-13).
+- Une période standard est le segment `1`, de lundi 00:00 UTC à dimanche 23:59:59.9999999 UTC.
+- En cas de clôture anticipée, `EndsAt` et `ClosedAt` correspondent à l'instant exact de la
+  clôture. Le segment suivant commence au même instant (`StartsAt`) et se termine à la fin du
+  dimanche. `StartDate` peut donc être identique pour deux segments clôturés le même jour.
+- `IgnoreHistoryForAssignment` vaut `true` uniquement pour une période créée après annulation
+  forcée des tâches inachevées : sa première affectation ne tient pas compte de l'historique.
 
 ## WeekStatus
 

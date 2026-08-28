@@ -179,17 +179,18 @@ Chaque cas d'usage documente :
 ## UC-GEN-01 — Générer les instances d'une semaine
 
 - **Acteur** : Planificateur (automatique) ou Administrateur (manuel).
-- **Préconditions** : au moins un modèle actif ; semaine cible identifiée.
+- **Préconditions** : au moins un modèle actif ; période cible identifiée.
 - **Scénario nominal** :
-  1. Le système détermine la semaine cible (année + numéro ISO).
+  1. Le système détermine la période active de la semaine cible (année + numéro ISO et segment).
   2. Pour chaque modèle actif, il crée les `TaskInstance` selon la `FrequencyType` :
-     - `DailyMandatory` → 7 instances (une par jour) ;
+    - `DailyMandatory` → une instance par jour inclus dans la période (7 pour une semaine entière) ;
      - `DailyFlexible` → 1 instance, exécutable plusieurs fois (voir UC-CMP-03) ;
      - `Weekly` → 1 instance ;
      - `Monthly` → 1 instance sur la semaine cible du mois (règle à préciser, R-12) ;
      - `OneTime` → 1 instance unique.
-  3. Les tâches reportées de la semaine précédente sont conservées (UC-GEN-02).
-  4. Le moteur d'affectation est invoqué (UC-ENG-01).
+    3. Les tâches reportées de la période précédente sont conservées (UC-GEN-02).
+    4. La génération ne lance pas le moteur : l'administrateur déclenche ensuite l'affectation
+      explicitement (UC-ENG-01).
 - **Règles** : BR-007, BR-008 (unicité par jour pour DailyMandatory, R-07), BR-021, BR-027.
 - **Rattachement semaine** : `AssignmentRun` et `TaskInstance` référencent la semaine (entité
   `Week`, ADR-008, BR-038). C'est ce lien qui justifie les 7 instances d'une tâche quotidienne
@@ -200,16 +201,33 @@ Chaque cas d'usage documente :
 - **Acteur** : Système
 - **Déclencheur** : fin de période avec instances non terminées.
 - **Scénario nominal** :
-    1. L'instance non terminée est reportée sur la période suivante si elle n'a encore jamais été
-      reportée.
+  1. L'instance non terminée est reportée sur la période suivante si elle n'a encore jamais été
+     reportée.
   2. La nouvelle instance porte `IsCarryOver = true` et `ParentTaskInstanceId`.
-  3. La tâche **reste affectée au même participant** (ADR-005, BR-non défini → BR-039).
+  3. La tâche **reste affectée au même participant** si elle possède déjà un propriétaire
+     (ADR-005, BR-039). Un report sans propriétaire reste une instance à affecter par le moteur.
+- **Clôture anticipée** : la période suivante est un nouveau segment de la même semaine ISO,
+  commençant à l'instant exact de clôture et se terminant dimanche soir.
+- **Annulation forcée** : l'administrateur peut annuler les instances inachevées. Aucun report
+  n'est créé et la première affectation de la période suivante ignore l'historique.
 - **Cas limites** :
   - Propriétaire devenu inactif/absent : voir R-05.
   - Report d'une instance `DailyMandatory` (quotidienne) : comportement à définir, R-07.
   - Instance déjà reportée et toujours non terminée : elle reste dans l'historique et est exclue
     des futures affectations et des calculs du moteur ; aucun second report n'est créé.
 - **Règles** : ADR-005, BR-039.
+
+## UC-GEN-03 — Récupérer une clôture historique anticipée
+
+- **Acteur** : Administrateur.
+- **Préconditions** : une semaine complète a été clôturée avant la mise en place des segments ;
+  elle possède un `ClosedAt` antérieur à sa fin ISO.
+- **Scénario nominal** : le système crée un segment actif de continuation dans la même semaine,
+  depuis `ClosedAt` jusqu'au dimanche soir. Les reports encore ouverts, créés auparavant dans la
+  semaine suivante, sont annulés logiquement puis recréés dans la période récupérée.
+- **Consolidation** : plusieurs anciens reports d'un même modèle sont consolidés en une seule
+  instance afin de respecter l'unicité `(TaskTemplateId, WeekId, PlannedDate)`.
+- **Erreur** : un report déjà terminé dans la semaine suivante n'est jamais déplacé.
 
 ---
 
@@ -222,7 +240,8 @@ Chaque cas d'usage documente :
 - **Scénario nominal** (aligné sur `ASSIGNMENT_ENGINE.md`) :
   1. Identifier les participants actifs (BR-003, BR-024).
   2. (Hors V1) Exclure les participants absents sur la période (BR-025 — reporté).
-  3. Conserver les tâches reportées sur leur propriétaire (ADR-005).
+    3. Conserver les tâches reportées sur leur propriétaire (ADR-005) ; les reports sans
+      propriétaire sont inclus dans les instances à affecter.
   4. Calculer la charge historique (`AssignmentMetricSnapshot`).
   5. Identifier les nouvelles tâches à répartir.
   6. Équilibrer les points prévisionnels pondérés par `AvailabilityPercentage`.

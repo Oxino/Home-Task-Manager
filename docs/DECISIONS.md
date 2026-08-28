@@ -326,13 +326,19 @@ Statut : validé.
 Décision :
 
 Une clôture anticipée segmente une semaine ISO en périodes successives. La période clôturée se
-termine le jour de la clôture et la période active suivante commence le lendemain, jusqu'au
-dimanche. Chaque période possède son propre `Week.Id` et `SegmentNumber`, tout en partageant
-`Year` et `WeekNumber`.
+termine à l'instant exact de la clôture (`ClosedAt` / `EndsAt`) et la période active suivante
+commence au même instant (`StartsAt`), jusqu'au dimanche à 23:59:59.9999999 UTC. Chaque période
+possède son propre `Week.Id` et `SegmentNumber`, tout en partageant `Year` et `WeekNumber`.
 
 L'administrateur peut cocher une option pour annuler les instances inachevées. Dans ce cas, aucun
 report n'est créé et la première affectation de la période suivante ignore l'historique de charge
 et de répétition.
+
+Pour une clôture historique exécutée avant cette évolution, une opération d'administration crée le
+segment de continuation depuis l'heure `ClosedAt`. Elle remplace les reports ouverts créés à tort
+dans la semaine ISO suivante ; plusieurs reports du même modèle sont consolidés en une instance.
+Un report déjà terminé n'est jamais déplacé. Les reports sans propriétaire restent éligibles à
+l'affectation afin qu'aucune instance active ne demeure orpheline.
 
 Justification :
 

@@ -20,7 +20,8 @@ Avant l'appel de la strategie, le cas d'utilisation d'affectation :
 1. verifie que le demandeur est administrateur ;
 2. charge la semaine et ses instances ;
 3. exclut les instances annulees ;
-4. conserve les instances reportees avec leur proprietaire ;
+4. conserve les instances reportees avec leur proprietaire ; un report sans proprietaire reste
+  eligible et est transmis a la strategie pour etre affecte ;
 5. charge les participants actifs ;
 6. prepare les modeles et les parametres ;
 7. applique le moteur selectionne ;
@@ -245,7 +246,12 @@ absences, repetitions historiques et responsabilites quotidiennes restent hors d
 ## Regles communes et audit
 
 - Une instance annulee ne peut pas etre affectee.
-- Une instance reportee conserve son proprietaire et est exclue de l'appel des strategies.
+- Une instance reportee possedant un proprietaire conserve ce proprietaire et est exclue de
+  l'appel des strategies. Une instance reportee sans proprietaire est incluse afin de ne jamais
+  rester non attribuee.
+- Lorsqu'une periode a ete creee apres annulation forcee des taches ouvertes,
+  `IgnoreHistoryForAssignment` vide l'historique et la penalite anti-repetition pour sa premiere
+  affectation.
 - Une relance cree un nouvel `AssignmentRun` et remplace les affectations selon les regles
   existantes.
 - L'execution est auditee avec `Action = Executed` et le nom du moteur utilise.

@@ -212,7 +212,7 @@ AuditLog       (générique, EntityType + EntityId)
 | `TaskTemplate` | Id | CreatedByUserId | `Title` unique, `Priority`, `FrequencyType` |
 | `TaskScore` | TaskTemplateId | TaskTemplateId | `CalculatedScore` recalculable |
 | `Reminder` | Id | TaskTemplateId | `TriggerType`, `OffsetValue/Unit` |
-| `Week` | Id | — | `(Year, WeekNumber)` unique, `Status` |
+| `Week` | Id | — | `(Year, WeekNumber, SegmentNumber)` unique, bornes `StartsAt`/`EndsAt`, `Status` |
 | `AssignmentStrategy` | Id | — | `IsActive` |
 | `AssignmentRun` | Id | WeekId, StrategyId, TriggeredByUserId | exécution |
 | `TaskInstance` | Id | TaskTemplateId, AssignmentRunId, WeekId, AssignedUserId, ParentTaskInstanceId? | occurrence |
@@ -229,7 +229,7 @@ AuditLog       (générique, EntityType + EntityId)
 
 - `User(DisplayName)` unique.
 - `TaskTemplate(Title)` unique ; `TaskTemplate(IsActive)`.
-- `Week(Year, WeekNumber)` unique.
+- `Week(Year, WeekNumber, SegmentNumber)` unique ; segment `1` pour une semaine entière.
 - `TaskInstance(WeekId, AssignedUserId)` ; `TaskInstance(TaskTemplateId, WeekId, PlannedDate)`
   unique fonctionnel (BR-008, unicité par jour planifié).
 - `AssignmentRun(WeekId)`.
@@ -247,12 +247,18 @@ AuditLog       (générique, EntityType + EntityId)
 ## 3.5 Cycle de vie d'une semaine
 
 ```text
-[Génération] → Week(Active) → instances Pending/Completed modifiables
-     │
-     │ (fin de semaine, scheduler)
-     ▼
-Week(Closed) → complétude figée (BR-055), lecture seule
+[Génération] → Week(segment 1, Active) → instances Pending/Completed modifiables
+  │
+  ├─ clôture à la fin de la semaine → reports vers la semaine ISO suivante
+  │
+  └─ clôture anticipée à t → segment 1 Closed (EndsAt = t)
+            → segment 2 Active (StartsAt = t, jusqu'à dimanche soir)
 ```
+
+La génération et l'affectation opèrent toujours sur le segment actif sélectionné pour une semaine
+ISO. L'endpoint de récupération `POST /api/weeks/{year}/{weekNumber}/recover-continuation`, réservé
+aux administrateurs, crée un segment de continuation pour les clôtures historiques exécutées avant
+l'introduction de cette règle.
 
 ---
 
@@ -282,7 +288,8 @@ Conforme à `ASSIGNMENT_ENGINE.md` :
 
 1. Participants actifs (BR-003).
 2. (Hors V1) Exclure les absents (BR-025).
-3. Conserver les reports sur leur propriétaire (ADR-005).
+3. Conserver les reports possédant déjà un propriétaire (ADR-005) ; les reports orphelins sont
+  confiés à la stratégie comme toute instance sans propriétaire.
 4. Calculer la charge historique (fenêtre d'équité, défaut 8 semaines).
 5. Identifier les nouvelles tâches.
 6. Équilibrer les points, cible ∝ disponibilité (BR-040).
@@ -322,8 +329,10 @@ Tâches planifiées :
 
 - **Génération hebdomadaire** : création de la `Week` cible et des `TaskInstance` selon la
   fréquence des modèles actifs, puis invocation du moteur.
-- **Clôture hebdomadaire** : passage de la semaine à `Closed`, gel de la complétude, report des
-  instances non terminées (BR-039).
+- **Clôture hebdomadaire** : passage du segment à `Closed`, gel de la complétude et report des
+  instances non terminées. Une clôture anticipée ouvre un nouveau segment actif au même instant ;
+  l'option d'annulation force `Cancelled`, supprime les reports et neutralise l'historique pour la
+  première affectation du segment suivant.
 - **Rappels** : émission des notifications selon les `Reminder` (fin de journée / fin de semaine).
 
 ## 5.2 Génération d'instances par fréquence
@@ -394,6 +403,9 @@ précédent et ses snapshots restent conservés (historique).
 | GET | `/api/weeks/{year}/{week}` | Semaine donnée | connecté |
 | GET | `/api/weeks/{year}/{week}/tasks` | Instances de la semaine (admin: toutes) | connecté |
 | GET | `/api/me/tasks?week=YYYY-Www` | Mes tâches de la semaine | connecté |
+| POST | `/api/weeks/{year}/{weekNumber}/generate` | Générer le segment actif | admin |
+| POST | `/api/weeks/{year}/{weekNumber}/close` | Clôturer le segment actif | admin |
+| POST | `/api/weeks/{year}/{weekNumber}/recover-continuation` | Récupérer une clôture historique anticipée | admin |
 | POST | `/api/task-instances/{id}/complete` | Marquer terminée | propriétaire |
 | POST | `/api/task-instances/{id}/uncomplete` | Retirer terminée (semaine active) | propriétaire |
 | POST | `/api/task-instances/{id}/executions` | Exécution flexible | propriétaire |
