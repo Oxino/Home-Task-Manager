@@ -268,9 +268,26 @@
 - Couvert par un test Application dédié.
 - Harmonisation : tous les flux de notification passent par `INotificationService` avec importance paramétrisée.
 
+### V13.8 — Réglette de pénibilité, priorisation du jour et signalement des reports en doublon
+
+- Le champ pénibilité des formulaires de création et de modification de modèle de tâche est
+  désormais une réglette (`input type="range"`, 1 à 100) avec affichage de la valeur courante,
+  remplaçant le champ numérique.
+- Le dashboard sépare désormais les tâches personnelles en deux groupes : **Aujourd'hui**
+  (échéance du jour ou passée) et **À venir**, chacun avec son compteur et un message dédié
+  lorsque le groupe est vide.
+- Les tâches reportées (`isCarryOver`) reprennent le même fond blanc que les tâches normales sur
+  le dashboard ; seule l'étiquette **REPORTÉE** les distingue visuellement, pour réduire
+  l'agressivité visuelle précédente.
+- Nouvel indicateur **« VERSION EN RETARD CHEZ UN AUTRE »** : lorsqu'une instance normale de la
+  semaine coexiste avec une instance reportée non terminée du même modèle (donc affectée à un
+  autre participant), une étiquette s'affiche sur la carte de la tâche. Le détail de l'instance
+  (modale) affiche en complément le nom du participant concerné et l'échéance de la version en
+  retard, pour permettre aux participants de se synchroniser en dehors de l'application.
+
 ---
 
-## Etat actuel (fin V13.7)
+## Etat actuel (fin V13.8)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -339,6 +356,10 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
   de repli explicitement non exacte.
 - Le calendrier des activités se trouve dans Analytics et charge uniquement le mois affiché,
   avec filtre participant et skeleton pendant le chargement.
+- Le dashboard distingue les tâches du jour des tâches à venir, et signale par une étiquette
+  dédiée toute tâche dont une version reportée du même modèle reste non terminée chez un autre
+  participant, sans accentuer visuellement les tâches reportées elles-mêmes.
+- La pénibilité d'un modèle de tâche se définit via une réglette plutôt qu'un champ numérique.
 - L'historique est paginé par pages de 10 événements, avec une distinction explicite entre
   l'historique personnel et le journal d'audit administrateur; il permet aussi de rejoindre les
   semaines récentes, dont la semaine active.

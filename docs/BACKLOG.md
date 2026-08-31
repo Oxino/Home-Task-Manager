@@ -153,6 +153,12 @@ Optimisation UX
 - Scénario de démonstration administrateur couvrant les reports, complétions et notifications.
 - Historique séparé en navigation des semaines passées et journal d'activités, avec titre des
   templates et détails des instances (semaine d'affectation, échéance et date d'activité).
+- Réglette (curseur) pour définir la pénibilité d'un modèle de tâche, dans les formulaires de
+  création et de modification.
+- Dashboard scindé en deux groupes de tâches personnelles : celles du jour et celles à venir.
+- Indicateur « Version en retard chez un autre » sur une instance de la semaine lorsqu'une
+  instance reportée non terminée du même modèle existe encore, avec détail du participant
+  concerné dans la modale de l'instance.
 
 L'envoi Web Push réel (intégration navigateur), les tests d'intégration/end-to-end complets et
 la revue sécurité avant exposition réseau restent à implémenter. Les commentaires avancés,
@@ -160,10 +166,41 @@ l'interface analytics et les parcours CRUD actuellement exposés sont implément
 
 ## Prochaines étapes
 
-1. Renforcer la couverture end-to-end de l'historique personnel et du journal d'audit.
-2. Réaliser la revue sécurité avant exposition réseau.
-3. Ajouter les tests d'intégration backend (`WebApplicationFactory`).
-4. Revenir ensuite sur les tests end-to-end frontend.
+0. Valider fonctionnelement les differents moteur de répartission. Todo:Clear database, reconstruire un jeux de donnée pour: imaginer un scénarion complet sur plusieurs semaines, calculer en amont les résultats attendu 'résultat sur le papier' pour chaque semaine, Faire la simulation dans l'application (test) et comparer les résultats. Le faire pour chaque moteur. Le scénario pour le moteur InteligentV1 va etre difficule a créer, il faudra bien réfléchir dessus.
+1. Améliorer la vue mobile, il faut que se soit plus responsive, plus adapter à la maniputation téléphone.
+2. Renforcer la couverture end-to-end de l'historique personnel et du journal d'audit.
+3. Réaliser la revue sécurité avant exposition réseau.
+4. Ajouter les tests d'intégration backend (`WebApplicationFactory`).
+5. Revenir ensuite sur les tests end-to-end frontend.
+
+## Risques et cas limites à finaliser
+
+Cette liste reprend les éléments encore ouverts ou seulement partiellement traités dans
+`RISKS_AND_EDGE_CASES.md`. Chaque évolution devra inclure les règles métier, les cas d'usage,
+les tests et une mise à jour de la documentation.
+
+1. **Absences et indisponibilités** (`R-05`, `R-06`, `R-10`, `BR-025`, `BR-042`) : permettre à un
+  participant de déclarer une absence et à un administrateur de la gérer ; exclure les absents
+  des nouvelles affectations ; définir et implémenter la réaffectation des tâches ouvertes quand
+  leur propriétaire devient inactif ou absent.
+2. **Cycle de vie des modèles de tâches** (`R-11`) : distinguer explicitement les états `Active`,
+  `Inactive` et `Archived`, au lieu de représenter tous les états par le seul booléen `IsActive`.
+3. **Aucun participant disponible** (`R-14`, `BR-050`) : conserver l'exécution sans affectation,
+  puis afficher une alerte administrateur visible et actionnable indiquant les instances restées
+  sans propriétaire et la raison.
+4. **Tâches flexibles concurrentes** (`R-17`, `BR-044`) : définir qui peut enregistrer une
+  exécution flexible, le comportement lorsque plusieurs participants la réalisent le même jour,
+  et les effets sur la complétude, l'historique et les notifications.
+5. **Fuseau horaire du foyer** (`R-28`, `BR-051`) : rendre le fuseau horaire configurable et
+  l'appliquer aux bornes de périodes, clôtures anticipées, rappels et dates affichées. Les dates
+  techniques doivent rester stockées en UTC.
+6. **Consultation historique très ancienne** (`R-20`) : confirmer le parcours de consultation des
+  périodes conservées sans purge et prévoir des messages explicites lorsqu'aucune période ne
+  correspond au filtre ou à la date demandée.
+7. **Cohérence documentaire** : marquer dans `RISKS_AND_EDGE_CASES.md` les points déjà résolus
+  (`R-04`, `R-07`, `R-12`, `R-19`, `R-23`, `R-22`, `R-29`, `R-18`, `R-21`, `R-26`, `R-27`) et
+  retirer les résumés devenus obsolètes, notamment ceux qui ne tiennent pas compte des segments
+  intra-semaine et des reports sans propriétaire.
 
 Le Web Push réel est volontairement différé après ces étapes. Il reste une fonctionnalité V14,
 hors priorité immédiate.
@@ -244,3 +281,8 @@ hors priorité immédiate.
 - Blocquer l'acces au page admin pour les utilsilateurs. http://localhost:5173/assignments est accecible par exemple, participants, assignment-engine, statistique. Mettre également un contexte de securité sur les endpoint des API pour que seul les actions admin puisse etre appeler par les admin.
 - ~~si la tache est terminé blocker la réaffectation.~~
 - ~~Changer le parametrage des notifications : Aucune / Importante / Toutes.~~
+- ~~Changer curseur (création tache) définition pénibilité : mettre plutot une réglette pour définir la valeur.~~
+- ~~Mieu identifier les taches du jour. Faire un tableau qui présente les tache du jour, et un autre tableau qui présente les futures.~~
+- ~~Indicateur sur la tache nouvelle semaine, si il y a une tache reporté. (afin de ne pas faire la tache avant que celle du report soit fini)~~
+-  ~~Tache reporté : ne pas le mettre en évidence. Revoir la vue des tache 'reporté' (moins agréssif, changé la visuelle)~~
+- 

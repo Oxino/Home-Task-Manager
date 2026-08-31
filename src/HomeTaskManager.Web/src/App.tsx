@@ -276,6 +276,18 @@ function carryOverOrigin(instance: Instance) {
   };
 }
 
+// Finds the still-open carry-over instance of the same template, if a regular (non carry-over) instance coexists with it this week.
+function pendingCarryOverSibling(instance: Instance, allInstances: Instance[]) {
+  if (instance.isCarryOver) return undefined;
+  return allInstances.find(
+    (other) =>
+      other.id !== instance.id &&
+      other.isCarryOver &&
+      !other.isCompleted &&
+      other.taskTemplateId === instance.taskTemplateId,
+  );
+}
+
 const viewRoutes: Record<string, string> = {
   "/week": "Semaine",
   "/history": "Historique",
@@ -802,13 +814,16 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
               <label>
                 Pénibilité
                 <FieldInfo text="Score entier obligatoire compris entre 1 et 100. Plus il est élevé, plus la tâche pèse dans l’équilibrage." />
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={difficulty}
-                  onChange={(event) => setDifficulty(event.target.value)}
-                />
+                <div className="difficulty-slider">
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={difficulty}
+                    onChange={(event) => setDifficulty(event.target.value)}
+                  />
+                  <span className="difficulty-slider-value">{difficulty}</span>
+                </div>
               </label>
               <label>
                 Durée (min)
@@ -1096,13 +1111,16 @@ function EditTaskDialog({
               <label>
                 Pénibilité
                 <FieldInfo text="Entier obligatoire compris entre 1 et 100." />
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={difficulty}
-                  onChange={(event) => setDifficulty(event.target.value)}
-                />
+                <div className="difficulty-slider">
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={difficulty}
+                    onChange={(event) => setDifficulty(event.target.value)}
+                  />
+                  <span className="difficulty-slider-value">{difficulty}</span>
+                </div>
               </label>
               <label>
                 Durée (min)
@@ -3525,6 +3543,94 @@ function App() {
     ? Math.round((completed / personalInstances.length) * 100)
     : 0;
   const user = (id?: string) => users.find((item) => item.id === id);
+  const today = new Date().toISOString().slice(0, 10);
+  const todayTasks = visible.filter((item) => item.dueDate <= today);
+  const futureTasks = visible.filter((item) => item.dueDate > today);
+
+  function renderTask(item: Instance) {
+    const pendingSibling = pendingCarryOverSibling(item, instances);
+    return (
+      <article
+        className={`${item.isCompleted ? "task completed" : "task"}${!item.isCompleted && item.dueDate < today ? " overdue" : ""}${item.isCarryOver ? " carry-over" : ""}`}
+        key={item.id}
+        onDoubleClick={(event) => {
+          if (
+            event.target instanceof HTMLElement &&
+            event.target.closest("button")
+          )
+            return;
+          setSelected(item);
+        }}
+        title="Double-cliquer pour ouvrir le détail"
+      >
+        <button
+          className={
+            weekStatus === "Closed" ? "check-button locked" : "check-button"
+          }
+          disabled={weekStatus === "Closed"}
+          onClick={() => toggle(item)}
+          aria-label="Modifier la complétude"
+        >
+          {item.isCompleted ? "✓" : ""}
+        </button>
+        {item.isCompleted && (
+          <span className="task-completed-status">
+            <b>Terminée</b>
+            {item.completedAt && (
+              <small>
+                {new Date(item.completedAt).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </small>
+            )}
+          </span>
+        )}
+        <div className="task-main">
+          <div className="task-title-line">
+            <h3>{template(item.taskTemplateId)?.title ?? "Tâche sans titre"}</h3>
+            {item.isCarryOver && <span className="tag carry">REPORTÉE</span>}
+            {!item.isCompleted && item.dueDate < today && (
+              <span className="tag overdue-tag">EN RETARD</span>
+            )}
+            {template(item.taskTemplateId)?.priority === "Critical" && (
+              <span className="tag critical">CRITIQUE</span>
+            )}
+            {pendingSibling && (
+              <span
+                className="tag related-carry"
+                title={`Une instance reportée de cette tâche n’a pas encore été faite (attribuée à ${user(pendingSibling.assignedUserId)?.displayName ?? "un participant non attribué"}).`}
+              >
+                ⚠ VERSION EN RETARD CHEZ UN AUTRE
+              </span>
+            )}
+          </div>
+          <p>{template(item.taskTemplateId)?.description}</p>
+          <div className="task-meta">
+            ◷ Échéance : {formatTaskDate(item.dueDate, dateDisplayFormat)}
+            {item.completedAt && (
+              <>
+                {" "}· Complétée le {new Date(item.completedAt).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </>
+            )}
+            {currentUser?.isAdmin && <> · {user(item.assignedUserId)?.displayName}</>}
+          </div>
+        </div>
+        <button
+          className="detail-button"
+          onClick={() => setSelected(item)}
+          aria-label="Voir le détail"
+        >
+          ···
+        </button>
+      </article>
+    );
+  }
 
   async function toggle(item: Instance) {
     if (weekStatus === "Closed") return;
@@ -4044,98 +4150,35 @@ function App() {
                   </button>
                   <span className="task-count">{visible.length} éléments</span>
                 </div>
-                <div className="task-list">
-                  {visible.map((item) => (
-                    <article
-                      className={`${item.isCompleted ? "task completed" : "task"}${!item.isCompleted && item.dueDate < new Date().toISOString().slice(0, 10) ? " overdue" : ""}${item.isCarryOver ? " carry-over" : ""}`}
-                      key={item.id}
-                      onDoubleClick={(event) => {
-                        if (
-                          event.target instanceof HTMLElement &&
-                          event.target.closest("button")
-                        )
-                          return;
-                        setSelected(item);
-                      }}
-                      title="Double-cliquer pour ouvrir le détail"
-                    >
-                      <button
-                        className={
-                          weekStatus === "Closed"
-                            ? "check-button locked"
-                            : "check-button"
-                        }
-                        disabled={weekStatus === "Closed"}
-                        onClick={() => toggle(item)}
-                        aria-label="Modifier la complétude"
-                      >
-                        {item.isCompleted ? "✓" : ""}
-                      </button>
-                      {item.isCompleted && (
-                        <span className="task-completed-status">
-                          <b>Terminée</b>
-                          {item.completedAt && (
-                            <small>
-                              {new Date(item.completedAt).toLocaleDateString("fr-FR", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </small>
-                          )}
-                        </span>
-                      )}
-                      <div className="task-main">
-                        <div className="task-title-line">
-                          <h3>
-                            {template(item.taskTemplateId)?.title ??
-                              "Tâche sans titre"}
-                          </h3>
-                          {item.isCarryOver && (
-                            <span className="tag carry">REPORTÉE</span>
-                          )}
-                          {!item.isCompleted &&
-                            item.dueDate <
-                              new Date().toISOString().slice(0, 10) && (
-                              <span className="tag overdue-tag">EN RETARD</span>
-                            )}
-                          {template(item.taskTemplateId)?.priority ===
-                            "Critical" && (
-                            <span className="tag critical">CRITIQUE</span>
-                          )}
-                        </div>
-                        <p>{template(item.taskTemplateId)?.description}</p>
-                        <div className="task-meta">
-                          ◷ Échéance :{" "}
-                          {formatTaskDate(item.dueDate, dateDisplayFormat)}
-                          {item.completedAt && (
-                            <>
-                              {" "}
-                              · Complétée le{" "}
-                              {new Date(item.completedAt).toLocaleDateString(
-                                "fr-FR",
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )}
-                            </>
-                          )}
-                          {currentUser.isAdmin && (
-                            <> · {user(item.assignedUserId)?.displayName}</>
-                          )}
-                        </div>
+                <div className="task-groups">
+                  <section className="task-group task-group-today" aria-labelledby="today-tasks-heading">
+                    <div className="task-group-heading">
+                      <div>
+                        <span className="section-kicker">PRIORITÉ DU JOUR</span>
+                        <h3 id="today-tasks-heading">Aujourd'hui</h3>
                       </div>
-                      <button
-                        className="detail-button"
-                        onClick={() => setSelected(item)}
-                        aria-label="Voir le détail"
-                      >
-                        ···
-                      </button>
-                    </article>
-                  ))}
+                      <span>{todayTasks.length}</span>
+                    </div>
+                    {todayTasks.length > 0 ? (
+                      <div className="task-list">{todayTasks.map(renderTask)}</div>
+                    ) : (
+                      <p className="task-group-empty">Aucune tâche prévue pour aujourd'hui.</p>
+                    )}
+                  </section>
+                  <section className="task-group" aria-labelledby="future-tasks-heading">
+                    <div className="task-group-heading">
+                      <div>
+                        <span className="section-kicker">PLANIFICATION</span>
+                        <h3 id="future-tasks-heading">À venir</h3>
+                      </div>
+                      <span>{futureTasks.length}</span>
+                    </div>
+                    {futureTasks.length > 0 ? (
+                      <div className="task-list">{futureTasks.map(renderTask)}</div>
+                    ) : (
+                      <p className="task-group-empty">Aucune tâche à venir avec les filtres actuels.</p>
+                    )}
+                  </section>
                 </div>
               </section>
               <aside className="insight-panel">
@@ -4328,6 +4371,30 @@ function App() {
                       {origin.dueDate.toLocaleDateString("fr-FR", {
                         dateStyle: "long",
                       })}
+                    </span>
+                  </div>
+                );
+              })()}
+            {!selected.isCarryOver &&
+              (() => {
+                const sibling = pendingCarryOverSibling(selected, instances);
+                if (!sibling) return null;
+                return (
+                  <div className="carry-over-origin related-carry-warning">
+                    <span className="section-kicker">TÂCHE EN RETARD LIÉE</span>
+                    <strong>
+                      Une occurrence reportée de cette tâche n’a pas encore été
+                      faite, attribuée à{" "}
+                      {users.find((user) => user.id === sibling.assignedUserId)
+                        ?.displayName ?? "un participant non attribué"}
+                      .
+                    </strong>
+                    <span>
+                      Échéance de la version en retard :{" "}
+                      {new Date(sibling.dueDate).toLocaleDateString("fr-FR", {
+                        dateStyle: "long",
+                      })}
+                      . Synchronisez-vous pour éviter de la faire en double.
                     </span>
                   </div>
                 );

@@ -96,7 +96,7 @@ select:focus-visible {
   background: #fff8f5;
 }
 .task.carry-over {
-  background: #f5faf7;
+  background: var(--white);
 }
 .overdue-tag {
   background: #f8dfd8 !important;
@@ -512,6 +512,58 @@ nav {
 .task-list {
   display: grid;
 }
+.task-groups {
+  display: grid;
+  gap: 25px;
+  margin-top: 18px;
+}
+.task-group {
+  border-top: 1px solid var(--line);
+}
+.task-group-today {
+  border-top: 3px solid var(--teal);
+  background: #f7fbf9;
+}
+.task-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 11px;
+}
+.task-group-today .task-group-heading {
+  padding-inline: 14px;
+}
+.task-group-heading h3 {
+  margin-top: 4px;
+  font-size: 16px;
+}
+.task-group-heading > span {
+  min-width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf2ef;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.task-group-today .task-group-heading > span {
+  margin-right: 14px;
+  background: var(--teal);
+  color: white;
+}
+.task-group-today .task-list,
+.task-group-today .task-group-empty {
+  margin-inline: 14px;
+}
+.task-group-empty {
+  margin: 0;
+  padding: 16px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
 .task {
   display: flex;
   align-items: center;
@@ -605,6 +657,14 @@ nav {
 .tag.critical {
   background: #f8dfd8;
   color: #af5f4f;
+}
+.tag.related-carry {
+  background: #fde8e8;
+  color: #a13a3a;
+}
+.related-carry-warning {
+  border-left-color: #e08a8a;
+  background: #fdf1f1;
 }
 .detail-button {
   background: transparent;
@@ -901,6 +961,31 @@ nav {
 }
 .form-modal textarea {
   resize: vertical;
+}
+.difficulty-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.difficulty-slider input[type="range"] {
+  flex: 1;
+  width: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--accent, #3a7d5c);
+}
+.difficulty-slider-value {
+  min-width: 28px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #fbfcfb;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 2px 6px;
 }
 .form-grid {
   display: grid;

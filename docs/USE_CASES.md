@@ -328,6 +328,25 @@ Chaque cas d'usage documente :
 - **Scénario** : passage à `Status = Cancelled`.
 - **Cas limite** : une instance annulée doit-elle être reportée ? Non (R-19).
 
+## UC-CMP-06 — Être alerté d'une version en retard de sa propre tâche
+
+- **Acteur** : Participant
+- **Contexte** : une tâche non terminée en semaine N est reportée (UC-GEN-02). En semaine N+1,
+  le modèle génère normalement une nouvelle instance régulière, qui peut être affectée à un
+  participant différent de celui qui détient l'instance reportée toujours ouverte : les deux
+  instances du même modèle coexistent alors dans la semaine.
+- **Scénario nominal** :
+  1. Sur le dashboard, la carte de l'instance régulière (non reportée) affiche l'étiquette
+     « VERSION EN RETARD CHEZ UN AUTRE » dès qu'une instance reportée non terminée du même
+     modèle existe dans la semaine.
+  2. En ouvrant le détail de l'instance, le participant voit le nom du participant qui détient
+     la version en retard ainsi que son échéance.
+- **Objectif** : permettre aux participants de se synchroniser (hors application) pour éviter de
+  réaliser deux fois la même tâche.
+- **Cas limite** : si l'instance reportée est terminée entre-temps, l'étiquette disparaît au
+  prochain chargement du dashboard.
+- **Règles** : ADR-005, BR-039.
+
 ---
 
 # Domaine : Consultation & Historique
