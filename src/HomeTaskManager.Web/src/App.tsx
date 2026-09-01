@@ -1918,10 +1918,14 @@ function HistoryPanel({
     Promise.all(instanceEntries.map(async (entry) => {
       try {
         const response = await fetch(`${api}/api/task-instances/${entry.entityId}`);
-        if (!response.ok) return null;
+        if (!response.ok) {
+          console.error(`Détail de l'instance ${entry.entityId} indisponible (${response.status}).`);
+          return null;
+        }
         const result = await response.json();
         return result.instance && result.week ? [entry.entityId, result] as const : null;
-      } catch {
+      } catch (reason) {
+        console.error(`Détail de l'instance ${entry.entityId} indisponible.`, reason);
         return null;
       }
     })).then((results) => setHistoryTargets((current) => ({ ...current, ...Object.fromEntries(results.filter((result): result is readonly [string, { instance: Instance; week: { year: number; weekNumber: number } }] => result !== null)) })));
@@ -3060,6 +3064,7 @@ function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [instances, setInstances] = useState<Instance[]>([]);
+  const [adminInstances, setAdminInstances] = useState<Instance[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [dateDisplayFormat, setDateDisplayFormat] = useState<
     "Weekday" | "Numeric"
@@ -3132,10 +3137,32 @@ function App() {
     setSelected(null);
   }
 
-  function selectProfile(user: User) {
+  async function selectProfile(user: User) {
+    try {
+      const response = await fetch(`${api}/api/users/${user.id}/select`, { method: "POST" });
+      if (!response.ok) {
+        setNotice("Impossible de sélectionner ce profil.");
+        return;
+      }
+    } catch {
+      setNotice("Impossible de sélectionner ce profil.");
+      return;
+    }
+    // Clear the previous profile's session-scoped state so no stale data leaks into the new one.
+    setInstances([]);
+    setAdminInstances([]);
+    setSelected(null);
+    setCurrentPeriod(null);
+    setContinuationPeriod(null);
+    setCurrentWeekId(null);
+    setWeekStatus("Active");
+    setUnreadNotifications(0);
+    setApiError(false);
+    setApiMessage("");
+    setNotice("");
     setCurrentUser(user);
     navigate("/week");
-    void fetch(`${api}/api/users/${user.id}/select`, { method: "POST" });
+    setPeriodRefresh((value) => value + 1);
   }
 
   useEffect(() => {
@@ -3244,7 +3271,31 @@ function App() {
     periodRefresh,
     queryInstanceId,
     pendingNotificationTaskTitle,
+    currentUser?.id,
   ]);
+
+  useEffect(() => {
+    if (!currentUser?.isAdmin) {
+      setAdminInstances([]);
+      return;
+    }
+    fetch(
+      `${api}/api/weeks/${week.year}/${week.week}/instances?includeAllParticipants=true`,
+    )
+      .then(async (response) => {
+        if (!response.ok) {
+          console.error("Lecture des instances multi-participants impossible.");
+          setAdminInstances([]);
+          return;
+        }
+        const result = await response.json();
+        setAdminInstances(result?.instances ?? []);
+      })
+      .catch((reason) => {
+        console.error("Lecture des instances multi-participants impossible.", reason);
+        setAdminInstances([]);
+      });
+  }, [api, week.year, week.week, periodRefresh, currentUser?.id, currentUser?.isAdmin]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -3411,11 +3462,19 @@ function App() {
         setInstances(instanceData?.instances ?? []);
       } else {
         if (action === "assign" && Array.isArray(result.instances)) {
-          setInstances(result.instances);
+          setInstances(
+            currentUser
+              ? result.instances.filter(
+                  (item: Instance) => item.assignedUserId === currentUser.id,
+                )
+              : [],
+          );
+          setAdminInstances(result.instances);
         }
         if (action === "assign") setNewlyGeneratedCount(0);
         if (action === "close") setContinuationPeriod(result.nextPeriod ?? null);
       }
+      setPeriodRefresh((value) => value + 1);
       setNotice(
         action === "generate"
           ? result.createdInstances?.length > 0
@@ -3726,6 +3785,13 @@ function App() {
             : item,
         ),
       );
+      setAdminInstances((items) =>
+        items.map((item) =>
+          item.id === instanceId
+            ? { ...item, assignedUserId: updated.assignedUserId }
+            : item,
+        ),
+      );
       setSelected((item) =>
         item?.id === instanceId
           ? { ...item, assignedUserId: updated.assignedUserId }
@@ -3755,6 +3821,11 @@ function App() {
         );
       const updated = await response.json();
       setInstances((items) =>
+        items.map((item) =>
+          item.id === instanceId ? { ...item, status: updated.status } : item,
+        ),
+      );
+      setAdminInstances((items) =>
         items.map((item) =>
           item.id === instanceId ? { ...item, status: updated.status } : item,
         ),
@@ -3937,8 +4008,18 @@ function App() {
           <button
             className="logout"
             onClick={() => {
-              void fetch(`${api}/api/users/logout`, { method: "POST" });
+              fetch(`${api}/api/users/logout`, { method: "POST" }).catch(
+                (reason) => console.error("Déconnexion impossible.", reason),
+              );
               setCurrentUser(null);
+              setInstances([]);
+              setAdminInstances([]);
+              setSelected(null);
+              setCurrentPeriod(null);
+              setContinuationPeriod(null);
+              setCurrentWeekId(null);
+              setWeekStatus("Active");
+              setUnreadNotifications(0);
               navigate("/");
             }}
             title="Changer de profil"
@@ -4257,7 +4338,7 @@ function App() {
           />
         ) : view === "Affectations" ? (
           <AssignmentsPanel
-            instances={instances}
+            instances={adminInstances}
             templates={templates}
             users={users}
             year={week.year}
@@ -4275,7 +4356,7 @@ function App() {
           />
         ) : view === "Instances" ? (
           <InstanceAdminPanel
-            instances={instances}
+            instances={adminInstances}
             templates={templates}
             users={users}
             onReassigned={reassignInstance}

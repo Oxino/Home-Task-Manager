@@ -285,9 +285,27 @@
   (modale) affiche en complément le nom du participant concerné et l'échéance de la version en
   retard, pour permettre aux participants de se synchroniser en dehors de l'application.
 
+### V13.9 — Correctifs cache de session et périmètre des instances
+
+- Correction du changement de profil : la sélection de profil attend désormais la confirmation
+  serveur avant de poursuivre, puis réinitialise tout l'état lié à la session précédente
+  (instances, semaine courante, notifications, messages d'erreur) au lieu de laisser des
+  données de l'ancien profil s'afficher pendant que la nouvelle session se met en place.
+- `GET /api/weeks/{year}/{weekNumber}/instances` ne retourne plus systématiquement toutes les
+  instances à un administrateur : le périmètre par défaut est désormais toujours restreint à
+  l'utilisateur courant, y compris pour un administrateur consultant son propre tableau de bord.
+  La vue multi-participants devient un paramètre explicite (`includeAllParticipants=true`),
+  vérifié côté serveur et réservé aux administrateurs.
+- Les pages d'administration **Affectations** et **Instances** utilisent désormais une source de
+  données dédiée à la vue multi-participants, synchronisée après réaffectation, annulation,
+  génération et lancement d'affectation, sans régression sur leur périmètre global.
+- La récupération du détail d'une instance référencée dans l'historique journalise désormais
+  l'erreur rencontrée (403 ou autre) au lieu de l'ignorer silencieusement, tout en continuant
+  sur les entrées suivantes sans interrompre l'affichage.
+
 ---
 
-## Etat actuel (fin V13.8)
+## Etat actuel (fin V13.9)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -366,6 +384,10 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - Les modèles archivés sont conservés pour l'historique, filtrables dans le catalogue et
   réactivables par un administrateur.
 - Les notifications sont paginées et vérifiées périodiquement sans rechargement visible inutile.
+- Le changement de profil réinitialise l'état de session avant de recharger les données, et le
+  tableau de bord personnel ne retourne plus que les instances de l'utilisateur courant, même
+  pour un administrateur; les vues d'administration globales conservent une source dédiée pour
+  le périmètre multi-participants.
 
 ---
 

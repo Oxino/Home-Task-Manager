@@ -110,6 +110,12 @@ En cas d'egalite :
 2. moins d'occurrences recentes du modele ;
 3. identifiant stable du participant.
 
+Le compteur du critere 1 (`runningAssignedCount`) est unique et cumulatif : il demarre a la
+valeur historique (`TotalAssignedCount` sur la fenetre d'equite) puis s'incremente au fil des
+affectations de la semaine en cours, sans jamais etre remis a zero. Ce n'est donc pas un
+compteur limite a la semaine traitee ; il melange volontairement l'historique et les
+affectations deja decidees pendant le calcul en cours.
+
 ### Exemple
 
 Pour une tache de difficulte 40, priorite normale et duree 45 minutes :

@@ -39,12 +39,15 @@ public class WeeksController(
     public async Task<ActionResult<GetWeekInstancesResult>> GetInstances(
         int year,
         int weekNumber,
+        [FromQuery] bool includeAllParticipants,
         CancellationToken cancellationToken)
     {
         try
         {
             var result = await getWeekInstancesUseCase.ExecuteAsync(year, weekNumber, cancellationToken);
-            if (!User.IsInRole("Admin"))
+            // Default scope is always "my instances", even for admins; the multi-participant view is opt-in and admin-only.
+            var canSeeAllParticipants = includeAllParticipants && User.IsInRole("Admin");
+            if (!canSeeAllParticipants)
             {
                 var currentUserId = User.GetCurrentUserId();
                 result = result with { Instances = result.Instances.Where(instance => instance.AssignedUserId == currentUserId).ToList() };
