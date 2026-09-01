@@ -29,6 +29,10 @@ internal static class BalancedAssignment
         var loads = participants.ToDictionary(participant => participant.Id, _ => 0m);
         var counts = participants.ToDictionary(participant => participant.Id, _ => 0);
         var assignments = new List<TaskAssignment>();
+        var dailyMandatoryOwners = new Dictionary<Guid, Guid>();
+        // Seeded by the week itself (not by prior runs) so identical weeks do not always start
+        // the rotation on the same participant.
+        var tieBreakCursor = (context.Week.Year * 53 + context.Week.WeekNumber) % participants.Count;
         var grouped = context.TaskInstances
             .Where(instance => context.TaskTemplatesById.ContainsKey(instance.TaskTemplateId))
             .GroupBy(instance => instance.TaskTemplateId)
@@ -39,14 +43,41 @@ internal static class BalancedAssignment
 
         foreach (var item in grouped)
         {
-            var participant = participants
-                .OrderBy(candidate => loads[candidate.Id] / (candidate.AvailabilityPercentage / 100m))
-                .ThenBy(candidate => counts[candidate.Id])
-                .ThenBy(candidate => candidate.Id)
-                .First();
-            assignments.Add(new TaskAssignment(item.instance.Id, participant.Id));
-            loads[participant.Id] += item.weight;
-            counts[participant.Id]++;
+            var template = context.TaskTemplatesById[item.instance.TaskTemplateId];
+            var isSingleOwnerDaily = template.FrequencyType == FrequencyType.DailyMandatory && !template.DistributeDailyMandatory;
+
+            Guid participantId;
+            if (isSingleOwnerDaily && dailyMandatoryOwners.TryGetValue(template.Id, out var ownerId))
+            {
+                participantId = ownerId;
+            }
+            else
+            {
+                var minLoad = participants.Min(candidate => loads[candidate.Id] / (candidate.AvailabilityPercentage / 100m));
+                var minCount = participants
+                    .Where(candidate => loads[candidate.Id] / (candidate.AvailabilityPercentage / 100m) == minLoad)
+                    .Min(candidate => counts[candidate.Id]);
+                var tied = participants
+                    .Where(candidate => loads[candidate.Id] / (candidate.AvailabilityPercentage / 100m) == minLoad && counts[candidate.Id] == minCount)
+                    .OrderBy(candidate => candidate.Id)
+                    .ToList();
+
+                // Strict ties rotate the winner instead of always favoring the same participant id.
+                participantId = tied[tieBreakCursor % tied.Count].Id;
+                if (tied.Count > 1)
+                {
+                    tieBreakCursor++;
+                }
+
+                if (isSingleOwnerDaily)
+                {
+                    dailyMandatoryOwners[template.Id] = participantId;
+                }
+            }
+
+            assignments.Add(new TaskAssignment(item.instance.Id, participantId));
+            loads[participantId] += item.weight;
+            counts[participantId]++;
         }
 
         return new AssignmentResult(assignments);

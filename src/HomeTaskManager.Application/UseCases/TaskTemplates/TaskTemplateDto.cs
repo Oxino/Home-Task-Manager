@@ -15,4 +15,5 @@ public sealed record TaskTemplateDto(
     IReadOnlyList<DayOfWeek> ActiveWeekDays,
     MonthlyScheduleType MonthlyScheduleType,
     int? MonthlyDay,
-    WeeklyScheduleType WeeklyScheduleType);
+    WeeklyScheduleType WeeklyScheduleType,
+    bool DistributeDailyMandatory);

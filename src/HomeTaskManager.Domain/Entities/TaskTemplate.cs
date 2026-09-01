@@ -25,7 +25,8 @@ public sealed class TaskTemplate
         IEnumerable<DayOfWeek>? activeWeekDays = null,
         MonthlyScheduleType monthlyScheduleType = MonthlyScheduleType.StartOfMonth,
         int? monthlyDay = null,
-        WeeklyScheduleType weeklyScheduleType = WeeklyScheduleType.EndOfWeek)
+        WeeklyScheduleType weeklyScheduleType = WeeklyScheduleType.EndOfWeek,
+        bool distributeDailyMandatory = true)
     {
         Id = Guid.NewGuid();
         CreatedAt = DateTime.UtcNow;
@@ -44,6 +45,7 @@ public sealed class TaskTemplate
         SetActiveWeekDays(activeWeekDays ?? []);
         SetMonthlySchedule(monthlyScheduleType, monthlyDay);
         WeeklyScheduleType = weeklyScheduleType;
+        DistributeDailyMandatory = distributeDailyMandatory;
         ChangePriority(priority);
         ChangeEstimatedDuration(estimatedDurationMinutes);
         UpdatedAt = CreatedAt;
@@ -70,6 +72,9 @@ public sealed class TaskTemplate
     public int? MonthlyDay { get; private set; }
 
     public WeeklyScheduleType WeeklyScheduleType { get; private set; }
+
+    // BR-038: for DailyMandatory only; true spreads the 7 instances across participants, false keeps a single weekly owner.
+    public bool DistributeDailyMandatory { get; private set; } = true;
 
     public bool IsActive { get; private set; }
 
@@ -153,6 +158,12 @@ public sealed class TaskTemplate
     public void SetWeeklySchedule(WeeklyScheduleType scheduleType)
     {
         WeeklyScheduleType = scheduleType;
+        Touch();
+    }
+
+    public void SetDistributeDailyMandatory(bool distribute)
+    {
+        DistributeDailyMandatory = distribute;
         Touch();
     }
 

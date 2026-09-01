@@ -318,9 +318,94 @@
 - Les trois cellules d'action sont disposées horizontalement (une colonne par étape), avec un
   repli en une seule colonne sur petit écran.
 
+### V13.11 — Répartition configurable des tâches quotidiennes obligatoires
+
+- Nouveau réglage par modèle `DailyMandatory` : `DistributeDailyMandatory` (BR-061), modifiable
+  dans les formulaires de création et de modification, visible uniquement pour cette fréquence.
+- Valeur par défaut `true` : les 7 instances de la semaine sont désormais réparties entre les
+  participants par le moteur d'affectation, comme n'importe quelle autre fréquence.
+- Valeur `false` : comportement historique conservé, un seul tirage détermine le propriétaire
+  des 7 instances de la semaine.
+- Ce comportement est désormais appliqué de façon identique par les quatre moteurs
+  (`INTELLIGENT_V1`, `RANDOM`, `BALANCED_POINTS`, `BALANCED_TIME`) — auparavant seul
+  `INTELLIGENT_V1` gérait la responsabilité unique, les trois autres moteurs répartissaient
+  systématiquement sans pouvoir la désactiver.
+- Migration EF Core ajoutant la colonne avec valeur par défaut `true` pour les modèles existants.
+- Tests dédiés ajoutés pour les deux modes sur `IntelligentV1Strategy`.
+
+### V13.12 — Refonte de l'algorithme INTELLIGENT_V1 (construction + recherche locale)
+
+- Constat issu du test manuel du jeu de données : `INTELLIGENT_V1` traitait les instances de la
+  semaine dans l'ordre chronologique en une seule passe irrévocable. Une seule décision sur une
+  tâche à fort score (ex. 45 pts), prise tôt dans la semaine, pouvait faire basculer
+  définitivement tout le reste vers un seul participant, sans aucune correction possible —
+  produisant des semaines à 100 %/0 % entre deux participants.
+- Nouvel algorithme en deux temps :
+  1. **Construction gloutonne par score décroissant (LPT)** : la tâche la plus lourde est
+     placée en premier, pendant que les participants sont encore proches en charge, au lieu
+     d'être décidée au hasard de l'ordre chronologique.
+  2. **Recherche locale bornée** : le moteur cherche ensuite le meilleur déplacement d'une seule
+     tâche ou le meilleur échange entre deux tâches qui réduirait la variance des charges
+     normalisées entre participants, et répète jusqu'à ne plus trouver d'amélioration ou
+     atteindre un plafond de 500 itérations (garde-fou de performance).
+- Les 7 instances d'une tâche quotidienne obligatoire non répartie (`DistributeDailyMandatory =
+  false`) restent regroupées comme une seule unité tout au long de la construction et de la
+  recherche locale : elles se déplacent toujours ensemble.
+- Le départage reste déterministe (BR-048), désormais appliqué à la construction et à la
+  recherche locale plutôt qu'à une séquence unique de décisions.
+- Formules de score, de disponibilité, de fenêtre d'équité et de pénalité anti-répétition
+  inchangées (BR-052 à BR-054) : seul le mécanisme de décision a changé.
+- Nouveau test dédié reproduisant le scénario régressé (historique proche, une grosse tâche
+  parmi plusieurs petites) et vérifiant que les deux participants reçoivent au moins une
+  instance, au lieu d'un balayage complet d'un seul côté.
+- Validation manuelle sur le jeu de données de test (2 participants, 4 semaines consécutives,
+  historique enchaîné) : les semaines à balayage complet ont disparu.
+
+  | Semaine | Ancien algorithme (passe chronologique) | Nouvel algorithme (LPT + recherche locale) |
+  |---------|------------------------------------------|---------------------------------------------|
+  | S33 | 9 / 3 | 8 / 4 |
+  | S34 | 6 / 5 | 7 / 4 |
+  | S35 | 11 / 0 | 4 / 7 |
+  | S36 | 12 / 0 | 7 / 5 |
+
+- Documentation mise à jour : `ASSIGNMENT_ENGINE.md` (section INTELLIGENT_V1 réécrite) et
+  BR-048 (`BUSINESS_RULES.md`).
+
+### V13.13 — Départage rotatif pour BALANCED_POINTS et BALANCED_TIME
+
+- Constat issu du test manuel comparatif des 4 moteurs sur le même jeu de données : `BALANCED_TIME`
+  produisait exactement le même motif jour par jour sur deux semaines consécutives (S34 et S35),
+  toujours en faveur du même participant. Cause identifiée : ces deux moteurs n'ont aucune
+  mémoire d'une semaine à l'autre (charge repartie à zéro), et leur départage en cas d'égalité
+  stricte de charge se faisait sur l'identifiant du participant — toujours le même gagnant tant
+  que le jeu de tâches restait structurellement identique (mêmes durées, aucune variation).
+- Nouveau départage rotatif (BR-062) : en cas d'égalité stricte de charge normalisée puis de
+  nombre de tâches déjà affectées, le participant gagnant alterne parmi ceux encore à égalité au
+  lieu de toujours favoriser le même identifiant. Un curseur de rotation avance à chaque égalité
+  effective (au moins deux participants à égalité), ce qui distribue l'égalité en tourniquet.
+- Validation manuelle du premier correctif : insuffisant. Le curseur repartait de zéro à chaque
+  semaine (chaque appel de `Assign`), donc une même séquence d'égalités rejouait le même motif
+  tant que le jeu de tâches restait identique — `BALANCED_TIME` reproduisait toujours exactement
+  le même enchaînement jour par jour sur S34 et S35.
+- Correctif complémentaire : le curseur de rotation est initialisé à partir de l'année et du
+  numéro de semaine traités (`(Year × 53 + WeekNumber) % nombre de participants`), au lieu de
+  repartir de zéro à chaque appel. Ce calcul reste une fonction pure de la semaine traitée, sans
+  aucun état persisté entre deux exécutions — conforme au principe « sans mémoire » de ces deux
+  moteurs.
+- Validation manuelle après correctif complémentaire : S34 et S35 produisent désormais des motifs
+  différents pour la tâche quotidienne obligatoire (ex. Alice favorisée en S34, Benoît favorisé
+  en S35), au lieu d'un motif identique reconduit à l'identique chaque semaine.
+- Changement localisé à `BalancedAssignment.Assign` (`BalancedStrategies.cs`), partagé par
+  `BALANCED_POINTS` et `BALANCED_TIME`. Aucun changement pour `INTELLIGENT_V1` (BR-048, déjà
+  déterministe par construction/recherche locale) ni pour `RANDOM` (déjà non déterministe).
+- Nouveau test dédié vérifiant qu'une série de tâches de poids strictement égal ne favorise plus
+  un seul participant.
+- Documentation mise à jour : `ASSIGNMENT_ENGINE.md` (sections BALANCED_POINTS et BALANCED_TIME)
+  et règle BR-062 (`BUSINESS_RULES.md`), précisant l'initialisation du curseur par semaine.
+
 ---
 
-## Etat actuel (fin V13.10)
+## Etat actuel (fin V13.13)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -375,7 +460,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
         → Notifications & Analytics
 ```
 
-- **84 tests unitaires** (Application), **22 tests** (Domain), tous verts.
+- **93 tests unitaires** (Application), **24 tests** (Domain), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
 - Les commentaires avancés couvrent désormais le threading et les réactions.
@@ -406,6 +491,13 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - Le panneau d'action de la page Affectations regroupe, pour chacune des trois étapes (clôturer,
   générer, affecter), son explication et son bouton dans une cellule unique, disposées
   horizontalement et dans l'ordre réel d'utilisation.
+- La répartition d'une tâche quotidienne obligatoire est configurable par modèle
+  (`DistributeDailyMandatory`, défaut réparti entre participants) et appliquée de façon
+  identique par les quatre moteurs d'affectation.
+- `INTELLIGENT_V1` construit sa répartition hebdomadaire par un algorithme glouton décroissant
+  (LPT) suivi d'une recherche locale bornée, plutôt qu'une seule passe chronologique
+  irrévocable, afin d'éviter qu'une décision isolée sur une tâche à fort score ne bascule toute
+  la semaine vers un seul participant.
 
 ---
 

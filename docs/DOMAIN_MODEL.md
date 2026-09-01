@@ -91,6 +91,7 @@ Définition permanente d'une tâche.
 | CreatedByUserId | Guid | Oui |
 | CreatedAt | DateTime | Oui |
 | UpdatedAt | DateTime | Oui |
+| DistributeDailyMandatory | bool | Oui |
 
 ## Contraintes
 
@@ -110,6 +111,14 @@ Priority :
 EstimatedDurationMinutes :
 
 - minimum 1
+
+DistributeDailyMandatory :
+
+- ne s'applique qu'aux modèles `FrequencyType = DailyMandatory`
+- valeur par défaut : `true` (les 7 instances de la semaine sont réparties entre les
+  participants par le moteur d'affectation)
+- `false` : les 7 instances restent affectées à un seul participant pour la semaine
+  (comportement historique, BR-038)
 
 ## Droits
 

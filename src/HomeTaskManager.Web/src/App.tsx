@@ -29,6 +29,7 @@ type Template = {
   monthlyScheduleType?: string;
   monthlyDay?: number;
   weeklyScheduleType?: string;
+  distributeDailyMandatory?: boolean;
 };
 type Instance = {
   id: string;
@@ -236,6 +237,15 @@ function periodTimeLabel(value?: string) {
   return value
     ? new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })
     : null;
+}
+
+function todayFullLabel(date: Date) {
+  const label = date.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function formatTaskDate(
@@ -618,6 +628,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   const [activeWeekDays, setActiveWeekDays] = useState<number[]>([1]);
   const [monthlyScheduleType, setMonthlyScheduleType] = useState("StartOfMonth");
   const [monthlyDay, setMonthlyDay] = useState("1");
+  const [distributeDailyMandatory, setDistributeDailyMandatory] = useState(true);
   const [difficulty, setDifficulty] = useState("50");
   const [duration, setDuration] = useState("30");
   const [reminderEnabled, setReminderEnabled] = useState(false);
@@ -635,6 +646,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
     setActiveWeekDays([1]);
     setMonthlyScheduleType("StartOfMonth");
     setMonthlyDay("1");
+    setDistributeDailyMandatory(true);
     setDifficulty("50");
     setDuration("30");
     setReminderEnabled(false);
@@ -674,6 +686,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
       monthlyScheduleType,
       monthlyDay: frequencyType === "Monthly" && monthlyScheduleType === "SpecificDay" ? Number(monthlyDay) : null,
       weeklyScheduleType,
+      distributeDailyMandatory,
       createdByUserId: user.id,
     };
     try {
@@ -811,6 +824,17 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
               )}
               {frequencyType === "Monthly" && <MonthlyScheduleField scheduleType={monthlyScheduleType} day={monthlyDay} onScheduleTypeChange={setMonthlyScheduleType} onDayChange={setMonthlyDay} />}
               {frequencyType === "Weekly" && <WeeklyScheduleField value={weeklyScheduleType} onChange={setWeeklyScheduleType} />}
+              {frequencyType === "DailyMandatory" && (
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={distributeDailyMandatory}
+                    onChange={(event) => setDistributeDailyMandatory(event.target.checked)}
+                  />{" "}
+                  Répartir entre les participants
+                  <FieldInfo text="Coché : les 7 occurrences de la semaine sont réparties entre les participants. Décoché : un seul participant reçoit les 7 occurrences de la semaine." />
+                </label>
+              )}
               <label>
                 Pénibilité
                 <FieldInfo text="Score entier obligatoire compris entre 1 et 100. Plus il est élevé, plus la tâche pèse dans l’équilibrage." />
@@ -930,6 +954,9 @@ function EditTaskDialog({
     template.monthlyScheduleType || "StartOfMonth",
   );
   const [monthlyDay, setMonthlyDay] = useState(String(template.monthlyDay ?? 1));
+  const [distributeDailyMandatory, setDistributeDailyMandatory] = useState(
+    template.distributeDailyMandatory ?? true,
+  );
   const [difficulty, setDifficulty] = useState(
     String(template.manualDifficultyScore ?? 50),
   );
@@ -948,6 +975,7 @@ function EditTaskDialog({
     setActiveWeekDays(template.activeWeekDays?.length ? template.activeWeekDays : [1]);
     setMonthlyScheduleType(template.monthlyScheduleType || "StartOfMonth");
     setMonthlyDay(String(template.monthlyDay ?? 1));
+    setDistributeDailyMandatory(template.distributeDailyMandatory ?? true);
     setDifficulty(String(template.manualDifficultyScore ?? 50));
     setDuration(String(template.estimatedDurationMinutes ?? 30));
     setRemindersOpen(false);
@@ -985,6 +1013,7 @@ function EditTaskDialog({
       monthlyScheduleType,
       monthlyDay: frequencyType === "Monthly" && monthlyScheduleType === "SpecificDay" ? Number(monthlyDay) : null,
       weeklyScheduleType,
+      distributeDailyMandatory,
       requestingUserId: user.id,
     };
     try {
@@ -1108,6 +1137,17 @@ function EditTaskDialog({
               )}
               {frequencyType === "Monthly" && <MonthlyScheduleField scheduleType={monthlyScheduleType} day={monthlyDay} onScheduleTypeChange={setMonthlyScheduleType} onDayChange={setMonthlyDay} />}
               {frequencyType === "Weekly" && <WeeklyScheduleField value={weeklyScheduleType} onChange={setWeeklyScheduleType} />}
+              {frequencyType === "DailyMandatory" && (
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={distributeDailyMandatory}
+                    onChange={(event) => setDistributeDailyMandatory(event.target.checked)}
+                  />{" "}
+                  Répartir entre les participants
+                  <FieldInfo text="Coché : les 7 occurrences de la semaine sont réparties entre les participants. Décoché : un seul participant reçoit les 7 occurrences de la semaine." />
+                </label>
+              )}
               <label>
                 Pénibilité
                 <FieldInfo text="Entier obligatoire compris entre 1 et 100." />
@@ -3965,7 +4005,7 @@ function App() {
                 className={
                   view === "Affectations" ? "nav-item active" : "nav-item"
                 }
-                onClick={() => navigate("/assignments")}
+                onClick={() => navigate(`/assignments?year=${week.year}&week=${week.week}`)}
               >
                 ▦ <span>Affectations</span>
               </button>
@@ -3973,7 +4013,7 @@ function App() {
                 className={
                   view === "Instances" ? "nav-item active" : "nav-item"
                 }
-                onClick={() => navigate("/instances")}
+                onClick={() => navigate(`/instances?year=${week.year}&week=${week.week}`)}
               >
                 ◫ <span>Instances</span>
               </button>
@@ -4245,7 +4285,12 @@ function App() {
                     <div className="task-group-heading">
                       <div>
                         <span className="section-kicker">PRIORITÉ DU JOUR</span>
-                        <h3 id="today-tasks-heading">Aujourd'hui</h3>
+                        <h3 id="today-tasks-heading">
+                          Aujourd'hui
+                          {!isHistoricalWeek && (
+                            <span className="today-date-label">, {todayFullLabel(new Date())}</span>
+                          )}
+                        </h3>
                       </div>
                       <span>{todayTasks.length}</span>
                     </div>

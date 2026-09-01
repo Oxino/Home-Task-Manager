@@ -159,6 +159,10 @@ Optimisation UX
 - Indicateur « Version en retard chez un autre » sur une instance de la semaine lorsqu'une
   instance reportée non terminée du même modèle existe encore, avec détail du participant
   concerné dans la modale de l'instance.
+- Répartition d'une tâche quotidienne obligatoire configurable par modèle (réglage coché par
+  défaut pour répartir les 7 occurrences entre participants, décoché pour garder un seul
+  propriétaire sur la semaine), appliquée de façon identique par les quatre moteurs
+  d'affectation.
 
 L'envoi Web Push réel (intégration navigateur), les tests d'intégration/end-to-end complets et
 la revue sécurité avant exposition réseau restent à implémenter. Les commentaires avancés,
@@ -267,9 +271,7 @@ hors priorité immédiate.
 -  ~~Supprimer le bouton 'nouvelle tache' du dashboard, le rajouter dans la page de gestion des taches~~
 -  ~~optimisation web : pour les paginations, implémenter la pagination coté API, afin d'optimiser le chargement des données coté navigateur.~~
 -  ~~Amélioration du système de notification : actualisation silencieuse périodique et rechargement uniquement lorsqu'une nouveauté est détectée.~~
--  Festaure: permettre visuellement d'avoir une représentation de la décision logique d'affectation de chaque tache. Une représentation sous forme d'arbre décisionnel. Je veux voir le plans d'execution logique d'attribution de chaque tache, pourquoi cette tache a été attribué a l'utilisateur. Si c'est psk c'est trié par ordre de point, si elle ne l'a pas faite la semaine passé, si c'est une tache non faite de la semaine passé, etc.. etc.. je qu'on puisse comprendre pourquoi l'affectation a été faite. Je rappel, que le choix du moteur d'affectation est paramettrable. donc il faudra que l'arbre de décision puisse s'adapté au moteur de distribution. lors de l'implémentation, pause moi des questions si cela manque de précision, ou qu'il y a un choix technique ou d'affichage a faire, si tu as une meilleur proposition donne la moi
 -  ~~Régles métier: si un tache non fini est réaffecté la nouvelle semaine, et que celle ci n'est toujours pas fin à la fin de la nouvelle semaine, cette tache n'est pas reporté. Elle n'intervient dras plus, et n'interviendra plus non plus dans les calculs de poids et répartission~~
--  reprendre ou approfondir le system de génération d'instance + affectation. 
 - ~~Historique : ouvrir une action de tâche vers le dashboard de la semaine concernée et distinguer ce parcours des cartes de navigation des semaines passées.~~
 - ~~La page d'historique personnel et le journal d'audit administrateur sont séparés par route, avec filtres et tris à renforcer dans les tests end-to-end.~~
 - ~~quand on ouvre un formulaire type popup (formulaire création, modification de tache), si on modifie la valeur et qu'on ferme sans sauvegardé, la valeur modifier persiste.~~
@@ -278,16 +280,17 @@ hors priorité immédiate.
 - ~~Bug formulaire création de tache : le formulaire de création de tache et différent de modificaiton. => Dans la création il manque la partie 'configuration' de l'échéance, pour hebdomadaire, et mensuelle, vérrifie les autres type également.~~
 - ~~Modifier toutes les dropdowns de l'application du méme style graphique~~
 - ~~Journal d'audit : page dédiée à la consultation de l'audit log administrateur, sans navigation temporelle, avec filtres par catégorie, entité et action, et tri chronologique.~~
-- Blocquer l'acces au page admin pour les utilsilateurs. http://localhost:5173/assignments est accecible par exemple, participants, assignment-engine, statistique. Mettre également un contexte de securité sur les endpoint des API pour que seul les actions admin puisse etre appeler par les admin.
 - ~~si la tache est terminé blocker la réaffectation.~~
 - ~~Changer le parametrage des notifications : Aucune / Importante / Toutes.~~
 - ~~Changer curseur (création tache) définition pénibilité : mettre plutot une réglette pour définir la valeur.~~
 - ~~Mieu identifier les taches du jour. Faire un tableau qui présente les tache du jour, et un autre tableau qui présente les futures.~~
 - ~~Indicateur sur la tache nouvelle semaine, si il y a une tache reporté. (afin de ne pas faire la tache avant que celle du report soit fini)~~
-- ~~Page Affectations : remettre 'Clôturer' en 1ère position du mode d'emploi (ordre réel :
-  clôturer, générer les instances, lancer l'affectation) et regrouper chaque bouton d'action
-  avec son explication et, si besoin, son paramètre (case 'annuler les tâches inachevées'
-  déplacée dans la cellule Clôturer), le tout affiché horizontalement.~~
+- ~~Page Affectations : remettre 'Clôturer' en 1ère position du mode d'emploi (ordre réel : clôturer, générer les instances, lancer l'affectation) et regrouper chaque bouton d'action avec son explication et, si besoin, son paramètre (case 'annuler les tâches inachevées' déplacée dans la cellule Clôturer), le tout affiché horizontalement.~~
 -  ~~Tache reporté : ne pas le mettre en évidence. Revoir la vue des tache 'reporté' (moins agréssif, changé la visuelle)~~
-- régles métier a pofiner : une tache quotidienne obligatoire (avoir la possibilité de gérer l'affectaion : toujours à la mm personne ou à répartir aux participant)
-- Amélioration navigation interface téléphone.
+- ~~reprendre ou approfondir le system de génération d'instance + affectation.~~
+
+- ~~régles métier a pofiner : une tache quotidienne obligatoire (avoir la possibilité de gérer l'affectaion : toujours à la mm personne ou à répartir aux participant)~~
+- Amélioration navigation interface téléphone.0
+- Blocquer l'acces au page admin pour les utilsilateurs. http://localhost:5173/assignments est accecible par exemple, participants, assignment-engine, statistique. Mettre également un contexte de securité sur les endpoint des API pour que seul les actions admin puisse etre appeler par les admin.
+- Festaure: permettre visuellement d'avoir une représentation de la décision logique d'affectation de chaque tache. Une représentation sous forme d'arbre décisionnel. Je veux voir le plans d'execution logique d'attribution de chaque tache, pourquoi cette tache a été attribué a l'utilisateur. Si c'est psk c'est trié par ordre de point, si elle ne l'a pas faite la semaine passé, si c'est une tache non faite de la semaine passé, etc.. etc.. je qu'on puisse comprendre pourquoi l'affectation a été faite. Je rappel, que le choix du moteur d'affectation est paramettrable. donc il faudra que l'arbre de décision puisse s'adapté au moteur de distribution. lors de l'implémentation, pause moi des questions si cela manque de précision, ou qu'il y a un choix technique ou d'affichage a faire, si tu as une meilleur proposition donne la moi
+- 

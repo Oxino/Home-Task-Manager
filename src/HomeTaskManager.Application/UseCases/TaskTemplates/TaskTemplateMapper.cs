@@ -17,5 +17,6 @@ public static class TaskTemplateMapper
         taskTemplate.GetActiveWeekDays(),
         taskTemplate.MonthlyScheduleType,
         taskTemplate.MonthlyDay,
-        taskTemplate.WeeklyScheduleType);
+        taskTemplate.WeeklyScheduleType,
+        taskTemplate.DistributeDailyMandatory);
 }

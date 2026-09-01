@@ -50,6 +50,21 @@ parametres.
 Les parametres qui ne concernent pas le moteur choisi restent persistes, mais n'influencent pas
 les autres strategies.
 
+## Repartition d'une tache quotidienne obligatoire
+
+Chaque modele `DailyMandatory` porte son propre indicateur `DistributeDailyMandatory`,
+modifiable depuis le formulaire de creation et de modification du modele :
+
+- **coche (defaut)** : les 7 instances de la semaine sont traitees independamment par le moteur,
+  comme n'importe quelle autre frequence ; elles peuvent donc etre reparties entre plusieurs
+  participants au cours de la semaine.
+- **decoche** : la premiere instance decidee par le moteur fixe un unique propriataire pour les
+  7 instances de la semaine (comportement historique).
+
+Ce reglage est applique de maniere identique par les quatre moteurs (`INTELLIGENT_V1`, `RANDOM`,
+`BALANCED_POINTS`, `BALANCED_TIME`) : aucun ne traite plus la responsabilite unique comme une
+limite non couverte.
+
 ---
 
 ## INTELLIGENT_V1
@@ -58,26 +73,31 @@ les autres strategies.
 
 Moteur complet et moteur par defaut. Il cherche une repartition equitable dans le temps en
 combinant la charge de la semaine, la disponibilite, l'historique recent et une penalite contre
-les repetitions.
+les repetitions. Contrairement a une simple passe chronologique, il construit une repartition
+initiale puis la corrige avant de la valider : une decision malheureuse en debut de semaine peut
+etre annulee plus tard dans le meme calcul, au lieu de rester figee.
 
 ### Logique etapes par etapes
 
-Pour chaque participant eligible, le moteur initialise :
-
-- `runningScore` avec le score historique cumule ;
-- `runningAssignedCount` avec le nombre historique d'instances affectees.
-
-Il traite les instances dans l'ordre de `PlannedDate`, puis par identifiant stable. Pour chaque
-instance, il :
-
-1. retrouve son modele ;
-2. calcule le score de la tache ;
-3. compte les occurrences du meme modele pour chaque candidat ;
-4. calcule la charge ajustee ;
-5. rapporte cette charge a la disponibilite du candidat ;
-6. selectionne le candidat le moins charge ;
-7. affecte l'instance et actualise les compteurs ;
-8. memorise le participant pour les sept instances d'une tache quotidienne obligatoire.
+1. **Unites de travail** : chaque instance est une unite independante, sauf les instances d'un
+  modele quotidien obligatoire dont `DistributeDailyMandatory = false` : ses 7 instances sont
+  regroupees en une seule unite qui se deplace toujours ensemble (memes 7 instances, un seul
+  proprietaire).
+2. **Construction initiale (glouton par ordre decroissant de score)** : les unites sont triees
+  par score decroissant (la plus grosse d'abord), puis par date planifiee et identifiant stable
+  en cas d'egalite. Chaque unite est affectee au candidat dont la charge ajustee et normalisee
+  serait alors la plus faible (memes formules que ci-dessous). Traiter la plus grosse tache en
+  premier, quand tous les participants sont encore proches, evite qu'elle bascule tout le reste
+  de la semaine par accident d'ordre de traitement.
+3. **Recherche locale bornee (correction)** : le moteur cherche ensuite, parmi tous les
+  deplacements d'une seule unite vers un autre participant et tous les echanges entre deux
+  unites de proprietaires differents, celui qui reduit le plus la variance des charges
+  normalisees finales entre participants. Le meilleur mouvement trouve est applique, puis la
+  recherche recommence, jusqu'a ce qu'aucun mouvement ne l'ameliore ou qu'un plafond de
+  500 iterations soit atteint (garde-fou de performance, jamais atteint pour un foyer classique).
+4. Les instances d'une meme unite quotidienne obligatoire regroupee restent toujours ensemble
+  pendant toute la construction et la recherche locale : un deplacement ou un echange les
+  deplace toutes en meme temps.
 
 ### Calcul du score
 
@@ -87,34 +107,38 @@ DurationFactor   = EstimatedDurationMinutes / ReferenceDurationMinutes
 ```
 
 Si la duree est absente, `DurationFactor` vaut 1. Les multiplicateurs par defaut sont : faible
-0.5, normale 1.0 et critique 1.5.
+0.5, normale 1.0 et critique 1.5. Pour une unite regroupee (tache quotidienne obligatoire non
+repartie), le score est la somme des 7 scores individuels.
 
 ### Historique et penalite
 
 L'historique est lu sur la fenetre d'equite, par defaut les huit semaines precedant la semaine
-traitee. La semaine en cours et les instances reportees sont exclues des calculs historiques.
+traitee. La semaine en cours et les instances reportees sont exclues des calculs historiques ;
+les occurrences recentes utilisees pour la penalite sont donc fixees avant le calcul et ne
+varient pas selon la repartition retenue cette semaine.
 
 ```text
 Penalty = RecentOccurrences x RepetitionPenaltyWeight x CalculatedScore
-AdjustedLoad = CurrentScoreLoad + Penalty
-NormalizedLoad = AdjustedLoad / (AvailabilityPercentage / 100)
+AdjustedContribution = CalculatedScore + Penalty
+NormalizedLoad(participant) = (HistoricalScore + Somme des AdjustedContribution retenues) / (AvailabilityPercentage / 100)
 ```
 
-Le candidat retenu est celui dont `NormalizedLoad` est le plus faible.
+La construction choisit, a chaque etape, le candidat dont `NormalizedLoad` projete serait alors
+la plus faible. La recherche locale minimise ensuite la variance de `NormalizedLoad` sur
+l'ensemble des participants eligibles, y compris ceux qui n'auraient encore rien recu.
 
 ### Departage
 
-En cas d'egalite :
+En cas d'egalite stricte entre deux candidats ou deux mouvements :
 
-1. moins d'instances affectees pendant le calcul ;
+1. moins d'unites deja affectees pendant la construction ;
 2. moins d'occurrences recentes du modele ;
 3. identifiant stable du participant.
 
-Le compteur du critere 1 (`runningAssignedCount`) est unique et cumulatif : il demarre a la
-valeur historique (`TotalAssignedCount` sur la fenetre d'equite) puis s'incremente au fil des
-affectations de la semaine en cours, sans jamais etre remis a zero. Ce n'est donc pas un
-compteur limite a la semaine traitee ; il melange volontairement l'historique et les
-affectations deja decidees pendant le calcul en cours.
+Pendant la recherche locale, un mouvement n'est retenu que s'il ameliore strictement la
+variance ; a amelioration egale, le premier mouvement trouve dans l'ordre stable (date
+planifiee puis identifiant d'unite, puis identifiant de participant) est conserve, ce qui rend
+le resultat reproductible pour les memes donnees d'entree.
 
 ### Exemple
 
@@ -135,9 +159,14 @@ A charge egale, Nicolas est choisi.
 
 ### Conformite et limites
 
-L'implementation est conforme a la documentation pour le score, la disponibilite, la fenetre
-historique, la penalite et le departage. Les absences sont encore hors perimetre V1, comme prevu
-par `BR-025`. La conservation des reports est appliquee en amont par le cas d'utilisation.
+Le calcul du score, la normalisation par disponibilite, la fenetre d'equite sur huit semaines et
+la formule de penalite restent conformes a la documentation. Le mecanisme de decision a change :
+il ne s'agit plus d'une seule passe chronologique irrevocable, mais d'une construction suivie
+d'une recherche locale bornee qui peut revenir sur une decision. Les absences restent hors
+perimetre V1, comme prevu par `BR-025`. La conservation des reports est appliquee en amont par
+le cas d'utilisation. Le plafond de 500 iterations garantit un temps de calcul borne meme sur un
+foyer avec de nombreux participants et modeles ; il n'a pas de raison d'etre atteint pour les
+volumes hebdomadaires habituels (quelques dizaines d'instances au plus).
 
 ---
 
@@ -164,8 +193,10 @@ unite, mais une egalite parfaite est impossible lorsque la division ne tombe pas
 ### Exemple et limites
 
 Deux executions avec les memes taches peuvent donner des proprietaires differents. Le moteur
-ne cherche pas a eviter qu'une personne recoive souvent la meme tache et ne garantit pas encore
-la responsabilite unique des taches quotidiennes obligatoires.
+ne cherche pas a eviter qu'une personne recoive souvent la meme tache. La responsabilite unique
+d'une tache quotidienne obligatoire (`DistributeDailyMandatory = false`) est respectee : un seul
+tirage determine le proprietaire des 7 instances, les six autres lui sont directement affectees
+sans consommer un nouveau tirage aleatoire.
 
 ---
 
@@ -195,12 +226,20 @@ Les multiplicateurs de priorite et la duree de reference peuvent modifier le sco
 d'equite et le poids anti-repetition sont ignores. Le moteur optimise la charge de la semaine,
 pas l'equite historique ni necessairement le nombre de taches.
 
+En cas d'egalite stricte de charge normalisee puis de nombre de taches deja affectees, le
+departage alterne entre les participants a egalite plutot que de toujours choisir le meme
+identifiant (BR-062) : chaque nouvelle egalite fait gagner le participant suivant dans l'ordre
+stable des participants encore a egalite. Le point de depart de cette rotation est calcule a
+partir de l'annee et du numero de semaine traites (et non remis a zero de facon fixe), afin que
+deux semaines structurellement identiques ne reproduisent pas le meme motif jour par jour.
+
 ### Exemple et limites
 
 Pour quatre scores 60, 40, 20 et 20, le placement glouton peut produire 80 points contre 60,
 plutot que placer les deux plus grosses taches sur la meme personne. Les reports sont filtres
 par le cas d'utilisation avant l'appel. La responsabilite unique des taches quotidiennes
-obligatoires doit encore etre generalisee a ce moteur.
+obligatoires (`DistributeDailyMandatory = false`) est respectee : le premier tirage fixe le
+proprietaire des 7 instances, dont le score cumule est ajoute a sa charge au fil du tri.
 
 ---
 
@@ -229,11 +268,19 @@ NormalizedTimeLoad = CurrentTimeLoad / (AvailabilityPercentage / 100)
 Les multiplicateurs de priorite, la fenetre d'equite et la penalite sont ignores. La qualite du
 resultat depend de la fiabilite des durees renseignees.
 
+Comme pour `BALANCED_POINTS`, une egalite stricte de charge normalisee puis de nombre de taches
+fait alterner le departage entre les participants a egalite (BR-062) au lieu de toujours
+favoriser le meme identifiant, avec un point de depart de rotation calcule par semaine. Ce point
+est particulierement sensible ici : plusieurs taches partagent souvent la meme duree, ce qui
+produit des egalites frequentes.
+
 ### Exemple et limites
 
 Avec des taches de 60, 45, 30 et 15 minutes, les deux plus longues sont d'abord reparties sur
 des participants differents, puis les suivantes vont a la charge de temps la plus faible. Les
-absences, repetitions historiques et responsabilites quotidiennes restent hors du calcul.
+absences et repetitions historiques restent hors du calcul. La responsabilite unique d'une tache
+quotidienne obligatoire (`DistributeDailyMandatory = false`) est respectee de la meme maniere
+que pour `BALANCED_POINTS`.
 
 ---
 
@@ -248,6 +295,7 @@ absences, repetitions historiques et responsabilites quotidiennes restent hors d
 | Penalite anti-repetition | oui | non | non | non |
 | Equilibre principal | charge globale | nombre de taches | points | temps |
 | Justification | detaillee | ordre aleatoire | charge de points | charge de temps |
+| Responsabilite unique quotidienne obligatoire | configurable (`DistributeDailyMandatory`) | configurable (`DistributeDailyMandatory`) | configurable (`DistributeDailyMandatory`) | configurable (`DistributeDailyMandatory`) |
 
 ## Regles communes et audit
 
@@ -268,13 +316,25 @@ absences, repetitions historiques et responsabilites quotidiennes restent hors d
 ## Analyse de conformite de INTELLIGENT_V1
 
 L'implementation actuelle est conforme aux regles documentees pour le calcul du score, la
-normalisation par disponibilite, l'historique sur huit semaines, la penalite anti-repetition,
-le departage et l'affectation des taches quotidiennes obligatoires. Les absences restent
-volontairement non implementees, conformement au hors-perimetre V1.
+normalisation par disponibilite, l'historique sur huit semaines, la penalite anti-repetition et
+l'affectation des taches quotidiennes obligatoires. Les absences restent volontairement non
+implementees, conformement au hors-perimetre V1.
 
-Les nouveaux moteurs respectent leur objectif propre, mais la contrainte de responsabilite unique
-pour les taches quotidiennes obligatoires doit encore etre appliquee de maniere commune si ces
-moteurs doivent traiter ces taches.
+Le mecanisme de decision a ete revu : une construction gloutonne par score decroissant (LPT),
+suivie d'une recherche locale bornee, remplace la passe chronologique a decision unique et
+irrevocable. Ce changement corrige un defaut observe en test manuel : une seule decision sur une
+tache a fort score, prise tot dans la semaine, pouvait basculer la totalite des instances
+restantes vers un seul participant sans possibilite de correction. Le departage reste
+deterministe, mais ses criteres s'appliquent desormais a la construction et a la recherche
+locale plutot qu'a une sequence unique de decisions.
+
+Validation manuelle sur quatre semaines consecutives avec deux participants et un historique
+enchaine : les semaines a balayage complet (11/0, 12/0) ont disparu avec le nouvel algorithme,
+remplacees par des repartitions au pire ratio 2:1 (8/4, 7/4, 4/7, 7/5).
+
+Les quatre moteurs appliquent la meme regle de responsabilite unique pour les taches
+quotidiennes obligatoires, pilotee par l'indicateur `DistributeDailyMandatory` du modele de
+tache plutot que par une difference de comportement entre moteurs.
 
 ## Algorithmes futurs
 

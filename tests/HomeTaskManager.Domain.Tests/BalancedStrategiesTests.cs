@@ -39,6 +39,18 @@ public sealed class BalancedStrategiesTests
         result.Assignments.Select(assignment => assignment.TaskInstanceId).Should().OnlyHaveUniqueItems();
     }
 
+    [Fact]
+    public void Balanced_time_alternates_the_winner_on_strict_ties()
+    {
+        var context = CreateContext([30, 30, 30, 30]);
+        var result = new BalancedTimeStrategy().Assign(context);
+
+        var owners = result.Assignments.Select(assignment => assignment.AssignedUserId).ToList();
+        owners.Distinct().Should().HaveCount(2, "an unbroken run of strict ties should not always favor the same participant");
+        result.Assignments.GroupBy(assignment => assignment.AssignedUserId).Select(group => group.Count())
+            .Should().BeEquivalentTo([2, 2]);
+    }
+
     private static AssignmentContext CreateContext(IReadOnlyList<int> scores)
     {
         var week = new Week(new WeekKey(2026, 1));

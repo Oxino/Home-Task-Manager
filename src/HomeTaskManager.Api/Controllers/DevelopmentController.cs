@@ -59,7 +59,7 @@ public sealed class DevelopmentController(
     {
         if (!environment.IsDevelopment())
             return Forbid();
-
+//TODO: expliquer cette partie de code. PK restreindre les semaines entre 6 et 20?
         if (request.Weeks is < 6 or > 20)
             return BadRequest(new { error = "Weeks must be between 6 and 20." });
 

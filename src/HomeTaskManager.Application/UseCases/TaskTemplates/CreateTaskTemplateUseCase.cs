@@ -17,7 +17,8 @@ public sealed record CreateTaskTemplateCommand(
     IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
     MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
     int? MonthlyDay = null,
-    WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek);
+    WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek,
+    bool DistributeDailyMandatory = true);
 
 public interface ICreateTaskTemplateUseCase
 {
@@ -57,7 +58,8 @@ public sealed class CreateTaskTemplateUseCase(
             command.ActiveWeekDays,
             command.MonthlyScheduleType,
             command.MonthlyDay,
-            command.WeeklyScheduleType);
+            command.WeeklyScheduleType,
+            command.DistributeDailyMandatory);
 
         await taskTemplateRepository.AddAsync(taskTemplate, cancellationToken);
 

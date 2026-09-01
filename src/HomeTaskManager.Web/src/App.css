@@ -530,6 +530,11 @@ nav {
   margin-top: 4px;
   font-size: 16px;
 }
+.today-date-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
 .task-group-heading > span {
   min-width: 25px;
   height: 25px;
@@ -645,6 +650,10 @@ nav {
 .tag.carry {
   background: #fff0c5;
   color: #9b7b21;
+}
+.tag.critical {
+  background: #f8dfd8;
+  color: #af5f4f;
 }
 .tag.related-carry {
   background: #dceafd;

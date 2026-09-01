@@ -13,4 +13,5 @@ public sealed record UpdateTaskTemplateRequest(
     IReadOnlyCollection<DayOfWeek>? ActiveWeekDays = null,
     MonthlyScheduleType MonthlyScheduleType = MonthlyScheduleType.StartOfMonth,
     int? MonthlyDay = null,
-    WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek);
+    WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek,
+    bool DistributeDailyMandatory = true);

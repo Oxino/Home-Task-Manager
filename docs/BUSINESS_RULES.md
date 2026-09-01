@@ -501,12 +501,34 @@ Une tâche possède une fréquence.
 > **Clarification (voir RISKS_AND_EDGE_CASES R-26)** : la liste ci-dessous est alignée sur
 > l'enum `FrequencyType` du `DOMAIN_MODEL`, qui fait référence.
 
-- Quotidienne obligatoire (`DailyMandatory`) — une occurrence par jour, les 7 instances de la
-  semaine restant affectées au même participant.
+- Quotidienne obligatoire (`DailyMandatory`) — une occurrence par jour ; la répartition des
+  7 instances de la semaine entre un ou plusieurs participants est configurable par modèle
+  (voir BR-061).
 - Quotidienne flexible (`DailyFlexible`) — au moins une occurrence par semaine, plusieurs possibles.
 - Hebdomadaire (`Weekly`) — une occurrence par semaine.
 - Mensuelle (`Monthly`) — une occurrence par mois.
 - Ponctuelle (`OneTime`) — une occurrence unique.
+
+---
+
+# BR-061 - Répartition d'une tâche quotidienne obligatoire
+
+## Description
+
+Un modèle `DailyMandatory` porte un indicateur `DistributeDailyMandatory` qui détermine si les
+7 instances générées chaque semaine sont réparties entre plusieurs participants ou attribuées à
+un seul.
+
+## Règle
+
+- Valeur par défaut : `true` (réparties). Le moteur d'affectation traite alors chaque instance
+  indépendamment, comme pour les autres fréquences.
+- Valeur `false` (comportement historique) : la première instance décidée par le moteur fixe un
+  unique propriétaire pour les 7 instances de la semaine.
+- Ce comportement est appliqué de manière identique par les quatre moteurs d'affectation
+  (`INTELLIGENT_V1`, `RANDOM`, `BALANCED_POINTS`, `BALANCED_TIME`).
+- Le réglage est modifiable dans le formulaire de création et de modification du modèle de
+  tâche, uniquement lorsque la fréquence est `DailyMandatory`.
 
 ---
 
@@ -833,15 +855,59 @@ En cas d'égalité de scores entre participants, le choix doit être déterminis
 
 ## Règle
 
-Ordre de départage :
+`INTELLIGENT_V1` construit sa répartition en deux étapes (construction gloutonne par score
+décroissant, puis recherche locale bornée qui corrige la construction). Le départage
+s'applique dans les deux étapes :
 
-1. le participant ayant le **moins de tâches affectées** (charge en nombre d'occurrences) ;
+1. le participant ayant le **moins de tâches affectées** pendant la construction ;
 2. puis celui ayant le **moins réalisé récemment la tâche concernée** (éviter la répétition) ;
 3. puis un identifiant stable.
+
+Pendant la recherche locale, un déplacement ou un échange n'est retenu que s'il améliore
+strictement l'équilibre des charges ; à amélioration égale, le premier mouvement trouvé dans un
+ordre stable (date planifiée, puis identifiant d'instance, puis identifiant de participant) est
+conservé.
 
 Aucun tirage aléatoire dans INTELLIGENT_V1.
 
 > Résout l'ambiguïté R-15. Confirmé par ADR-016.
+
+---
+
+# BR-062 - Départage rotatif des moteurs sans historique
+
+## Description
+
+`BALANCED_POINTS` et `BALANCED_TIME` ne conservent aucune mémoire d'une semaine à l'autre : leur
+charge repart de zéro à chaque affectation. Lorsque plusieurs tâches ont le même poids (même
+score ou même durée), une égalité stricte de charge normalisée entre deux ou plusieurs
+participants peut se répéter à chaque étape du tri glouton.
+
+## Règle
+
+En cas d'égalité stricte de charge normalisée puis de nombre de tâches déjà affectées, le
+départage **alterne** entre les participants encore à égalité au lieu de toujours favoriser le
+même identifiant stable. Chaque nouvelle égalité fait gagner le participant suivant dans la
+liste ordonnée des participants à égalité (ordre stable par identifiant), en rotation.
+
+Le curseur de rotation est initialisé à partir de la semaine traitée (année et numéro ISO), et
+non remis à zéro de façon fixe : deux semaines dont le jeu de tâches est structurellement
+identique (mêmes modèles, mêmes durées) démarrent donc leur rotation à un point différent et ne
+reproduisent pas le même motif jour par jour. Ce calcul reste une fonction pure de la semaine
+traitée, sans persister aucun état entre deux exécutions du moteur.
+
+Ce mécanisme évite qu'un même participant reçoive systématiquement la tâche « en trop » chaque
+semaine lorsque le jeu de tâches reste structurellement identique (mêmes modèles, mêmes durées,
+aucun historique consulté). Une tâche quotidienne obligatoire non répartie
+(`DistributeDailyMandatory = false`) reste néanmoins assignée à un seul propriétaire pour ses 7
+instances et ne participe pas à la rotation au-delà de ce premier tirage.
+
+> Corrige un biais observé en test manuel : `BALANCED_TIME` attribuait la même tâche
+> excédentaire au même participant, semaine après semaine, à cause d'un départage figé sur
+> l'identifiant du participant. Un premier correctif alternant le gagnant au sein d'une même
+> semaine s'est révélé insuffisant : la rotation redémarrant à zéro à chaque semaine, elle
+> reproduisait le même motif tant que le jeu de tâches restait identique. Le calage du curseur
+> sur la semaine traitée corrige ce résidu.
 
 ---
 

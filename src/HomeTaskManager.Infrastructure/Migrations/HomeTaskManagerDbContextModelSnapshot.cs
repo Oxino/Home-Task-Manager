@@ -359,6 +359,9 @@ namespace HomeTaskManager.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("DistributeDailyMandatory")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("EstimatedDurationMinutes")
                         .HasColumnType("INTEGER");
 
