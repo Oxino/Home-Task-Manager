@@ -90,14 +90,6 @@ select:focus-visible {
 .overdue-filter input {
   accent-color: var(--coral);
 }
-.task.overdue {
-  border-left: 3px solid var(--coral);
-  padding-left: 11px;
-  background: #fff8f5;
-}
-.task.carry-over {
-  background: var(--white);
-}
 .overdue-tag {
   background: #f8dfd8 !important;
   color: #af5f4f !important;
@@ -654,13 +646,9 @@ nav {
   background: #fff0c5;
   color: #9b7b21;
 }
-.tag.critical {
-  background: #f8dfd8;
-  color: #af5f4f;
-}
 .tag.related-carry {
-  background: #fde8e8;
-  color: #a13a3a;
+  background: #dceafd;
+  color: #2a5fa1;
 }
 .related-carry-warning {
   border-left-color: #e08a8a;

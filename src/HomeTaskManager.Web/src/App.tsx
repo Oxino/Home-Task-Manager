@@ -3072,7 +3072,7 @@ function App() {
   const [view, setView] = useState(() =>
     viewFromPath(window.location.pathname),
   );
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("open");
   const [taskTitleFilter, setTaskTitleFilter] = useState("");
   const [taskTypeFilter, setTaskTypeFilter] = useState("all");
   const [dueDateFilter, setDueDateFilter] = useState("");
@@ -3653,9 +3653,6 @@ function App() {
             {!item.isCompleted && item.dueDate < today && (
               <span className="tag overdue-tag">EN RETARD</span>
             )}
-            {template(item.taskTemplateId)?.priority === "Critical" && (
-              <span className="tag critical">CRITIQUE</span>
-            )}
             {pendingSibling && (
               <span
                 className="tag related-carry"
@@ -3665,7 +3662,10 @@ function App() {
               </span>
             )}
           </div>
-          <p>{template(item.taskTemplateId)?.description}</p>
+          <p>
+            {template(item.taskTemplateId)?.priority === "Critical" && "[Critique] "}
+            {template(item.taskTemplateId)?.description}
+          </p>
           <div className="task-meta">
             ◷ Échéance : {formatTaskDate(item.dueDate, dateDisplayFormat)}
             {item.completedAt && (
@@ -4155,8 +4155,8 @@ function App() {
                 </div>
                 <div className="filter-row">
                   {[
-                    ["all", "Toutes"],
                     ["open", "À faire"],
+                    ["all", "Toutes"],
                     ["done", "Terminées"],
                   ].map(([value, label]) => (
                     <button

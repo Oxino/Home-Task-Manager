@@ -286,3 +286,4 @@ hors priorité immédiate.
 - ~~Indicateur sur la tache nouvelle semaine, si il y a une tache reporté. (afin de ne pas faire la tache avant que celle du report soit fini)~~
 -  ~~Tache reporté : ne pas le mettre en évidence. Revoir la vue des tache 'reporté' (moins agréssif, changé la visuelle)~~
 - régles métier a pofiner : une tache quotidienne obligatoire (avoir la possibilité de gérer l'affectaion : toujours à la mm personne ou à répartir aux participant)
+- Amélioration navigation interface téléphone.
