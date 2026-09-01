@@ -303,9 +303,24 @@
   l'erreur rencontrée (403 ou autre) au lieu de l'ignorer silencieusement, tout en continuant
   sur les entrées suivantes sans interrompre l'affichage.
 
+### V13.10 — Réorganisation du panneau d'action de la page Affectations
+
+- Le mode d'emploi de la page **Affectations** reflète désormais l'ordre réel d'utilisation :
+  **1. Clôturer**, **2. Générer les instances**, **3. Lancer l'affectation**, au lieu de
+  présenter la clôture en dernier alors qu'elle doit précéder la génération de la nouvelle
+  semaine courante.
+- Les trois boutons d'action, auparavant regroupés séparément dans l'en-tête du panneau, sont
+  désormais intégrés chacun dans leur cellule du mode d'emploi, à côté de l'explication de
+  l'étape correspondante.
+- L'option **« Annuler les tâches inachevées à la clôture »** est désormais rattachée à la
+  cellule de l'étape Clôturer plutôt qu'affichée comme un bloc indépendant sous le statut de
+  semaine.
+- Les trois cellules d'action sont disposées horizontalement (une colonne par étape), avec un
+  repli en une seule colonne sur petit écran.
+
 ---
 
-## Etat actuel (fin V13.9)
+## Etat actuel (fin V13.10)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -388,6 +403,9 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
   tableau de bord personnel ne retourne plus que les instances de l'utilisateur courant, même
   pour un administrateur; les vues d'administration globales conservent une source dédiée pour
   le périmètre multi-participants.
+- Le panneau d'action de la page Affectations regroupe, pour chacune des trois étapes (clôturer,
+  générer, affecter), son explication et son bouton dans une cellule unique, disposées
+  horizontalement et dans l'ordre réel d'utilisation.
 
 ---
 

@@ -1676,13 +1676,6 @@ nav {
   align-items: center;
   gap: 14px;
 }
-.admin-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  max-width: 520px;
-}
 .assignment-week-status {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1735,8 +1728,8 @@ nav {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-top: 18px;
-  padding: 13px 15px;
+  margin-top: 10px;
+  padding: 11px 13px;
   border: 1px solid #ead18d;
   background: #fff9e8;
   color: var(--ink);
@@ -1762,8 +1755,7 @@ nav {
 }
 .assignment-guide {
   display: grid;
-  grid-template-columns: minmax(190px, 0.6fr) minmax(0, 1.4fr);
-  gap: 22px;
+  gap: 14px;
   margin-top: 24px;
   padding: 18px 0;
   border-block: 1px solid var(--line);
@@ -1777,16 +1769,20 @@ nav {
 .assignment-guide-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.assignment-guide-steps li {
-  display: grid;
-  gap: 5px;
-  padding-left: 11px;
+.assignment-guide-step {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 14px 16px 14px 14px;
   border-left: 3px solid var(--mint);
+  background: #fbfdfc;
 }
 .assignment-guide-steps li:nth-child(2) {
   border-left-color: var(--yellow);
@@ -1794,14 +1790,23 @@ nav {
 .assignment-guide-steps li:nth-child(3) {
   border-left-color: var(--coral);
 }
-.assignment-guide-steps b {
+.assignment-guide-step-body {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.assignment-guide-step-body b {
   font-size: 11px;
   color: var(--ink);
 }
-.assignment-guide-steps span {
+.assignment-guide-step-body > span {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.4;
+}
+.assignment-guide-step > button {
+  align-self: flex-start;
 }
 .assignment-generation-notice {
   display: flex;
@@ -1828,10 +1833,6 @@ nav {
   font-size: 11px;
 }
 @media (max-width: 700px) {
-  .assignment-guide {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
   .assignment-guide-steps {
     grid-template-columns: 1fr;
   }

@@ -2750,33 +2750,6 @@ function AssignmentsPanel({
             Vue globale des instances attribuées à tous les participants.
           </p>
         </div>
-        <div className="admin-actions">
-          <button
-            className="secondary-button"
-            disabled={Boolean(busyAction)}
-            onClick={() => onAction("generate")}
-          >
-            {busyAction === "generate"
-              ? "Génération..."
-              : "Générer les instances"}
-          </button>
-          <button
-            className="primary-button"
-            disabled={Boolean(busyAction)}
-            onClick={() => onAction("assign")}
-          >
-            {busyAction === "assign"
-              ? "Affectation..."
-              : "Lancer l’affectation"}
-          </button>
-          <button
-            className="danger-button"
-            disabled={Boolean(busyAction) || weekStatus === "Closed"}
-            onClick={() => onAction("close", cancelIncompleteTasks)}
-          >
-            {busyAction === "close" ? "Clôture..." : "Clôturer"}
-          </button>
-        </div>
       </div>
       <section className="assignment-week-status" aria-label="Période administrée">
         <div>
@@ -2821,21 +2794,57 @@ function AssignmentsPanel({
           )}
         </div>
       )}
-      {weekStatus !== "Closed" && (
-        <label className="close-option">
-          <input type="checkbox" checked={cancelIncompleteTasks} onChange={(event) => setCancelIncompleteTasks(event.target.checked)} />
-          <span><b>Annuler les tâches inachevées à la clôture</b><small>Sans cette option, elles seront reportées dans la période suivante avec leur propriétaire. Avec cette option, elles seront annulées et l'affectation suivante repartira sans historique.</small></span>
-        </label>
-      )}
       <section className="assignment-guide" aria-label="Étapes de gestion de la semaine">
         <div className="assignment-guide-intro">
           <span className="section-kicker">MODE D'EMPLOI</span>
-          <p>Prépare la semaine dans cet ordre : créer les occurrences, les attribuer, puis la clôturer une fois terminée.</p>
+          <p>Gère la semaine dans cet ordre : clôturer la semaine en cours une fois terminée, générer les occurrences de la nouvelle semaine, puis les attribuer.</p>
         </div>
         <ol className="assignment-guide-steps">
-          <li><b>1. Générer les instances</b><span>Crée les tâches prévues pour cette semaine à partir des modèles actifs. Elles n'ont pas encore de propriétaire.</span></li>
-          <li><b>2. Lancer l'affectation</b><span>Répartit les tâches non attribuées entre les participants selon le moteur choisi.</span></li>
-          <li><b>3. Clôturer</b><span>Fige la semaine et reporte les tâches ouvertes vers la semaine suivante.</span></li>
+          <li className="assignment-guide-step">
+            <div className="assignment-guide-step-body">
+              <b>1. Clôturer</b>
+              <span>Fige la semaine en cours (ou la scinde si elle est encore en cours) et reporte les tâches ouvertes vers la semaine suivante.</span>
+              {weekStatus !== "Closed" && (
+                <label className="close-option">
+                  <input type="checkbox" checked={cancelIncompleteTasks} onChange={(event) => setCancelIncompleteTasks(event.target.checked)} />
+                  <span><b>Annuler les tâches inachevées à la clôture</b><small>Sans cette option, elles seront reportées dans la période suivante avec leur propriétaire. Avec cette option, elles seront annulées et l'affectation suivante repartira sans historique.</small></span>
+                </label>
+              )}
+            </div>
+            <button
+              className="danger-button"
+              disabled={Boolean(busyAction) || weekStatus === "Closed"}
+              onClick={() => onAction("close", cancelIncompleteTasks)}
+            >
+              {busyAction === "close" ? "Clôture..." : "Clôturer"}
+            </button>
+          </li>
+          <li className="assignment-guide-step">
+            <div className="assignment-guide-step-body">
+              <b>2. Générer les instances</b>
+              <span>Crée les tâches prévues pour la nouvelle semaine courante à partir des modèles actifs. Elles n'ont pas encore de propriétaire.</span>
+            </div>
+            <button
+              className="secondary-button"
+              disabled={Boolean(busyAction)}
+              onClick={() => onAction("generate")}
+            >
+              {busyAction === "generate" ? "Génération..." : "Générer les instances"}
+            </button>
+          </li>
+          <li className="assignment-guide-step">
+            <div className="assignment-guide-step-body">
+              <b>3. Lancer l'affectation</b>
+              <span>Répartit les tâches non attribuées de la semaine courante entre les participants selon le moteur choisi.</span>
+            </div>
+            <button
+              className="primary-button"
+              disabled={Boolean(busyAction)}
+              onClick={() => onAction("assign")}
+            >
+              {busyAction === "assign" ? "Affectation..." : "Lancer l’affectation"}
+            </button>
+          </li>
         </ol>
       </section>
       {newlyGeneratedCount > 0 && (

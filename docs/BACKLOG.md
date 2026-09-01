@@ -284,6 +284,10 @@ hors priorité immédiate.
 - ~~Changer curseur (création tache) définition pénibilité : mettre plutot une réglette pour définir la valeur.~~
 - ~~Mieu identifier les taches du jour. Faire un tableau qui présente les tache du jour, et un autre tableau qui présente les futures.~~
 - ~~Indicateur sur la tache nouvelle semaine, si il y a une tache reporté. (afin de ne pas faire la tache avant que celle du report soit fini)~~
+- ~~Page Affectations : remettre 'Clôturer' en 1ère position du mode d'emploi (ordre réel :
+  clôturer, générer les instances, lancer l'affectation) et regrouper chaque bouton d'action
+  avec son explication et, si besoin, son paramètre (case 'annuler les tâches inachevées'
+  déplacée dans la cellule Clôturer), le tout affiché horizontalement.~~
 -  ~~Tache reporté : ne pas le mettre en évidence. Revoir la vue des tache 'reporté' (moins agréssif, changé la visuelle)~~
 - régles métier a pofiner : une tache quotidienne obligatoire (avoir la possibilité de gérer l'affectaion : toujours à la mm personne ou à répartir aux participant)
 - Amélioration navigation interface téléphone.
