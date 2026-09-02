@@ -38,6 +38,11 @@ dist/
 npm-debug.log*
 yarn-error.log*
 
+# Playwright (tests end-to-end)
+playwright-report/
+test-results/
+blob-report/
+
 # Environnement
 .env
 .env.local

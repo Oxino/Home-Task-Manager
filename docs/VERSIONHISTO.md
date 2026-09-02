@@ -511,9 +511,40 @@
   complète), nécessaire notamment pour le scénario d'amorçage qui exige une base réellement vide.
 - Suite totale validée à **128 tests** : 96 Application, 25 Domain, 7 Api (intégration).
 
+### V13.18 — Tests end-to-end frontend (desktop/mobile)
+
+- Nouvelle suite Playwright dans `src/HomeTaskManager.Web/e2e`, sur deux projets : **Desktop
+  Chrome** (parcours fonctionnels) et **Mobile Chrome** (émulation Pixel 5, tiroir de navigation).
+- `playwright.config.ts` démarre l'API et le serveur de développement Vite via `webServer`
+  (réutilisés s'ils tournent déjà en local), et un `globalSetup` réinitialise systematiquement
+  la base via l'endpoint de seed complet (`reset-and-seed-full-demo`) avant l'exécution, pour un
+  jeu de données déterministe (admin1/user1 + 20 modèles + historique).
+- Cinq parcours critiques couverts : connexion par sélection de profil et affichage du tableau de
+  la semaine ; complétion d'une tâche assignée ; création d'un modèle de tâche par un administrateur ;
+  affichage du panneau de pilotage des affectations ; ouverture et navigation du tiroir mobile.
+- Exécution séquentielle (`workers: 1`, `fullyParallel: false`) : plusieurs tests mutent le même
+  jeu de données seedé partagé, une exécution parallèle risquerait des interférences entre tests.
+- Plusieurs pièges découverts et corrigés pendant l'écriture de ces tests, tous documentés dans le
+  fichier de test lui-même :
+  - `locator.count()` ne ré-interroge pas automatiquement le DOM : il faut explicitement attendre
+    la réponse réseau concernée avant de compter des éléments chargés de façon asynchrone.
+  - `networkidle` ne se déclenche jamais avec le serveur de développement Vite (websocket HMR
+    permanent) ; utiliser plutôt `page.waitForResponse` ciblé sur l'appel réseau attendu.
+  - Compléter une tâche peut réorganiser la liste affichée : comparer un état re-chargé (nombre de
+    tâches non terminées après un `page.reload()`) est plus fiable que de suivre un nœud DOM
+    précis à travers une mutation qui peut le déplacer dans une autre section.
+  - Le message de confirmation optimiste (`setNotice`) s'affiche avant la résolution de la requête
+    réseau : il ne doit pas servir de preuve de succès, contrairement au vrai statut HTTP de la
+    réponse observée via `page.waitForResponse`.
+  - Le jeu de démonstration annule volontairement une instance sans la marquer terminée ; un test
+    de complétion doit donc tolérer un rejet métier ponctuel et réessayer la tâche suivante plutôt
+    que d'échouer sur cette variance du jeu de données.
+- `npm run test:e2e` (et `test:e2e:ui`) exécutent la suite ; navigateur Chromium installé via
+  `npx playwright install chromium`.
+
 ---
 
-## Etat actuel (fin V13.17)
+## Etat actuel (fin V13.18)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -569,7 +600,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 ```
 
 - **96 tests unitaires** (Application), **25 tests** (Domain), **7 tests d'intégration API**
-  (`WebApplicationFactory`), tous verts.
+  (`WebApplicationFactory`), **5 tests end-to-end frontend** (Playwright, desktop + mobile), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
 - CORS explicite (sans wildcard), cookie d'authentification durci (SameSite, Secure, expiration),
   limite de taille de requête (1 Mo), gestionnaire d'erreur générique hors développement,
@@ -640,7 +671,7 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
   endpoints admin, politique CORS/cookies).
 - [x] Tests d'intégration API bout en bout (`WebApplicationFactory`) en complément des tests
   unitaires Application/Domain.
-- [ ] Tests end-to-end frontend (desktop/mobile) sur les parcours critiques.
+- [x] Tests end-to-end frontend (desktop/mobile) sur les parcours critiques.
 
 ## Reste à faire — versions futures
 
