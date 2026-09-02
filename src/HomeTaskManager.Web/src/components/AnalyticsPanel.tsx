@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { formatDurationFromHours } from "../format";
 
 type ParticipantLoad = {
   userId: string;
@@ -90,7 +91,7 @@ function LoadKpis({ rows }: { rows: ParticipantLoad[] }) {
       </article>
       <article className="analytics-kpi">
         <small>Temps estimé</small>
-        <b>{safeNumber(totals.estimatedHours)}h</b>
+        <b>{formatDurationFromHours(totals.estimatedHours)}</b>
         <span>{totals.totalTasks} tâche{totals.totalTasks > 1 ? "s" : ""} attribuée{totals.totalTasks > 1 ? "s" : ""}</span>
       </article>
       <article className="analytics-kpi">
@@ -124,7 +125,7 @@ function LoadTable({ rows, emptyLabel }: { rows: ParticipantLoad[]; emptyLabel: 
             <td data-label="Participant">{row.userName}</td>
             <td data-label="Tâches">{row.totalTasks}</td>
             <td data-label="Points">{row.totalPoints}</td>
-            <td data-label="Heures">{safeNumber(row.estimatedHours)}</td>
+            <td data-label="Heures">{formatDurationFromHours(row.estimatedHours)}</td>
           </tr>
         ))}
       </tbody>

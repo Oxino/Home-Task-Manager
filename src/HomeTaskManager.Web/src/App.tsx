@@ -7,6 +7,7 @@ import {
 } from "react";
 import "./App.css";
 import { AnalyticsPanel } from "./components/AnalyticsPanel";
+import { formatDurationFromMinutes } from "./format";
 
 type User = {
   id: string;
@@ -4590,7 +4591,7 @@ function App() {
                 <span>Durée estimée</span>
                 <b>
                   {template(selected.taskTemplateId)?.estimatedDurationMinutes
-                    ? `${template(selected.taskTemplateId)?.estimatedDurationMinutes} min`
+                    ? formatDurationFromMinutes(template(selected.taskTemplateId)!.estimatedDurationMinutes!)
                     : "Non renseignée"}
                 </b>
               </div>
