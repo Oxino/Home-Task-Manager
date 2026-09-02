@@ -368,6 +368,9 @@ nav {
   right: 70px;
   top: -160px;
 }
+.hero-banner > div:first-child {
+  min-width: 0;
+}
 .section-kicker.light {
   color: #abd2c5;
 }
@@ -382,6 +385,7 @@ nav {
 .progress-ring {
   width: 112px;
   height: 112px;
+  flex-shrink: 0;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -2813,6 +2817,7 @@ body:has(.sidebar.mobile-open) {
   .progress-ring {
     width: 85px;
     height: 85px;
+    flex-shrink: 0;
   }
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
