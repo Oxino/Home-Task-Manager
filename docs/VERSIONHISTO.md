@@ -403,9 +403,30 @@
 - Documentation mise à jour : `ASSIGNMENT_ENGINE.md` (sections BALANCED_POINTS et BALANCED_TIME)
   et règle BR-062 (`BUSINESS_RULES.md`), précisant l'initialisation du curseur par semaine.
 
+### V13.14 — Refonte de la page Statistiques en trois zones et navigation par semaine
+
+- Constat : la page `/analytics` n'affichait qu'une seule semaine (celle active ailleurs dans
+  l'application, sans navigation possible) et mélangeait, sans distinction de période claire,
+  des indicateurs par semaine, par 28 jours glissants et par 20 semaines glissantes.
+- La page est désormais organisée en trois zones : **Semaine** (navigable), **Mois courant**
+  (calendaire) et **Vue globale** (complétude 28 jours, distribution de charge 20 semaines,
+  calendrier des complétions), chacune avec ses propres indicateurs (points cumulés, temps
+  estimé, taux de complétion) et son propre tableau de charge par participant.
+- La zone Semaine permet de naviguer vers les semaines passées (et suivantes) indépendamment de
+  la semaine active ailleurs dans l'application, avec un bouton de retour rapide à la semaine
+  courante; elle résout la semaine consultée via `GET /api/weeks/{year}/{week}/instances` sans
+  affecter le reste de l'application.
+- Nouveau use case `GetMonthStatisticsUseCase` et endpoint `GET /api/analytics/month/{year}/{month}`,
+  agrégeant les instances attribuées et non annulées d'un mois calendaire (par opposition à
+  `GetWeekStatisticsUseCase`, borné à une semaine ISO).
+- Les points cumulés et le temps estimé restent calculés à partir des **instances attribuées**
+  (pas des modèles de tâches, actifs ou non) de la période affichée, jamais de l'ensemble des
+  modèles.
+- Documentation mise à jour : `ARCHITECTURE.md` (endpoints analytiques) et `BACKLOG.md`.
+
 ---
 
-## Etat actuel (fin V13.13)
+## Etat actuel (fin V13.14)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -498,6 +519,9 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
   (LPT) suivi d'une recherche locale bornée, plutôt qu'une seule passe chronologique
   irrévocable, afin d'éviter qu'une décision isolée sur une tâche à fort score ne bascule toute
   la semaine vers un seul participant.
+- La page `/analytics` est organisée en trois zones (semaine navigable, mois courant, vue
+  globale), chacune avec ses propres indicateurs et sa propre période explicite; un endpoint
+  dédié (`GET /api/analytics/month/{year}/{month}`) alimente la zone mensuelle.
 
 ---
 

@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IGetAuditLogsForEntityUseCase, GetAuditLogsForEntityUseCase>();
 
         services.AddScoped<IGetWeekStatisticsUseCase, GetWeekStatisticsUseCase>();
+        services.AddScoped<IGetMonthStatisticsUseCase, GetMonthStatisticsUseCase>();
         services.AddScoped<IGetCompletionStatisticsUseCase, GetCompletionStatisticsUseCase>();
         services.AddScoped<IGetUserLoadDistributionUseCase, GetUserLoadDistributionUseCase>();
 

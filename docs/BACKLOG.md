@@ -142,6 +142,10 @@ Optimisation UX
   personnel et le journal d'audit administrateur.
 - Calendrier mensuel des activités disponible dans la page Statistiques, avec chargement différé
   du mois affiché.
+- Page Statistiques réorganisée en trois zones (semaine, mois courant, vue globale) ; la zone
+  semaine est navigable indépendamment de la semaine active ailleurs dans l'application.
+- Endpoint analytique par mois calendaire (`GET /api/analytics/month/{year}/{month}`), en
+  complément des statistiques par semaine.
 - Dashboard distinguant la date d'échéance et la date de complétion des tâches terminées.
 - Détail d'une tâche terminée affichant la date de complétion dans la grille des propriétés,
   avec rattrapage des anciennes instances dont `CompletedAt` était nul.

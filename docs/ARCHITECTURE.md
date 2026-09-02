@@ -149,7 +149,12 @@ interfaces (inversion de dépendance).
   actions `PUT /api/notifications/{id}/read`, `POST /api/notifications/read-all` et
   `DELETE /api/notifications/read`. Chaque requête est filtrée par l’identité de session.
 - Les statistiques admin sont exposées par `GET /api/analytics/week/{weekId}`,
-  `GET /api/analytics/completion` et `GET /api/analytics/load-distribution`.
+  `GET /api/analytics/month/{year}/{month}`, `GET /api/analytics/completion` et
+  `GET /api/analytics/load-distribution`. La page `/analytics` restitue trois zones distinctes
+  (semaine, mois courant, vue globale) : la zone semaine est navigable (semaine précédente/
+  suivante, retour à la semaine courante) indépendamment de la semaine active ailleurs dans
+  l'application, et résout sa propre semaine via `GET /api/weeks/{year}/{week}/instances` quand
+  elle diffère de celle déjà chargée.
 - Les réactions de commentaires sont exposées par `POST /api/comments/{commentId}/reactions`,
   `DELETE /api/comments/reactions/{reactionId}` et `GET /api/comments/{commentId}/reactions`.
 - La lecture authentifiée de `GET /api/task-instances/{id}` renvoie l'instance et sa semaine;

@@ -2511,6 +2511,33 @@ nav {
   display: grid;
   gap: 18px;
 }
+.analytics-zone {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+.analytics-zone:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.analytics-zone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.analytics-zone-header h3 {
+  font-size: 16px;
+  margin-top: 4px;
+  color: #29463f;
+  text-transform: capitalize;
+}
+.analytics-week-reset {
+  font-size: 11px;
+  padding: 6px 10px;
+}
 .analytics-kpis {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2714,6 +2741,10 @@ nav {
   }
   .analytics-grid {
     grid-template-columns: 1fr;
+  }
+  .analytics-zone-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .completion-meter {
     width: 72px;

@@ -9,6 +9,7 @@ namespace HomeTaskManager.Api.Controllers;
 [Authorize]
 public sealed class AnalyticsController(
     IGetWeekStatisticsUseCase weekStatisticsUseCase,
+    IGetMonthStatisticsUseCase monthStatisticsUseCase,
     IGetCompletionStatisticsUseCase completionStatisticsUseCase,
     IGetUserLoadDistributionUseCase loadDistributionUseCase) : ControllerBase
 {
@@ -17,6 +18,15 @@ public sealed class AnalyticsController(
     {
         if (!User.IsInRole("Admin")) return Forbid();
         var stats = await weekStatisticsUseCase.ExecuteAsync(weekId, cancellationToken);
+        return Ok(stats);
+    }
+
+    [HttpGet("month/{year:int}/{month:int}")]
+    public async Task<ActionResult<object>> GetMonthStatistics(int year, int month, CancellationToken cancellationToken)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        if (month is < 1 or > 12) return BadRequest(new { error = "Month must be between 1 and 12." });
+        var stats = await monthStatisticsUseCase.ExecuteAsync(year, month, cancellationToken);
         return Ok(stats);
     }
 
