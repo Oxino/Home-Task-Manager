@@ -436,16 +436,8 @@ function ProfileListSkeleton() {
   );
 }
 
-function ReminderDialog({
-  api,
-  template,
-  initialOpen = false,
-}: {
-  api: string;
-  template: Template;
-  initialOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(initialOpen);
+// Reminder list + add-reminder form, shared by the standalone dialog and the inline "Gérer les rappels" section.
+function ReminderFields({ api, template }: { api: string; template: Template }) {
   const [reminders, setReminders] = useState<
     {
       id: string;
@@ -459,23 +451,17 @@ function ReminderDialog({
   const [offset, setOffset] = useState("0");
   const [unit, setUnit] = useState("Hour");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  async function load() {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `${api}/api/task-templates/${template.id}/reminders`,
-      );
-      if (response.ok) setReminders(await response.json());
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if (initialOpen) void load();
-  }, [initialOpen, template.id]);
-  async function add(event: FormEvent) {
-    event.preventDefault();
+    let cancelled = false;
+    setLoading(true);
+    fetch(`${api}/api/task-templates/${template.id}/reminders`)
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data) => { if (!cancelled) setReminders(data); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [api, template.id]);
+  async function add() {
     const value = Number(offset);
     if (!Number.isInteger(value) || value < 0)
       return setError("Le décalage doit être un entier positif ou nul.");
@@ -517,13 +503,95 @@ function ReminderDialog({
   }
   return (
     <>
-      <button
-        className="secondary-button"
-        onClick={() => {
-          setOpen(true);
-          void load();
-        }}
-      >
+      <div className="reminder-list">
+        {loading ? (
+          <PanelSkeleton rows={2} />
+        ) : reminders.length === 0 ? (
+          <p className="muted">Aucun rappel configuré.</p>
+        ) : (
+          reminders.map((reminder) => (
+            <div
+              className={
+                reminder.isEnabled
+                  ? "reminder-row"
+                  : "reminder-row disabled"
+              }
+              key={reminder.id}
+            >
+              <div>
+                <b>
+                  {reminder.triggerType === "EndOfDay"
+                    ? "Fin de journée"
+                    : "Fin de semaine"}
+                </b>{" "}
+                <span>
+                  {reminder.offsetValue}{" "}
+                  {reminder.offsetUnit === "Hour"
+                    ? "heure(s)"
+                    : "jour(s)"}{" "}
+                  avant
+                </span>
+              </div>
+              <button
+                className="secondary-button"
+                onClick={() => toggle(reminder)}
+              >
+                {reminder.isEnabled ? "Désactiver" : "Réactiver"}
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+      <div className="reminder-form">
+        <label>
+          Moment
+          <select
+            value={trigger}
+            onChange={(event) => setTrigger(event.target.value)}
+          >
+            <option value="EndOfDay">Fin de journée</option>
+            <option value="EndOfWeek">Fin de semaine</option>
+          </select>
+        </label>
+        <label>
+          Décalage
+          <input
+            type="number"
+            min="0"
+            value={offset}
+            onChange={(event) => setOffset(event.target.value)}
+          />
+        </label>
+        <label>
+          Unité
+          <select
+            value={unit}
+            onChange={(event) => setUnit(event.target.value)}
+          >
+            <option value="Hour">Heures</option>
+            <option value="Day">Jours</option>
+          </select>
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        <button className="primary-button wide" type="button" onClick={add}>
+          Ajouter le rappel
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ReminderDialog({
+  api,
+  template,
+}: {
+  api: string;
+  template: Template;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button className="secondary-button" onClick={() => setOpen(true)}>
         Rappels
       </button>
       {open && (
@@ -537,80 +605,7 @@ function ReminderDialog({
             </button>
             <span className="section-kicker">RAPPELS</span>
             <h2>{template.title}</h2>
-            <div className="reminder-list">
-              {loading ? (
-                <PanelSkeleton rows={2} />
-              ) : reminders.length === 0 ? (
-                <p className="muted">Aucun rappel configuré.</p>
-              ) : (
-                reminders.map((reminder) => (
-                  <div
-                    className={
-                      reminder.isEnabled
-                        ? "reminder-row"
-                        : "reminder-row disabled"
-                    }
-                    key={reminder.id}
-                  >
-                    <div>
-                      <b>
-                        {reminder.triggerType === "EndOfDay"
-                          ? "Fin de journée"
-                          : "Fin de semaine"}
-                      </b>
-                      <span>
-                        {reminder.offsetValue}{" "}
-                        {reminder.offsetUnit === "Hour"
-                          ? "heure(s)"
-                          : "jour(s)"}{" "}
-                        avant
-                      </span>
-                    </div>
-                    <button
-                      className="secondary-button"
-                      onClick={() => toggle(reminder)}
-                    >
-                      {reminder.isEnabled ? "Désactiver" : "Réactiver"}
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-            <form onSubmit={add} className="reminder-form">
-              <label>
-                Moment
-                <select
-                  value={trigger}
-                  onChange={(event) => setTrigger(event.target.value)}
-                >
-                  <option value="EndOfDay">Fin de journée</option>
-                  <option value="EndOfWeek">Fin de semaine</option>
-                </select>
-              </label>
-              <label>
-                Décalage
-                <input
-                  type="number"
-                  min="0"
-                  value={offset}
-                  onChange={(event) => setOffset(event.target.value)}
-                />
-              </label>
-              <label>
-                Unité
-                <select
-                  value={unit}
-                  onChange={(event) => setUnit(event.target.value)}
-                >
-                  <option value="Hour">Heures</option>
-                  <option value="Day">Jours</option>
-                </select>
-              </label>
-              {error && <p className="form-error">{error}</p>}
-              <button className="primary-button wide" type="submit">
-                Ajouter le rappel
-              </button>
-            </form>
+            <ReminderFields api={api} template={template} />
           </section>
         </div>
       )}
@@ -1182,12 +1177,7 @@ function EditTaskDialog({
                 Gérer les rappels
               </button>
               {remindersOpen && (
-                <ReminderDialog
-                  key="edit-reminders"
-                  api={api}
-                  template={template}
-                  initialOpen
-                />
+                <ReminderFields key="edit-reminders" api={api} template={template} />
               )}
             </div>
             {error && <p className="form-error">{error}</p>}
@@ -3146,6 +3136,7 @@ function App() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pendingNotificationTaskTitle, setPendingNotificationTaskTitle] =
     useState<string | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const api = import.meta.env.VITE_API_URL ?? "";
   const queryParameters = new URLSearchParams(locationSearch);
   const queryYear = Number(queryParameters.get("year"));
@@ -3944,7 +3935,22 @@ function App() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
+      <button
+        type="button"
+        className="mobile-nav-toggle"
+        aria-label={mobileNavOpen ? "Fermer le menu" : "Ouvrir le menu"}
+        aria-expanded={mobileNavOpen}
+        onClick={() => setMobileNavOpen((open) => !open)}
+      >
+        {mobileNavOpen ? "×" : "☰"}
+      </button>
+      {mobileNavOpen && (
+        <div
+          className="sidebar-scrim"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+      <aside className={mobileNavOpen ? "sidebar mobile-open" : "sidebar"}>
         <div className="brand">
           <span className="brand-mark">⌂</span>
           <span>
@@ -3953,22 +3959,25 @@ function App() {
             <b>Task Manager</b>
           </span>
         </div>
-        <nav>
+        <nav onClick={() => setMobileNavOpen(false)}>
           <div className="nav-label personal-label">MON ESPACE</div>
           <button
             className={view === "Semaine" ? "nav-item active" : "nav-item"}
+            aria-label="Ma semaine"
             onClick={() => navigate("/week")}
           >
             ◷ <span>Ma semaine</span>
           </button>
           <button
             className={view === "Historique" ? "nav-item active" : "nav-item"}
+            aria-label="Historique"
             onClick={() => navigate("/history")}
           >
             ↗ <span>Historique</span>
           </button>
           <button
             className={view === "Préférences" ? "nav-item active" : "nav-item"}
+            aria-label="Préférences"
             onClick={() => navigate("/preferences")}
           >
             ⚙ <span>Préférences</span>
@@ -3977,6 +3986,7 @@ function App() {
             className={
               view === "Notifications" ? "nav-item active" : "nav-item"
             }
+            aria-label={`Notifications${unreadNotifications > 0 ? `, ${unreadNotifications} non lues` : ""}`}
             onClick={() => navigate("/notifications")}
           >
             ◉ <span>Notifications</span>
@@ -3988,6 +3998,7 @@ function App() {
           </button>
           <button
             className={view === "Tâches" ? "nav-item active" : "nav-item"}
+            aria-label="Tâches"
             onClick={() => navigate("/tasks")}
           >
             □ <span>Tâches</span>
@@ -3997,6 +4008,7 @@ function App() {
               <div className="nav-label admin-label">ADMINISTRATION</div>
               <button
                 className={view === "Journal d’audit" ? "nav-item active" : "nav-item"}
+                aria-label="Journal d’audit"
                 onClick={() => navigate("/admin-history")}
               >
                 ↗ <span>Journal d’audit</span>
@@ -4005,6 +4017,7 @@ function App() {
                 className={
                   view === "Affectations" ? "nav-item active" : "nav-item"
                 }
+                aria-label="Affectations"
                 onClick={() => navigate(`/assignments?year=${week.year}&week=${week.week}`)}
               >
                 ▦ <span>Affectations</span>
@@ -4013,6 +4026,7 @@ function App() {
                 className={
                   view === "Instances" ? "nav-item active" : "nav-item"
                 }
+                aria-label="Instances"
                 onClick={() => navigate(`/instances?year=${week.year}&week=${week.week}`)}
               >
                 ◫ <span>Instances</span>
@@ -4021,6 +4035,7 @@ function App() {
                 className={
                   view === "Participants" ? "nav-item active" : "nav-item"
                 }
+                aria-label="Participants"
                 onClick={() => navigate("/participants")}
               >
                 ♧ <span>Participants</span>
@@ -4031,6 +4046,7 @@ function App() {
                     ? "nav-item active"
                     : "nav-item"
                 }
+                aria-label="Moteur d’affectation"
                 onClick={() => navigate("/assignment-engine")}
               >
                 ✦ <span>Moteur d’affectation</span>
@@ -4039,6 +4055,7 @@ function App() {
                 className={
                   view === "Statistiques" ? "nav-item active" : "nav-item"
                 }
+                aria-label="Statistiques"
                 onClick={() => navigate("/analytics")}
               >
                 📊 <span>Statistiques</span>
@@ -4071,6 +4088,7 @@ function App() {
               setUnreadNotifications(0);
               navigate("/");
             }}
+            aria-label="Changer de profil"
             title="Changer de profil"
           >
             ↪

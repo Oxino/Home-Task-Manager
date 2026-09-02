@@ -424,9 +424,37 @@
   modèles.
 - Documentation mise à jour : `ARCHITECTURE.md` (endpoints analytiques) et `BACKLOG.md`.
 
+### V13.15 — Ergonomie mobile : navigation, cibles tactiles, modales et rappels
+
+- Audit visuel sur viewport téléphone (390×844) révélant un débordement horizontal forcé sur
+  `/tasks` et `/analytics` (jusqu'à 1,8x la largeur d'écran), des cibles tactiles sous les 44px
+  recommandés (bouton de complétion 22px, fermeture de modale 25px, case à cocher 13px) et une
+  barre latérale figée occupant l'écran en permanence sans libellés accessibles.
+- La barre latérale devient un tiroir hors-écran sous 640px, ouvert par un bouton hamburger et
+  fermé au clic sur le tiroir ou sur un élément de navigation ; chaque bouton d'icône reçoit un
+  `aria-label` explicite (auparavant absent, illisible par lecteur d'écran une fois le libellé
+  masqué).
+- Les modales (`modal-backdrop`/`task-modal`) deviennent des feuilles ancrées en bas d'écran sous
+  640px, avec coins arrondis, poignée de préhension et marge de sécurité (`env(safe-area-inset-bottom)`) ;
+  le défilement de la page derrière une modale ou le tiroir ouvert est désormais bloqué
+  (`body:has(...)`).
+- Cibles tactiles portées à 44px minimum (complétion, fermeture, filtres, cases à cocher) et
+  `font-size: 16px` forcé sur les champs de formulaire pour éviter le zoom automatique de Safari iOS.
+- Les lignes qui débordaient (en-têtes de panneaux, barre d'outils du catalogue, cartes de
+  modèles, tableaux analytiques) acceptent désormais le retour à la ligne ; les tableaux de charge
+  par participant se transforment en cartes clé/valeur empilées sous 640px.
+- Correction d'un bug de modale imbriquée : le formulaire "Gérer les rappels" ouvrait un second
+  modal complet à l'intérieur du formulaire "Modifier le modèle", produisant un rendu confus en
+  feuille mobile et un `<form>` invalide imbriqué dans un autre `<form>`. La liste et le formulaire
+  de rappels sont désormais un composant partagé (`ReminderFields`) sans modal propre lorsqu'il
+  est intégré au formulaire d'édition.
+- Le formulaire d'ajout de rappel (Moment / Décalage / Unité, en trois colonnes fixes) s'empile
+  désormais sur une colonne sous 640px, et un espace manquant entre le déclencheur (« Fin de
+  journée ») et le délai configuré a été corrigé.
+
 ---
 
-## Etat actuel (fin V13.14)
+## Etat actuel (fin V13.15)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -522,6 +550,10 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
 - La page `/analytics` est organisée en trois zones (semaine navigable, mois courant, vue
   globale), chacune avec ses propres indicateurs et sa propre période explicite; un endpoint
   dédié (`GET /api/analytics/month/{year}/{month}`) alimente la zone mensuelle.
+- Sous 640px, la barre latérale devient un tiroir hors-écran accessible par un bouton hamburger,
+  les modales s'affichent en feuille ancrée en bas d'écran, les cibles tactiles atteignent 44px
+  minimum et les tableaux/lignes qui débordaient auparavant s'empilent ou acceptent le retour à
+  la ligne.
 
 ---
 

@@ -476,6 +476,9 @@ précédent et ses snapshots restent conservés (historique).
 - Mobile-first, responsive (desktop / tablette / smartphone).
 - Compréhension immédiate : « quoi faire » et « pourquoi » (explication d'affectation visible).
 - Écrans épurés, pas de logique métier côté client.
+- Sous 640px : navigation en tiroir hors-écran (bouton hamburger), modales en feuille ancrée en
+  bas d'écran, cibles tactiles d'au moins 44px et mises en page qui s'empilent plutôt que de
+  déborder horizontalement.
 
 ## 7.3 État et données
 

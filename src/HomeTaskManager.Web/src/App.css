@@ -158,6 +158,28 @@ h3 {
   display: flex;
   flex-direction: column;
 }
+.mobile-nav-toggle {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 210;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--teal);
+  color: white;
+  font-size: 20px;
+  box-shadow: 0 4px 12px #00000030;
+}
+.sidebar-scrim {
+  position: fixed;
+  inset: 0;
+  background: #10231ecc;
+  z-index: 200;
+}
 .brand {
   display: flex;
   gap: 10px;
@@ -822,6 +844,11 @@ nav {
   place-items: center;
   padding: 30px;
   z-index: 100;
+}
+/* Prevent the page behind an open modal/drawer from scrolling. */
+body:has(.modal-backdrop),
+body:has(.sidebar.mobile-open) {
+  overflow: hidden;
 }
 .task-modal {
   background: white;
@@ -2826,5 +2853,197 @@ nav {
   }
   .analytics-kpi b {
     font-size: 20px;
+  }
+}
+
+/* Phone-width layout: off-canvas nav, bottom-sheet modals, no horizontal scroll, bigger touch targets. */
+@media (max-width: 640px) {
+  .mobile-nav-toggle {
+    display: flex;
+  }
+  .topbar {
+    padding-left: 54px;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 260px;
+    max-width: 82vw;
+    padding: 24px 18px 20px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 205;
+    box-shadow: 0 0 24px #00000030;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .sidebar.mobile-open .brand > span:last-child,
+  .sidebar.mobile-open .nav-item span,
+  .sidebar.mobile-open .nav-label,
+  .sidebar.mobile-open .mini-profile span:not(.avatar),
+  .sidebar.mobile-open .logout {
+    display: initial;
+  }
+  .sidebar.mobile-open .brand {
+    margin: 0 12px 40px;
+  }
+  .sidebar.mobile-open .nav-item {
+    justify-content: flex-start;
+  }
+  .sidebar.mobile-open .sidebar-footer {
+    justify-content: space-between;
+  }
+
+  /* Touch targets: bring every interactive control up to the ~44px minimum. */
+  .check-button {
+    width: 44px;
+    height: 44px;
+  }
+  .detail-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+  .filter {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+  .primary-button,
+  .secondary-button {
+    min-height: 44px;
+  }
+  .modal-close {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    right: 8px;
+    top: 8px;
+  }
+  .overdue-filter {
+    min-height: 44px;
+  }
+  .overdue-filter input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+  .calendar-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Avoid iOS Safari auto-zoom on focus (triggered by any field under 16px). */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Let dense header/toolbar rows wrap instead of forcing horizontal page scroll. */
+  .panel-heading {
+    flex-wrap: wrap;
+  }
+  .catalog-toolbar {
+    flex-wrap: wrap;
+  }
+  .catalog-toolbar input {
+    flex: 1 1 100%;
+  }
+  .catalog-item {
+    flex-wrap: wrap;
+  }
+  .catalog-meta {
+    flex-wrap: wrap;
+  }
+  .calendar-heading {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .calendar-controls {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .calendar-controls select {
+    flex: 1 1 100%;
+  }
+
+  /* Modals become full-width bottom sheets instead of shrunk desktop dialogs. */
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .task-modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    padding: 22px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+  .task-modal::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 3px;
+    background: #d8e3df;
+    margin: -8px auto 16px;
+  }
+
+  .hero-banner:after {
+    display: none;
+  }
+
+  /* Analytics tables become stacked key/value cards instead of squeezed columns. */
+  .analytics-table thead {
+    display: none;
+  }
+  .analytics-table,
+  .analytics-table tbody,
+  .analytics-table tr,
+  .analytics-table td {
+    display: block;
+    width: 100%;
+  }
+  .analytics-table tr {
+    border: 1px solid #dbe9e4;
+    border-radius: 6px;
+    padding: 4px 12px;
+    margin-bottom: 10px;
+  }
+  .analytics-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px dashed #edf3f0;
+    text-align: left !important;
+  }
+  .analytics-table td:last-child {
+    border-bottom: 0;
+  }
+  .analytics-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6e857c;
+  }
+  .analytics-empty-cell {
+    justify-content: center !important;
+  }
+  .analytics-empty-cell::before {
+    display: none;
+  }
+
+  /* Reminder forms (add-task, edit-task, reminders dialog) stack instead of squeezing 3 columns. */
+  .reminder-form {
+    grid-template-columns: 1fr;
+  }
+  .reminder-row {
+    flex-wrap: wrap;
   }
 }

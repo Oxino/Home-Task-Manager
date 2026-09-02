@@ -167,6 +167,9 @@ Optimisation UX
   défaut pour répartir les 7 occurrences entre participants, décoché pour garder un seul
   propriétaire sur la semaine), appliquée de façon identique par les quatre moteurs
   d'affectation.
+- Navigation mobile en tiroir hors-écran (sous 640px), modales en feuille ancrée en bas d'écran,
+  cibles tactiles portées à 44px minimum et suppression des débordements horizontaux forcés
+  (catalogue de tâches, statistiques) au profit de mises en page qui s'empilent.
 
 L'envoi Web Push réel (intégration navigateur), les tests d'intégration/end-to-end complets et
 la revue sécurité avant exposition réseau restent à implémenter. Les commentaires avancés,
@@ -175,11 +178,10 @@ l'interface analytics et les parcours CRUD actuellement exposés sont implément
 ## Prochaines étapes
 
 0. Valider fonctionnelement les differents moteur de répartission. Todo:Clear database, reconstruire un jeux de donnée pour: imaginer un scénarion complet sur plusieurs semaines, calculer en amont les résultats attendu 'résultat sur le papier' pour chaque semaine, Faire la simulation dans l'application (test) et comparer les résultats. Le faire pour chaque moteur. Le scénario pour le moteur InteligentV1 va etre difficule a créer, il faudra bien réfléchir dessus.
-1. Améliorer la vue mobile, il faut que se soit plus responsive, plus adapter à la maniputation téléphone.
-2. Renforcer la couverture end-to-end de l'historique personnel et du journal d'audit.
-3. Réaliser la revue sécurité avant exposition réseau.
-4. Ajouter les tests d'intégration backend (`WebApplicationFactory`).
-5. Revenir ensuite sur les tests end-to-end frontend.
+1. Renforcer la couverture end-to-end de l'historique personnel et du journal d'audit.
+2. Réaliser la revue sécurité avant exposition réseau.
+3. Ajouter les tests d'intégration backend (`WebApplicationFactory`).
+4. Revenir ensuite sur les tests end-to-end frontend.
 
 ## Risques et cas limites à finaliser
 

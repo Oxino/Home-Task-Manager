@@ -121,10 +121,10 @@ function LoadTable({ rows, emptyLabel }: { rows: ParticipantLoad[]; emptyLabel: 
         )}
         {rows.map((row) => (
           <tr key={row.userId}>
-            <td>{row.userName}</td>
-            <td>{row.totalTasks}</td>
-            <td>{row.totalPoints}</td>
-            <td>{safeNumber(row.estimatedHours)}</td>
+            <td data-label="Participant">{row.userName}</td>
+            <td data-label="Tâches">{row.totalTasks}</td>
+            <td data-label="Points">{row.totalPoints}</td>
+            <td data-label="Heures">{safeNumber(row.estimatedHours)}</td>
           </tr>
         ))}
       </tbody>
@@ -264,9 +264,11 @@ export function AnalyticsPanel({ api, weekId, week, users }: { api: string; week
   return (
     <section className="analytics-panel">
       <div className="panel-heading">
-        <span className="section-kicker">ADMINISTRATION</span>
-        <h2>Statistiques Analytics</h2>
-        <p className="panel-subtitle">Charge, complétion et tendances des participants.</p>
+        <div>
+          <span className="section-kicker">ADMINISTRATION</span>
+          <h2>Statistiques Analytics</h2>
+          <p className="panel-subtitle">Charge, complétion et tendances des participants.</p>
+        </div>
       </div>
 
       {error && <p className="form-error">{error}</p>}
@@ -362,10 +364,10 @@ export function AnalyticsPanel({ api, weekId, week, users }: { api: string; week
                   )}
                   {userCompletions.map((row) => (
                     <tr key={row.userId}>
-                      <td>{row.userName}</td>
-                      <td>{row.completedTasks}</td>
-                      <td>{row.totalTasks}</td>
-                      <td>
+                      <td data-label="Participant">{row.userName}</td>
+                      <td data-label="Complétées">{row.completedTasks}</td>
+                      <td data-label="Total">{row.totalTasks}</td>
+                      <td data-label="Taux">
                         <div className="completion-cell">
                           <span>{safeNumber(row.completionPercentage)}%</span>
                           <div className="completion-meter" role="presentation">
@@ -397,9 +399,9 @@ export function AnalyticsPanel({ api, weekId, week, users }: { api: string; week
                   )}
                   {userLoads.map((row) => (
                     <tr key={row.userId}>
-                      <td>{row.userName}</td>
-                      <td>{safeNumber(row.averageLoad, 2)} tâches</td>
-                      <td>
+                      <td data-label="Participant">{row.userName}</td>
+                      <td data-label="Charge moyenne">{safeNumber(row.averageLoad, 2)} tâches</td>
+                      <td data-label="Indice">
                         <span className={Math.abs(row.averageLoad - 1) < 0.2 ? "load-chip balanced" : "load-chip"}>
                           {safeNumber(row.averageLoad * 100, 0)}%
                         </span>
