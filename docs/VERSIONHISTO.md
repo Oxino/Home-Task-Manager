@@ -542,9 +542,29 @@
 - `npm run test:e2e` (et `test:e2e:ui`) exécutent la suite ; navigateur Chromium installé via
   `npx playwright install chromium`.
 
+### V13.19 — Arbre de décision d'affectation (BR-033)
+
+- Chaque moteur (`INTELLIGENT_V1`, `RANDOM`, `BALANCED_POINTS`, `BALANCED_TIME`) produit
+  désormais, pour chaque affectation, une trace de décision ordonnée (`ExplanationStep[]`) :
+  score de la tâche, comparaison de la charge normalisée des participants éligibles (avec raison
+  d'élimination), pénalité anti-répétition, égalité départagée par rotation (BR-062), tirage
+  aléatoire, responsabilité unique d'une tâche quotidienne obligatoire non répartie, et
+  réajustement éventuel pendant la recherche locale de `INTELLIGENT_V1` (BR-048).
+- Nouvelle entité `AssignmentExplanation` (une ligne par instance, `StepsJson` + résumé),
+  persistée par `RunAssignmentEngineUseCase` et remplacée à chaque relance (ADR-013). Nouvel
+  endpoint `GET /api/task-instances/{id}/explanation` (accès participant assigné ou admin).
+- Nouveau panneau frontend affichant ce parcours de décision sous forme de timeline verticale,
+  avec un comparatif repliable des autres participants à chaque étape pertinente ; il remplace
+  le texte générique fixe affiché jusqu'ici dans le détail d'une tâche. Les instances affectées
+  avant cette fonctionnalité retombent sur ce texte générique (aucune trace persistée).
+- Documentation mise à jour : `ASSIGNMENT_ENGINE.md` (nouvelle section traçabilité), `DOMAIN_MODEL.md`
+  et `ARCHITECTURE.md` (modèle `AssignmentExplanation` aligné sur l'implémentation réelle).
+- Suite validée à **124 tests** Domain+Application (28 Domain, 96 Application, dont 3 nouveaux
+  tests de trace d'explication par moteur).
+
 ---
 
-## Etat actuel (fin V13.18)
+## Etat actuel (fin V13.19)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -650,6 +670,9 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
   les modales s'affichent en feuille ancrée en bas d'écran, les cibles tactiles atteignent 44px
   minimum et les tableaux/lignes qui débordaient auparavant s'empilent ou acceptent le retour à
   la ligne.
+- Le détail d'une tâche affiche désormais un arbre de décision de l'affectation (parcours de
+  décision étape par étape, avec comparatif repliable des autres participants), généré par le
+  moteur ayant produit l'affectation et persisté par instance (BR-033).
 
 ---
 

@@ -67,6 +67,32 @@ limite non couverte.
 
 ---
 
+## Tracabilite et arbre de decision (BR-033)
+
+Chaque affectation produite par un moteur porte une trace de decision ordonnee
+(`ExplanationStep[]`), persistee dans `AssignmentExplanation` (une ligne par instance) et exposee
+par `GET /api/task-instances/{id}/explanation`. Le frontend l'affiche sous forme de parcours de
+decision vertical (un noeud par etape), avec pour certaines etapes une comparaison repliable des
+participants eligibles (charge normalisee, raison d'elimination).
+
+Chaque etape porte un type (`Kind`) utilise par le frontend pour choisir une icone :
+
+| Kind | Utilise par | Signification |
+|------|-------------|----------------|
+| `Score` | INTELLIGENT_V1, BALANCED_POINTS, BALANCED_TIME | detail du score ou de la duree de la tache |
+| `Load` | INTELLIGENT_V1, BALANCED_POINTS, BALANCED_TIME | comparaison de la charge normalisee des participants eligibles |
+| `Penalty` | INTELLIGENT_V1 | penalite anti-repetition appliquee au proprietaire retenu |
+| `TieBreak` | BALANCED_POINTS, BALANCED_TIME | egalite departagee par rotation hebdomadaire (BR-062) |
+| `LocalSearch` | INTELLIGENT_V1 | reajustement de la tache pendant la recherche locale (BR-048) |
+| `Random` | RANDOM | position tiree dans l'ordre melange des participants |
+| `SingleOwner` | les 4 moteurs | responsabilite unique d'une tache quotidienne obligatoire non repartie |
+
+Une instance affectee avant l'introduction de cette fonctionnalite n'a pas de trace persistee ;
+l'interface retombe alors sur un texte generique. Une relance d'affectation (ADR-013) supprime et
+regenere la trace des instances concernees.
+
+---
+
 ## INTELLIGENT_V1
 
 ### Description breve

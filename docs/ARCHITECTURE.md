@@ -225,7 +225,7 @@ AuditLog       (générique, EntityType + EntityId)
 | `CompletionChangeLog` | Id | TaskInstanceId, ChangedByUserId | bascules complété↔non |
 | `DailyFlexibleExecution` | Id | TaskInstanceId, ExecutedByUserId | exécutions multiples |
 | `TaskComment` | Id | TaskInstanceId, AuthorUserId | commentaires |
-| `AssignmentExplanation` | Id | TaskInstanceId, AssignedUserId | justification |
+| `AssignmentExplanation` | Id | TaskInstanceId (unique), AssignmentRunId, AssignedUserId | trace de décision structurée (StepsJson) |
 | `AssignmentMetricSnapshot` | Id | AssignmentRunId, UserId | métriques d'audit |
 | `SystemSetting` | Id | UpdatedByUserId | `Key` unique |
 | `AuditLog` | Id | PerformedByUserId | `EntityType` + `EntityId` |
@@ -281,11 +281,13 @@ AssignmentContext = {
 }
 
 AssignmentResult = {
-  Affectations[] (TaskInstance → User),
-  Explications[] (AssignmentExplanation),
-  Snapshots[] (AssignmentMetricSnapshot)
+  Affectations[] (TaskInstance → User, ExplanationSteps[] par affectation)
 }
 ```
+
+Les `ExplanationStep` de chaque affectation sont persistés dans `AssignmentExplanation`
+(`StepsJson`) puis exposés par `GET /api/task-instances/{id}/explanation` pour l'arbre de
+décision visuel côté frontend.
 
 ## 4.2 Pipeline INTELLIGENT_V1
 
@@ -416,7 +418,7 @@ précédent et ses snapshots restent conservés (historique).
 | POST | `/api/task-instances/{id}/executions` | Exécution flexible | propriétaire |
 | PUT | `/api/task-instances/{id}/cancel` | Annuler | admin |
 | GET/POST | `/api/task-instances/{id}/comments` | Commentaires | connecté |
-| GET | `/api/task-instances/{id}/explanation` | Justification d'affectation | connecté |
+| GET | `/api/task-instances/{id}/explanation` | Trace de décision d'affectation (arbre de décision) | connecté |
 
 ## 6.6 Affectation (administration)
 

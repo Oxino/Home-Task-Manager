@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<IDailyFlexibleExecutionRepository, DailyFlexibleExecutionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IReactionRepository, ReactionRepository>();
+        services.AddScoped<IAssignmentExplanationRepository, AssignmentExplanationRepository>();
 
         services.AddScoped<INotificationService, NotificationService>();
         services.AddSingleton<IClock, SystemClock>();

@@ -387,19 +387,34 @@ Justification de l'affectation.
 | Champ | Type | Obligatoire |
 |---------|---------|---------|
 | Id | Guid | Oui |
-| TaskInstanceId | Guid | Oui |
+| TaskInstanceId | Guid | Oui (unique) |
+| AssignmentRunId | Guid | Oui |
 | AssignedUserId | Guid | Oui |
+| EngineName | string | Oui |
+| SummaryText | string | Oui |
+| StepsJson | string | Oui |
 | GeneratedAt | DateTime | Oui |
-| ExplanationText | string | Oui |
 
-## Exemple
+## Notes
+
+`StepsJson` contient la trace de décision structurée produite par le moteur (liste ordonnée
+d'`ExplanationStep`, chacun avec un type, un titre, un résumé et, le cas échéant, la comparaison
+des participants éligibles à cette étape). C'est cette trace qui alimente l'arbre de décision
+visuel (BR-033, BACKLOG « arbre décisionnel d'affectation »). `SummaryText` reste une phrase
+courte de repli. Une relance d'affectation (ADR-013) supprime et régénère la trace des instances
+concernées. Les instances affectées avant l'introduction de cette fonctionnalité n'ont pas de
+ligne associée ; l'interface affiche alors un texte générique de repli.
+
+## Exemple (`StepsJson`, INTELLIGENT_V1)
 
 ```text
-Attribuée à Julie car :
-
-- Nicolas a réalisé cette tâche 4 fois sur les 8 dernières semaines
-- Julie possède un score historique inférieur
-- Julie est disponible à 100 %
+1. Score de la tâche : difficulté 40 × priorité 1.0 × durée 1.5 = 60 pts.
+2. Comparaison des charges : Nicolas avait la charge normalisée projetée la plus faible (1.2)
+   parmi les participants éligibles (Julie : 1.6, charge normalisée plus élevée).
+3. Pénalité anti-répétition : Julie a réalisé cette tâche 4 fois durant la fenêtre d'équité
+   récente → pénalité de 60 pts ajoutée à sa charge projetée (BR-054).
+4. (le cas échéant) Réajustement par optimisation : réattribuée pendant la recherche locale
+   (BR-048).
 ```
 
 ---

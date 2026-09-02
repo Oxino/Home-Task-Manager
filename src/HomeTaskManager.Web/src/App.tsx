@@ -73,6 +73,27 @@ type TaskComment = {
   createdAt: string;
 };
 type CommentReaction = { id: string; commentId: string; userId: string; reactionType: string; createdAt: string };
+type ExplanationCandidate = {
+  userId: string;
+  displayName: string;
+  value: number | null;
+  selected: boolean;
+  reason: string | null;
+};
+type ExplanationStep = {
+  kind: string;
+  title: string;
+  summary: string;
+  candidates: ExplanationCandidate[] | null;
+};
+type AssignmentExplanation = {
+  taskInstanceId: string;
+  assignedUserId: string;
+  engineName: string;
+  summaryText: string;
+  generatedAt: string;
+  steps: ExplanationStep[];
+};
 type NotificationItem = {
   id: string;
   title: string;
@@ -2520,6 +2541,127 @@ function NotificationsPanel({
   );
 }
 
+const explanationStepIcons: Record<string, string> = {
+  Score: "🧮",
+  Load: "⚖️",
+  Penalty: "🔁",
+  TieBreak: "🎲",
+  LocalSearch: "🔧",
+  Random: "🎲",
+  SingleOwner: "🔒",
+};
+
+function AssignmentExplanationPanel({
+  api,
+  instanceId,
+}: {
+  api: string;
+  instanceId: string;
+}) {
+  const [explanation, setExplanation] = useState<AssignmentExplanation | null>(null);
+  const [available, setAvailable] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${api}/api/task-instances/${instanceId}/explanation`)
+      .then(async (response) => {
+        if (response.ok) {
+          setExplanation(await response.json());
+          setAvailable(true);
+        } else {
+          setExplanation(null);
+          setAvailable(false);
+        }
+      })
+      .catch(() => {
+        setExplanation(null);
+        setAvailable(false);
+      })
+      .finally(() => setLoading(false));
+  }, [api, instanceId]);
+
+  if (loading) {
+    return (
+      <div className="explanation-panel">
+        <PanelSkeleton rows={2} />
+      </div>
+    );
+  }
+
+  // Fallback for engines/assignments without a captured decision trace (e.g. pre-existing data).
+  if (!available || !explanation || explanation.steps.length === 0) {
+    return (
+      <div className="explanation">
+        <span>✦</span>
+        <div>
+          <b>Une affectation pensée pour l’équilibre</b>
+          <p>
+            Cette tâche tient compte de la charge actuelle, de votre
+            disponibilité et de la rotation observée sur les dernières
+            semaines.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="explanation-panel">
+      <span className="section-kicker">AFFECTATION</span>
+      <h3>Pourquoi cette tâche ?</h3>
+      <p className="explanation-engine">
+        Moteur : <b>{engineInfo[explanation.engineName]?.title ?? explanation.engineName}</b>
+      </p>
+      <ol className="explanation-steps">
+        {explanation.steps.map((step, index) => (
+          <li className="explanation-step" key={index}>
+            <span className="explanation-step-icon" aria-hidden="true">
+              {explanationStepIcons[step.kind] ?? "•"}
+            </span>
+            <div className="explanation-step-body">
+              <b>{step.title}</b>
+              <p>{step.summary}</p>
+              {step.candidates && step.candidates.length > 0 && (
+                <details className="explanation-candidates">
+                  <summary>Comparaison avec les autres participants</summary>
+                  <ul>
+                    {step.candidates.map((candidate) => (
+                      <li
+                        key={candidate.userId}
+                        className={
+                          candidate.selected
+                            ? "explanation-candidate selected"
+                            : "explanation-candidate"
+                        }
+                      >
+                        <span className="explanation-candidate-name">
+                          {candidate.selected ? "✓ " : ""}
+                          {candidate.displayName}
+                        </span>
+                        {candidate.value !== null && (
+                          <span className="explanation-candidate-value">
+                            {candidate.value.toFixed(2)}
+                          </span>
+                        )}
+                        {!candidate.selected && candidate.reason && (
+                          <span className="explanation-candidate-reason">
+                            {candidate.reason}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function CommentsPanel({
   api,
   instanceId,
@@ -4676,17 +4818,7 @@ function App() {
                   }}
                 />
               )}
-            <div className="explanation">
-              <span>✦</span>
-              <div>
-                <b>Une affectation pensée pour l’équilibre</b>
-                <p>
-                  Cette tâche tient compte de la charge actuelle, de votre
-                  disponibilité et de la rotation observée sur les dernières
-                  semaines.
-                </p>
-              </div>
-            </div>
+            <AssignmentExplanationPanel api={api} instanceId={selected.id} />
             {template(selected.taskTemplateId)?.frequencyType ===
               "DailyFlexible" && (
               <FlexibleExecutionPanel

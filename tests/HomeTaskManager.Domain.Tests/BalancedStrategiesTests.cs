@@ -51,6 +51,16 @@ public sealed class BalancedStrategiesTests
             .Should().BeEquivalentTo([2, 2]);
     }
 
+    [Fact]
+    public void Balanced_points_produces_a_score_and_load_comparison_step()
+    {
+        var context = CreateContext([60, 40, 20, 20]);
+        var result = new BalancedPointsStrategy().Assign(context);
+
+        result.Assignments.Should().OnlyContain(assignment => assignment.ExplanationSteps != null && assignment.ExplanationSteps.Any(step => step.Kind == "Score"));
+        result.Assignments.Should().OnlyContain(assignment => assignment.ExplanationSteps!.Any(step => step.Kind == "Load" && step.Candidates != null && step.Candidates.Count == 2));
+    }
+
     private static AssignmentContext CreateContext(IReadOnlyList<int> scores)
     {
         var week = new Week(new WeekKey(2026, 1));

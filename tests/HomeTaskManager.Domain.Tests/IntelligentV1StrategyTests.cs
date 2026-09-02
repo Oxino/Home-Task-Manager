@@ -33,6 +33,32 @@ public class IntelligentV1StrategyTests
     }
 
     [Fact]
+    public void Produces_score_load_and_penalty_explanation_steps()
+    {
+        var week = new Week(new WeekKey(2026, 10));
+        var julie = new User("Julie");
+        var nicolas = new User("Nicolas");
+        var template = new TaskTemplate("Aspirateur", julie.Id, 40, FrequencyType.Weekly, TaskPriority.Normal, estimatedDurationMinutes: 45);
+        var instance = new TaskInstance(template.Id, null, week, null, week.StartDate, week.EndDate);
+        var history = new Dictionary<Guid, ParticipantHistory>
+        {
+            [julie.Id] = new(julie.Id, TotalScore: 0m, TotalAssignedCount: 0, new Dictionary<Guid, int> { [template.Id] = 4 }),
+            [nicolas.Id] = new(nicolas.Id, TotalScore: 0m, TotalAssignedCount: 0, new Dictionary<Guid, int>()),
+        };
+        var context = new AssignmentContext(
+            week, [julie, nicolas], [instance], new Dictionary<Guid, TaskTemplate> { [template.Id] = template },
+            history, AssignmentEngineSettings.Default);
+
+        var result = new IntelligentV1Strategy().Assign(context);
+
+        var steps = result.Assignments.Should().ContainSingle().Subject.ExplanationSteps;
+        steps.Should().NotBeNull();
+        steps!.Select(step => step.Kind).Should().Contain("Score").And.Contain("Load").And.Contain("Penalty");
+        var loadStep = steps!.Single(step => step.Kind == "Load");
+        loadStep.Candidates.Should().HaveCount(2);
+    }
+
+    [Fact]
     public void Excludes_participants_with_zero_availability()
     {
         var week = new Week(new WeekKey(2026, 10));

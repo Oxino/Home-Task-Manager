@@ -8,6 +8,7 @@ using HomeTaskManager.Domain.Entities;
 using HomeTaskManager.Domain.Enums;
 using HomeTaskManager.Domain.Exceptions;
 using HomeTaskManager.Domain.ValueObjects;
+using System.Text.Json;
 
 namespace HomeTaskManager.Application.UseCases.Assignments;
 
@@ -34,6 +35,7 @@ public sealed class RunAssignmentEngineUseCase(
     INotificationRepository? notificationRepository = null,
     IUserPreferencesRepository? userPreferencesRepository = null,
     INotificationService? notificationService = null,
+    IAssignmentExplanationRepository? assignmentExplanationRepository = null,
     IEnumerable<IAssignmentStrategy>? assignmentStrategies = null) : IRunAssignmentEngineUseCase
 {
     public async Task<RunAssignmentEngineResult> ExecuteAsync(
@@ -106,11 +108,30 @@ public sealed class RunAssignmentEngineUseCase(
             var result = selectedStrategy.Assign(context);
             var instancesById = assignableInstances.ToDictionary(instance => instance.Id);
             var notifiedAssignments = new HashSet<(Guid UserId, Guid TaskTemplateId)>();
+            var participantNames = activeParticipants.ToDictionary(p => p.Id, p => p.DisplayName);
+
+            if (assignmentExplanationRepository is not null)
+            {
+                // ADR-013: a relaunch overwrites the week's assignment, so any previous decision trace for these instances is stale.
+                await assignmentExplanationRepository.RemoveByTaskInstanceIdsAsync(
+                    result.Assignments.Select(a => a.TaskInstanceId), cancellationToken);
+            }
 
             foreach (var assignment in result.Assignments)
             {
                 var assignedInstance = instancesById[assignment.TaskInstanceId];
                 assignedInstance.Assign(run.Id, assignment.AssignedUserId);
+
+                if (assignmentExplanationRepository is not null && assignment.ExplanationSteps is { Count: > 0 })
+                {
+                    var assignedName = participantNames.TryGetValue(assignment.AssignedUserId, out var name) ? name : "ce participant";
+                    var summaryText = $"Affectée à {assignedName} par le moteur {selectedStrategy.Name}.";
+                    var stepsJson = JsonSerializer.Serialize(assignment.ExplanationSteps);
+                    await assignmentExplanationRepository.AddAsync(
+                        new AssignmentExplanation(assignedInstance.Id, run.Id, assignment.AssignedUserId, selectedStrategy.Name, summaryText, stepsJson),
+                        cancellationToken);
+                }
+
                 var notificationPreference = userPreferencesRepository is null
                     ? "All"
                     : (await userPreferencesRepository.GetByUserIdAsync(assignment.AssignedUserId, cancellationToken))?.NotificationPreference ?? "All";

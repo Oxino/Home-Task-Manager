@@ -17,6 +17,46 @@ namespace HomeTaskManager.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
 
+            modelBuilder.Entity("HomeTaskManager.Domain.Entities.AssignmentExplanation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AssignedUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AssignmentRunId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EngineName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StepsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SummaryText")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TaskInstanceId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskInstanceId")
+                        .IsUnique();
+
+                    b.ToTable("AssignmentExplanations");
+                });
+
             modelBuilder.Entity("HomeTaskManager.Domain.Entities.AssignmentRun", b =>
                 {
                     b.Property<Guid>("Id")

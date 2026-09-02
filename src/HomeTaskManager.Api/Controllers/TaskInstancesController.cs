@@ -1,5 +1,6 @@
 using HomeTaskManager.Api.Contracts.TaskInstances;
 using HomeTaskManager.Application.Exceptions;
+using HomeTaskManager.Application.UseCases.Assignments;
 using HomeTaskManager.Application.UseCases.TaskInstances;
 using HomeTaskManager.Application.UseCases.Weeks;
 using HomeTaskManager.Application.Abstractions.Repositories;
@@ -12,7 +13,7 @@ namespace HomeTaskManager.Api.Controllers;
 
 [ApiController]
 [Route("api/task-instances")]
-public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskInstanceCompletionUseCase, IReassignTaskInstanceUseCase reassignTaskInstanceUseCase, ICancelTaskInstanceUseCase cancelTaskInstanceUseCase, ITaskCommentUseCase taskCommentUseCase, IExecuteDailyFlexibleTaskUseCase executeDailyFlexibleTaskUseCase, ITaskInstanceRepository taskInstanceRepository, IWeekRepository weekRepository, IUserRepository userRepository) : ControllerBase
+public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskInstanceCompletionUseCase, IReassignTaskInstanceUseCase reassignTaskInstanceUseCase, ICancelTaskInstanceUseCase cancelTaskInstanceUseCase, ITaskCommentUseCase taskCommentUseCase, IExecuteDailyFlexibleTaskUseCase executeDailyFlexibleTaskUseCase, ITaskInstanceRepository taskInstanceRepository, IWeekRepository weekRepository, IUserRepository userRepository, IAssignmentExplanationRepository assignmentExplanationRepository) : ControllerBase
 {
     [HttpGet("{id:guid}")]
     [Authorize]
@@ -89,6 +90,19 @@ public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskIn
         try { return Ok(await taskCommentUseCase.ListAsync(id, User.GetCurrentUserId(), cancellationToken)); }
         catch (ForbiddenOperationException exception) { return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message }); }
         catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
+    }
+
+    [HttpGet("{id:guid}/explanation")]
+    [Authorize]
+    public async Task<ActionResult<AssignmentExplanationDto>> GetExplanation(Guid id, CancellationToken cancellationToken)
+    {
+        var instance = await taskInstanceRepository.GetByIdAsync(id, cancellationToken);
+        if (instance is null) return NotFound();
+        var user = await userRepository.GetByIdAsync(User.GetCurrentUserId(), cancellationToken);
+        if (user is null || (!user.IsAdmin && instance.AssignedUserId != user.Id)) return Forbid();
+        var explanation = await assignmentExplanationRepository.GetByTaskInstanceIdAsync(id, cancellationToken);
+        if (explanation is null) return NotFound();
+        return Ok(AssignmentExplanationMapper.ToDto(explanation));
     }
 
     [HttpPost("{id:guid}/comments")]

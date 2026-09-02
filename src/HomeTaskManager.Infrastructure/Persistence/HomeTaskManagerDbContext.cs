@@ -24,6 +24,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
     public DbSet<DailyFlexibleExecution> DailyFlexibleExecutions => Set<DailyFlexibleExecution>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Reaction> Reactions => Set<Reaction>();
+    public DbSet<AssignmentExplanation> AssignmentExplanations => Set<AssignmentExplanation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -137,6 +138,15 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
             entity.HasIndex(reaction => reaction.CommentId);
             entity.HasIndex(reaction => new { reaction.CommentId, reaction.UserId, reaction.ReactionType }).IsUnique();
             entity.Property(reaction => reaction.ReactionType).HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<AssignmentExplanation>(entity =>
+        {
+            entity.HasKey(explanation => explanation.Id);
+            entity.HasIndex(explanation => explanation.TaskInstanceId).IsUnique();
+            entity.Property(explanation => explanation.EngineName).HasMaxLength(50).IsRequired();
+            entity.Property(explanation => explanation.SummaryText).HasMaxLength(1000).IsRequired();
+            entity.Property(explanation => explanation.StepsJson).IsRequired();
         });
     }
 }
