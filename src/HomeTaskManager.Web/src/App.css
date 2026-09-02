@@ -126,6 +126,11 @@ select:focus-visible {
 * {
   box-sizing: border-box;
 }
+html,
+body {
+  /* Safety net: no page should ever need horizontal scroll (mobile-first, BR n/a). */
+  overflow-x: hidden;
+}
 button {
   font: inherit;
   cursor: pointer;
@@ -296,6 +301,7 @@ nav {
 }
 .content {
   flex: 1;
+  min-width: 0;
   padding: 0 5.4vw 60px;
   max-width: 1500px;
 }
@@ -1058,9 +1064,13 @@ body:has(.sidebar.mobile-open) {
   font-size: 13px;
 }
 .modal-close {
-  position: absolute;
-  right: 17px;
-  top: 13px;
+  /* Sticky (not absolute) so it never scrolls out of reach inside a tall/scrollable modal. */
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: block;
+  width: fit-content;
+  margin: 0 0 8px auto;
   background: transparent;
   font-size: 24px;
   color: var(--muted);
@@ -3041,8 +3051,8 @@ body:has(.sidebar.mobile-open) {
     height: 44px;
     display: grid;
     place-items: center;
-    right: 8px;
-    top: 8px;
+    margin: 0 0 4px auto;
+    top: 0;
   }
   .overdue-filter {
     min-height: 44px;
