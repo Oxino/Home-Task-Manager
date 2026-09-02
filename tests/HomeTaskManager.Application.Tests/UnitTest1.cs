@@ -1,6 +1,7 @@
 using FluentAssertions;
 using HomeTaskManager.Application.Abstractions;
 using HomeTaskManager.Application.Abstractions.Repositories;
+using HomeTaskManager.Application.Exceptions;
 using HomeTaskManager.Application.UseCases.Users;
 using HomeTaskManager.Domain.Entities;
 using HomeTaskManager.Domain.Exceptions;
@@ -24,6 +25,9 @@ public sealed class InMemoryUserRepository : IUserRepository
 
     public Task<bool> ExistsByDisplayNameAsync(string displayName, CancellationToken cancellationToken = default) =>
         Task.FromResult(_users.Any(user => user.DisplayName == displayName));
+
+    public Task<bool> ExistsAnyAdminAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_users.Any(user => user.IsAdmin));
 
     public Task AddAsync(User user, CancellationToken cancellationToken = default)
     {
@@ -73,6 +77,41 @@ public class CreateUserUseCaseTests
         var action = () => useCase.ExecuteAsync(new CreateUserCommand("Julie", false, 100));
 
         await action.Should().ThrowAsync<DomainValidationException>();
+    }
+
+    [Fact]
+    public async Task Allows_self_attributed_admin_role_when_no_admin_exists_yet()
+    {
+        var repository = new InMemoryUserRepository();
+        var useCase = new CreateUserUseCase(repository, new NoOpAuditLogger(), new NoOpUnitOfWork());
+
+        var profile = await useCase.ExecuteAsync(new CreateUserCommand("Julie", true, 100));
+
+        profile.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Rejects_anonymous_self_attributed_admin_role_once_an_admin_already_exists()
+    {
+        var repository = new InMemoryUserRepository();
+        repository.Seed(new User("Admin", isAdmin: true));
+        var useCase = new CreateUserUseCase(repository, new NoOpAuditLogger(), new NoOpUnitOfWork());
+
+        var action = () => useCase.ExecuteAsync(new CreateUserCommand("Nicolas", true, 100));
+
+        await action.Should().ThrowAsync<ForbiddenOperationException>();
+    }
+
+    [Fact]
+    public async Task Allows_an_existing_admin_to_create_another_admin_profile()
+    {
+        var repository = new InMemoryUserRepository();
+        repository.Seed(new User("Admin", isAdmin: true));
+        var useCase = new CreateUserUseCase(repository, new NoOpAuditLogger(), new NoOpUnitOfWork());
+
+        var profile = await useCase.ExecuteAsync(new CreateUserCommand("Nicolas", true, 100, RequestingUserIsAdmin: true));
+
+        profile.IsAdmin.Should().BeTrue();
     }
 }
 

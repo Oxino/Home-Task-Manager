@@ -17,6 +17,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeTaskManager.Domain.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeTaskManager.Application.Tests", "tests\HomeTaskManager.Application.Tests\HomeTaskManager.Application.Tests.csproj", "{E5756140-B22A-46E0-A08A-B3369DE756CC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeTaskManager.Api.Tests", "tests\HomeTaskManager.Api.Tests\HomeTaskManager.Api.Tests.csproj", "{749DEF8F-8E26-4152-9A3D-E0C1331A4804}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +103,18 @@ Global
 		{E5756140-B22A-46E0-A08A-B3369DE756CC}.Release|x64.Build.0 = Release|Any CPU
 		{E5756140-B22A-46E0-A08A-B3369DE756CC}.Release|x86.ActiveCfg = Release|Any CPU
 		{E5756140-B22A-46E0-A08A-B3369DE756CC}.Release|x86.Build.0 = Release|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Debug|x64.Build.0 = Debug|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Debug|x86.Build.0 = Debug|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Release|Any CPU.Build.0 = Release|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Release|x64.ActiveCfg = Release|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Release|x64.Build.0 = Release|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Release|x86.ActiveCfg = Release|Any CPU
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,5 +126,6 @@ Global
 		{85732464-6FE2-4504-BB33-4CA1BC11235B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{2AE18F6A-72E7-40C8-946E-86BA0197E54B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{E5756140-B22A-46E0-A08A-B3369DE756CC} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{749DEF8F-8E26-4152-9A3D-E0C1331A4804} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

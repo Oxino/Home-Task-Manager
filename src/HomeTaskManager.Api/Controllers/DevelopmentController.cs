@@ -18,8 +18,8 @@ namespace HomeTaskManager.Api.Controllers;
 [ApiController]
 [Route("api/development")]
 [Authorize(Roles = "Admin")]
+[DevelopmentOnly]
 public sealed class DevelopmentController(
-    IWebHostEnvironment environment,
     HomeTaskManagerDbContext dbContext,
     IGenerateWeekInstancesUseCase generateWeekInstancesUseCase,
     IRunAssignmentEngineUseCase runAssignmentEngineUseCase,
@@ -57,8 +57,6 @@ public sealed class DevelopmentController(
     [AllowAnonymous]
     public async Task<ActionResult<object>> ResetAndSeedFullDemo(FullDemoSeedRequest request, CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment())
-            return Forbid();
 //TODO: expliquer cette partie de code. PK restreindre les semaines entre 6 et 20?
         if (request.Weeks is < 6 or > 20)
             return BadRequest(new { error = "Weeks must be between 6 and 20." });
@@ -176,8 +174,6 @@ public sealed class DevelopmentController(
     [AllowAnonymous]
     public async Task<ActionResult<object>> EnsureAdminCarryOver(CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment()) return Forbid();
-
         var admin = await dbContext.Users.FirstOrDefaultAsync(entry => entry.DisplayName == "admin1" && entry.IsAdmin, cancellationToken);
         if (admin is null) return NotFound(new { error = "admin1 not found." });
 
@@ -241,9 +237,6 @@ public sealed class DevelopmentController(
     [AllowAnonymous]
     public async Task<ActionResult<object>> BackfillNotificationInstanceLinks(CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment())
-            return Forbid();
-
         var notifications = await dbContext.Notifications
             .Where(entry => entry.Link != null && entry.Link.StartsWith("/week?") && !entry.Link.Contains("instanceId="))
             .OrderBy(entry => entry.CreatedAt)
@@ -395,8 +388,6 @@ public sealed class DevelopmentController(
     [HttpPost("backfill-completion-audits")]
     public async Task<ActionResult<object>> BackfillCompletionAudits(CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment()) return Forbid();
-
         var completedInstances = await dbContext.TaskInstances
             .Where(entry => entry.IsCompleted && entry.AssignedUserId.HasValue)
             .ToListAsync(cancellationToken);

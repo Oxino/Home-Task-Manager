@@ -296,7 +296,7 @@ hors priorité immédiate.
 - ~~reprendre ou approfondir le system de génération d'instance + affectation.~~
 
 - ~~régles métier a pofiner : une tache quotidienne obligatoire (avoir la possibilité de gérer l'affectaion : toujours à la mm personne ou à répartir aux participant)~~
-- Amélioration navigation interface téléphone.0
+- ~~Amélioration navigation interface téléphone.~~
 - Blocquer l'acces au page admin pour les utilsilateurs. http://localhost:5173/assignments est accecible par exemple, participants, assignment-engine, statistique. Mettre également un contexte de securité sur les endpoint des API pour que seul les actions admin puisse etre appeler par les admin.
 - Festaure: permettre visuellement d'avoir une représentation de la décision logique d'affectation de chaque tache. Une représentation sous forme d'arbre décisionnel. Je veux voir le plans d'execution logique d'attribution de chaque tache, pourquoi cette tache a été attribué a l'utilisateur. Si c'est psk c'est trié par ordre de point, si elle ne l'a pas faite la semaine passé, si c'est une tache non faite de la semaine passé, etc.. etc.. je qu'on puisse comprendre pourquoi l'affectation a été faite. Je rappel, que le choix du moteur d'affectation est paramettrable. donc il faudra que l'arbre de décision puisse s'adapté au moteur de distribution. lors de l'implémentation, pause moi des questions si cela manque de précision, ou qu'il y a un choix technique ou d'affichage a faire, si tu as une meilleur proposition donne la moi
 - 

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HomeTaskManager.Api.Contracts.Settings;
 
 public sealed record UpdateAssignmentEngineSettingsRequest(
@@ -8,4 +10,4 @@ public sealed record UpdateAssignmentEngineSettingsRequest(
     int ReferenceDurationMinutes,
     int EquityWindowWeeks,
     decimal RepetitionPenaltyWeight,
-    string StrategyName = "INTELLIGENT_V1");
+    [Required, StringLength(50, MinimumLength = 1)] string StrategyName = "INTELLIGENT_V1");

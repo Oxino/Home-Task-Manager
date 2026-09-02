@@ -39,9 +39,14 @@ public class UsersController(
     {
         try
         {
-            var command = new CreateUserCommand(request.DisplayName, request.IsAdmin, request.AvailabilityPercentage);
+            var requestingUserIsAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("Admin");
+            var command = new CreateUserCommand(request.DisplayName, request.IsAdmin, request.AvailabilityPercentage, requestingUserIsAdmin);
             var profile = await createUserUseCase.ExecuteAsync(command, cancellationToken);
             return CreatedAtAction(nameof(GetActiveProfiles), new { }, profile);
+        }
+        catch (ForbiddenOperationException exception)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = exception.Message });
         }
         catch (DomainValidationException exception)
         {

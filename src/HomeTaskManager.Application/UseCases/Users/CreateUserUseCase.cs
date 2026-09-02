@@ -1,11 +1,12 @@
 using HomeTaskManager.Application.Abstractions;
 using HomeTaskManager.Application.Abstractions.Repositories;
+using HomeTaskManager.Application.Exceptions;
 using HomeTaskManager.Domain.Entities;
 using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.UseCases.Users;
 
-public sealed record CreateUserCommand(string DisplayName, bool IsAdmin, int AvailabilityPercentage);
+public sealed record CreateUserCommand(string DisplayName, bool IsAdmin, int AvailabilityPercentage, bool RequestingUserIsAdmin = false);
 
 public interface ICreateUserUseCase
 {
@@ -20,6 +21,15 @@ public sealed class CreateUserUseCase(IUserRepository userRepository, IAuditLogg
         if (await userRepository.ExistsByDisplayNameAsync(command.DisplayName, cancellationToken))
         {
             throw new DomainValidationException($"A profile named '{command.DisplayName}' already exists.");
+        }
+
+        if (command.IsAdmin && !command.RequestingUserIsAdmin)
+        {
+            // BR-017 bootstrap: self-attribution of the admin role is only allowed while no admin exists yet.
+            if (await userRepository.ExistsAnyAdminAsync(cancellationToken))
+            {
+                throw new ForbiddenOperationException("Only an existing administrator can create another administrator profile.");
+            }
         }
 
         var user = new User(command.DisplayName, command.IsAdmin, command.AvailabilityPercentage);

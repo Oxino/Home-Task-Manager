@@ -23,6 +23,9 @@ public sealed class UserRepository(HomeTaskManagerDbContext dbContext) : IUserRe
     public Task<bool> ExistsByDisplayNameAsync(string displayName, CancellationToken cancellationToken = default) =>
         dbContext.Users.AnyAsync(user => user.DisplayName == displayName, cancellationToken);
 
+    public Task<bool> ExistsAnyAdminAsync(CancellationToken cancellationToken = default) =>
+        dbContext.Users.AnyAsync(user => user.IsAdmin, cancellationToken);
+
     public Task AddAsync(User user, CancellationToken cancellationToken = default)
     {
         return dbContext.Users.AddAsync(user, cancellationToken).AsTask();

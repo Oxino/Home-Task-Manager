@@ -12,5 +12,7 @@ public interface IUserRepository
 
     Task<bool> ExistsByDisplayNameAsync(string displayName, CancellationToken cancellationToken = default);
 
+    Task<bool> ExistsAnyAdminAsync(CancellationToken cancellationToken = default);
+
     Task AddAsync(User user, CancellationToken cancellationToken = default);
 }

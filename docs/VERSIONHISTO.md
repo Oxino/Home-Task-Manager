@@ -452,9 +452,68 @@
   désormais sur une colonne sous 640px, et un espace manquant entre le déclencheur (« Fin de
   journée ») et le délai configuré a été corrigé.
 
+### V13.16 — Revue sécurité pré-exposition réseau
+
+- **CORS explicite** : ajout d'une politique CORS nommée, sans wildcard, pilotée par
+  `Cors:AllowedOrigins` (vide par défaut, `http://localhost:5173` en développement) ; les
+  identifiants (cookie) ne sont acceptés que pour les origines explicitement listées.
+- **Cookie d'authentification durci** : `HttpOnly`, `SameSite=Lax`, `SecurePolicy=SameAsRequest`,
+  expiration glissante de 12h (auparavant les valeurs par défaut d'ASP.NET Core, non explicites).
+- **Limite de payload** : taille maximale des requêtes fixée à 1 Mo (`Kestrel:Limits:MaxRequestBodySize`),
+  cette application ne traitant que du JSON sans pièce jointe.
+- **Gestionnaire d'erreur générique hors développement** : une exception non gérée renvoie
+  désormais un message générique en JSON au lieu de laisser fuir une trace technique.
+- **Faille de privilège corrigée** : `POST /api/users` permettait à n'importe quel appelant
+  anonyme de créer un profil avec `IsAdmin=true` à tout moment, pas seulement lors de
+  l'amorçage (BR-017). Un administrateur est désormais requis pour créer un autre profil
+  administrateur dès qu'un premier existe ; l'auto-attribution du rôle reste possible
+  uniquement tant qu'aucun administrateur n'existe encore.
+- **Durcissement des endpoints de développement** : les cinq actions de `DevelopmentController`
+  dupliquaient chacune une vérification manuelle d'environnement. Elles sont remplacées par un
+  filtre unique (`DevelopmentOnlyAttribute`) appliqué au contrôleur, renvoyant 404 hors
+  développement (au lieu de 403, pour ne pas révéler l'existence des routes) ; `seed-history`,
+  auparavant non protégée par cette vérification, en bénéficie désormais aussi.
+- **Validation d'entrée renforcée** : ajout d'attributs `[Required]`/`[StringLength]` sur les
+  champs texte libres exposés à l'API (nom de profil, titre et description de modèle de tâche,
+  contenu de commentaire, nom de stratégie du moteur), rejetés par la validation automatique
+  d'ASP.NET Core avant d'atteindre la couche domaine, qui ne bornait jusqu'ici que la non-vacuité.
+- Nouveaux tests dédiés à la restriction de création d'un profil administrateur.
+- Suite validée à **121 tests** : 96 Application et 25 Domain.
+
+### V13.17 — Tests d'intégration API bout en bout
+
+- Nouveau projet `tests/HomeTaskManager.Api.Tests`, utilisant `WebApplicationFactory<Program>` pour
+  démarrer l'API réelle (pipeline HTTP complet : routage, authentification par cookie,
+  autorisation par rôle, sérialisation JSON) sur une base SQLite temporaire par test, migrée via
+  EF Core.
+- `Program.cs` expose désormais `public partial class Program;` en fin de fichier, nécessaire pour
+  que `WebApplicationFactory<Program>` puisse démarrer l'application depuis le projet de tests.
+- Quatre scénarios couverts, complémentaires aux tests unitaires Application/Domain qui appellent
+  les cas d'usage directement sans jamais traverser le pipeline HTTP :
+  - création de profil, sélection (connexion par cookie) puis consultation du profil courant ;
+  - restriction de l'auto-attribution du rôle administrateur (rejouée ici en conditions réelles
+    via HTTP, en complément du test Application ciblé) ;
+  - rejet 401 d'un appel anonyme à un endpoint protégé, rejet 403 d'un participant non admin sur
+    un endpoint réservé ;
+  - parcours complet : création de modèle de tâche, génération de la semaine, lancement du
+    moteur d'affectation, complétude par le participant assigné, clôture de semaine ;
+  - endpoints de `DevelopmentController` renvoyant 404 hors environnement `Development`, y compris
+    pour un administrateur authentifié (`HomeTaskManagerApiProductionFactory` démarre l'API en
+    environnement `Production`).
+- Cette suite a immédiatement détecté une régression introduite par la revue sécurité V13.16 :
+  les attributs de validation (`[Required]`, `[StringLength]`) posés avec la cible `property:` sur
+  les paramètres positionnels de `record` provoquaient une `InvalidOperationException` au moment
+  de la validation du modèle par ASP.NET Core, sur chaque requête touchant ces contrats — invisible
+  des tests unitaires Application, qui appellent les cas d'usage sans jamais passer par le pipeline
+  MVC. Corrigé en retirant la cible `property:` (la validation des `record` doit être associée au
+  paramètre du constructeur, pas à la propriété générée).
+- Chaque classe de test crée sa propre instance d'API et sa propre base temporaire (isolation
+  complète), nécessaire notamment pour le scénario d'amorçage qui exige une base réellement vide.
+- Suite totale validée à **128 tests** : 96 Application, 25 Domain, 7 Api (intégration).
+
 ---
 
-## Etat actuel (fin V13.15)
+## Etat actuel (fin V13.17)
 
 La version V13.2 introduit deux types de tâches répétables : **Flexible**, avec une seule
 instance qui avance de jour en jour, et **Hebdomadaire fluide**, configurable par jours actifs
@@ -509,8 +568,14 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
         → Notifications & Analytics
 ```
 
-- **93 tests unitaires** (Application), **24 tests** (Domain), tous verts.
+- **96 tests unitaires** (Application), **25 tests** (Domain), **7 tests d'intégration API**
+  (`WebApplicationFactory`), tous verts.
 - Build complet backend et frontend (`npm run build`) sans erreur bloquante.
+- CORS explicite (sans wildcard), cookie d'authentification durci (SameSite, Secure, expiration),
+  limite de taille de requête (1 Mo), gestionnaire d'erreur générique hors développement,
+  endpoints de développement gagnant tous un seul filtre 404 hors environnement de développement,
+  validation d'entrée sur les champs texte libres exposés par l'API, et correction d'une faille
+  de privilège permettant l'auto-attribution du rôle administrateur après l'amorçage initial.
 - Les statistiques sont disponibles backend **et** frontend via la page `/analytics`.
 - Les commentaires avancés couvrent désormais le threading et les réactions.
 - Les migrations EF Core sont en place et appliquées au démarrage en environnement développement.
@@ -571,9 +636,9 @@ Profils → Modeles de taches → Generation de semaine → Moteur d'affectation
   parcours CRUD exposés.
 - [x] Poursuite de la gestion de l'historique : couverture end-to-end de l'historique personnel
   et du journal d'audit.
-- [ ] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
+- [x] Revue sécurité pré-exposition réseau (validation d'entrée, limites payload, durcissement
   endpoints admin, politique CORS/cookies).
-- [ ] Tests d'intégration API bout en bout (`WebApplicationFactory`) en complément des tests
+- [x] Tests d'intégration API bout en bout (`WebApplicationFactory`) en complément des tests
   unitaires Application/Domain.
 - [ ] Tests end-to-end frontend (desktop/mobile) sur les parcours critiques.
 

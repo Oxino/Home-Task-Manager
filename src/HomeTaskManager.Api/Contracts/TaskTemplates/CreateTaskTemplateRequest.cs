@@ -1,10 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using HomeTaskManager.Domain.Enums;
 
 namespace HomeTaskManager.Api.Contracts.TaskTemplates;
 
 public sealed record CreateTaskTemplateRequest(
-    string Title,
-    string? Description,
+    [Required, StringLength(200, MinimumLength = 1)] string Title,
+    [StringLength(2000)] string? Description,
     int ManualDifficultyScore,
     FrequencyType FrequencyType,
     TaskPriority Priority,
