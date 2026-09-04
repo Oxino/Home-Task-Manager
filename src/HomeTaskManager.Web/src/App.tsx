@@ -9,6 +9,20 @@ import "./App.css";
 import { AnalyticsPanel } from "./components/AnalyticsPanel";
 import { formatDurationFromMinutes } from "./format";
 
+// ---------------------------------------------------------------------------
+// Home Task Manager — main frontend module.
+// This single file intentionally hosts the whole app (no router, no per-page
+// component files yet — see docs/BACKLOG.md): a set of reusable panels/dialogs
+// (TaskCatalog, ProfileCatalog, HistoryPanel, NotificationsPanel, etc.) that
+// are all mounted by the root <App/> component near the bottom of this file,
+// which also owns global state (current user, active week, view routing via
+// a hand-rolled `navigate()` instead of a router library) and talks to the
+// ASP.NET Core API defined in src/HomeTaskManager.Api.
+// ---------------------------------------------------------------------------
+
+// --- API DTO mirrors (kept in sync with the C# records in HomeTaskManager.Application) ---
+
+/// A household member profile (see Domain.Entities.User); no email/password (ADR-003).
 type User = {
   id: string;
   displayName: string;
@@ -16,6 +30,7 @@ type User = {
   isActive: boolean;
   availabilityPercentage: number;
 };
+/// A reusable task definition (see Domain.Entities.TaskTemplate).
 type Template = {
   id: string;
   title: string;
@@ -32,6 +47,7 @@ type Template = {
   weeklyScheduleType?: string;
   distributeDailyMandatory?: boolean;
 };
+/// A concrete weekly occurrence of a Template (see Domain.Entities.TaskInstance); Original* fields are set only for carry-over instances.
 type Instance = {
   id: string;
   taskTemplateId: string;
@@ -46,6 +62,7 @@ type Instance = {
   originalDueDate?: string;
   assignedUserId?: string;
 };
+/// One entry of the append-only audit trail (see Domain.Entities.AuditLog).
 type AuditLog = {
   id: string;
   entityType: string;
@@ -56,6 +73,7 @@ type AuditLog = {
   newValue?: string;
   performedAt: string;
 };
+/// One execution of the assignment engine for a week (see Domain.Entities.AssignmentRun).
 type AssignmentRun = {
   id: string;
   weekId: string;
@@ -65,6 +83,7 @@ type AssignmentRun = {
   notes?: string;
   generatedAt: string;
 };
+/// A comment on a task instance, optionally a reply via a parent id encoded server-side.
 type TaskComment = {
   id: string;
   taskInstanceId: string;
@@ -73,6 +92,7 @@ type TaskComment = {
   createdAt: string;
 };
 type CommentReaction = { id: string; commentId: string; userId: string; reactionType: string; createdAt: string };
+/// One candidate considered (and whether retained) at a decision point of the assignment explanation (BR-033).
 type ExplanationCandidate = {
   userId: string;
   displayName: string;
@@ -80,12 +100,14 @@ type ExplanationCandidate = {
   selected: boolean;
   reason: string | null;
 };
+/// One step of the "why was this task assigned this way" decision trace (BR-033).
 type ExplanationStep = {
   kind: string;
   title: string;
   summary: string;
   candidates: ExplanationCandidate[] | null;
 };
+/// Full decision trace for a single task instance's assignment.
 type AssignmentExplanation = {
   taskInstanceId: string;
   assignedUserId: string;
@@ -94,6 +116,7 @@ type AssignmentExplanation = {
   generatedAt: string;
   steps: ExplanationStep[];
 };
+/// An in-app notification for the current user.
 type NotificationItem = {
   id: string;
   title: string;
@@ -102,11 +125,13 @@ type NotificationItem = {
   isRead: boolean;
   createdAt: string;
 };
+/// One logged execution of a "daily flexible" task.
 type FlexibleExecution = {
   id: string;
   executionDate: string;
   createdAt: string;
 };
+/// Aggregated task counts for a week, used in list/summary views.
 type WeekSummary = {
   year: number;
   week: number;
@@ -116,6 +141,7 @@ type WeekSummary = {
   endDate: string;
 };
 type WeekStatus = "Active" | "Closed";
+/// An ISO week (or a sub-segment of it after a mid-week closure), see Domain.Entities.Week.
 type WeekPeriod = {
   id: string;
   year: number;
@@ -218,6 +244,7 @@ const demoInstances: Instance[] = [
   },
 ];
 
+/** Computes the ISO-8601 {year, week} for a given date (client-side mirror of Domain.ValueObjects.WeekKey.FromDate). */
 function isoWeek(date = new Date()) {
   const value = new Date(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
@@ -231,6 +258,7 @@ function isoWeek(date = new Date()) {
   };
 }
 
+/** Computes the Monday that starts a given ISO week number/year (client-side mirror of Domain.ValueObjects.WeekKey). */
 function weekStart(year: number, week: number) {
   const januaryFourth = new Date(year, 0, 4);
   const monday = new Date(januaryFourth);
@@ -243,24 +271,28 @@ function weekStart(year: number, week: number) {
   return monday;
 }
 
+/** "S03 · 12 janvier - 18 janvier 2026" style label built only from a year/week number, used before a WeekPeriod is loaded. */
 function weekPeriodLabel(year: number, week: number) {
   const start = weekStart(year, week);
   const end = new Date(start.getTime() + 6 * 86400000);
   return `S${String(week).padStart(2, "0")} · ${start.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} - ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
 }
 
+/** Same label as weekPeriodLabel but from an already-loaded WeekPeriod's own start/end dates (correct even for a split segment). */
 function periodLabel(period: WeekPeriod) {
   const start = new Date(period.startDate);
   const end = new Date(period.endDate);
   return `S${String(period.weekNumber).padStart(2, "0")} · ${start.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} - ${end.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
 }
 
+/** Formats a period's StartsAt/EndsAt/ClosedAt timestamp for display, or null when the value is absent. */
 function periodTimeLabel(value?: string) {
   return value
     ? new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })
     : null;
 }
 
+/** "Lundi 12 janvier" style label (capitalized) for the dashboard's "today" header. */
 function todayFullLabel(date: Date) {
   const label = date.toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -270,6 +302,7 @@ function todayFullLabel(date: Date) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+/** Renders a task date per the user's DateDisplayFormat preference: full weekday name, or a plain numeric date. */
 function formatTaskDate(
   value: string,
   format: "Weekday" | "Numeric",
@@ -286,6 +319,7 @@ function formatTaskDate(
   );
 }
 
+/** Resolves which week/date a carry-over instance originally came from, falling back to "the day before due date" when the API didn't provide Original* fields (older data). */
 function carryOverOrigin(instance: Instance) {
   if (
     instance.originalWeekYear &&
@@ -334,10 +368,12 @@ const viewRoutes: Record<string, string> = {
   "/assignment-engine": "Moteur d’affectation",
 };
 
+/** Maps a pathname (there is no router library; navigation is handled manually via history.pushState) to its sidebar label, defaulting to the week dashboard. */
 function viewFromPath(pathname: string) {
   return viewRoutes[pathname] ?? "Semaine";
 }
 
+/** Recovers a task's title from an auto-generated assignment notification's message text (used to build a deep link for old notifications missing an explicit instanceId, see DevelopmentController.BackfillNotificationInstanceLinks). */
 function extractTaskTitleFromNotification(message: string) {
   const marker = " vous a été affectée";
   const markerIndex = message.indexOf(marker);
@@ -346,6 +382,7 @@ function extractTaskTitleFromNotification(message: string) {
   return value.length > 0 ? value : null;
 }
 
+/** Extracts a friendly error message from an API error response body, falling back to a generic message if the body isn't the expected `{ error: string }` shape. */
 async function readApiError(response: Response, fallback: string) {
   try {
     const payload = await response.json();
@@ -397,6 +434,7 @@ const weekDayOptions = [
   { value: 0, label: "Dimanche" },
 ];
 
+/** Small "i" icon that reveals a CSS tooltip on hover/focus, used next to less obvious form fields. */
 function FieldInfo({ text }: { text: string }) {
   return (
     <span className="field-info">
@@ -412,14 +450,17 @@ function FieldInfo({ text }: { text: string }) {
   );
 }
 
+/** Sub-form for a Monthly task template's due-date rule (start/middle/end of month, or a specific day). */
 function MonthlyScheduleField({ scheduleType, day, onScheduleTypeChange, onDayChange }: { scheduleType: string; day: string; onScheduleTypeChange: (value: string) => void; onDayChange: (value: string) => void }) {
   return <fieldset className="monthly-schedule-field"><legend>Date mensuelle<FieldInfo text="La tâche sera générée dans la semaine contenant cette date. Pour un jour précis, les mois plus courts utilisent leur dernier jour." /></legend><div className="monthly-schedule-controls"><select value={scheduleType} onChange={(event) => onScheduleTypeChange(event.target.value)}><option value="StartOfMonth">Début du mois (1)</option><option value="MiddleOfMonth">Milieu du mois (15)</option><option value="EndOfMonth">Fin du mois</option><option value="SpecificDay">Jour précis</option></select>{scheduleType === "SpecificDay" && <input type="number" min="1" max="31" value={day} onChange={(event) => onDayChange(event.target.value)} aria-label="Jour du mois" />}</div></fieldset>;
 }
 
+/** Sub-form for a Weekly task template's due-date rule (start/middle/end of week). */
 function WeeklyScheduleField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return <fieldset className="weekly-schedule-field"><legend>Échéance dans la semaine<FieldInfo text="Ce choix fixe la date limite de la tâche : lundi, jeudi ou dimanche." /></legend><select value={value} onChange={(event) => onChange(event.target.value)}><option value="StartOfWeek">Début de semaine (lundi)</option><option value="MiddleOfWeek">Milieu de semaine (jeudi)</option><option value="EndOfWeek">Fin de semaine (dimanche)</option></select></fieldset>;
 }
 
+/** Generic loading placeholder (animated skeleton rows) shown while a panel's data is being fetched. */
 function PanelSkeleton({ rows = 4 }: { rows?: number }) {
   return (
     <div className="panel-skeleton" aria-busy="true" aria-label="Chargement">
@@ -437,6 +478,7 @@ function PanelSkeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
+/** Loading placeholder for the profile-selection screen, shown while active profiles are being fetched. */
 function ProfileListSkeleton() {
   return (
     <div
@@ -603,6 +645,7 @@ function ReminderFields({ api, template }: { api: string; template: Template }) 
   );
 }
 
+/** Standalone "Rappels" modal opened from the task catalog row, wrapping ReminderFields in its own dialog. */
 function ReminderDialog({
   api,
   template,
@@ -635,6 +678,7 @@ function ReminderDialog({
   );
 }
 
+/** Modal form to create a new task template, covering every FrequencyType's specific fields plus an optional initial reminder. */
 function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -682,6 +726,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
     event.preventDefault();
     const score = Number(difficulty);
     if (!title.trim()) return setError("Le titre est obligatoire.");
+    // Client-side pre-check for instant feedback; the API still enforces uniqueness authoritatively (BR-002-like rule for templates).
     if (
       templates.some(
         (template) =>
@@ -935,6 +980,7 @@ function CreateTaskDialog({ api, user, templates, onCreated }: TaskFormProps) {
   );
 }
 
+/** Modal form to edit an existing task template; can auto-open directly on its "manage reminders" section (initialRemindersOpen) via a deep-linked notification. */
 function EditTaskDialog({
   api,
   user,
@@ -1213,6 +1259,7 @@ function EditTaskDialog({
   );
 }
 
+/** Admin/author task-template management screen: search/filter the catalog and launch the create/edit dialogs. */
 function TaskCatalog({
   templates,
   users,
@@ -1381,6 +1428,7 @@ function TaskCatalog({
   );
 }
 
+/** Admin-only modal to edit another user's profile (name/role/availability/active flag). */
 function EditProfileDialog({
   user,
   users,
@@ -1507,6 +1555,7 @@ function EditProfileDialog({
   );
 }
 
+/** Admin-only participant management screen: lists all profiles and launches profile creation/edit dialogs. */
 function ProfileCatalog({
   users,
   api,
@@ -1706,6 +1755,7 @@ const engineInfo: Record<string, { title: string; summary: string; detail: strin
   },
 };
 
+/** Admin-only screen to tune the assignment engine's parameters (BR-058: priority multipliers, equity window, penalty weight, strategy). */
 function EngineSettingsPanel({
   api,
   user,
@@ -1897,6 +1947,7 @@ function EngineSettingsPanel({
   );
 }
 
+/** Loading placeholder for HistoryPanel's audit log list. */
 function HistoryActivitySkeleton() {
   return (
     <div
@@ -1918,10 +1969,12 @@ function HistoryActivitySkeleton() {
   );
 }
 
+/** Reserved placeholder for a future calendar-style activity view; currently unimplemented (renders nothing). */
 function ActivityCalendar({ entries: _entries }: { entries?: AuditLog[] }) {
   return null;
 }
 
+/** Audit trail viewer (BR-033): admins see every action, filterable/sortable and paged; non-admins see only their own history. */
 function HistoryPanel({
   api,
   users,
@@ -2222,6 +2275,7 @@ function HistoryPanel({
   );
 }
 
+/** Current user's own settings: notification preference (All/Important/None) and date display format (Weekday/Numeric). */
 function PreferencesPanel({
   api,
   dateDisplayFormat,
@@ -2339,6 +2393,7 @@ function PreferencesPanel({
   );
 }
 
+/** Paged in-app notification center for the current user; reports the unread count up to the sidebar badge. */
 function NotificationsPanel({
   api,
   onUnreadChange,
@@ -2551,6 +2606,7 @@ const explanationStepIcons: Record<string, string> = {
   SingleOwner: "🔒",
 };
 
+/** Renders the BR-033 "why was this assigned this way" decision trace for one task instance, if one was recorded. */
 function AssignmentExplanationPanel({
   api,
   instanceId,
@@ -2662,6 +2718,7 @@ function AssignmentExplanationPanel({
   );
 }
 
+/** Threaded comments + emoji reactions for a task instance, restricted (server-side) to the assigned participant and admins. */
 function CommentsPanel({
   api,
   instanceId,
@@ -2781,6 +2838,7 @@ function CommentsPanel({
   );
 }
 
+/** Logs an execution of a DailyFlexible task instance for a chosen date, and lists past executions. */
 function FlexibleExecutionPanel({
   api,
   instance,
@@ -2848,6 +2906,7 @@ function FlexibleExecutionPanel({
   );
 }
 
+/** Admin view of a week's assignment runs (triggering the engine, showing the resulting per-participant load). */
 function AssignmentsPanel({
   instances,
   templates,
@@ -3100,6 +3159,7 @@ function AssignmentsPanel({
   );
 }
 
+/** Admin table of every task instance for a week, with quick reassignment/cancellation actions. */
 function InstanceAdminPanel({
   instances,
   templates,
@@ -3242,7 +3302,14 @@ function InstanceAdminPanel({
   );
 }
 
+/**
+ * Root component: owns the current profile/session, the active week, sidebar navigation (via a hand-rolled
+ * `navigate()` using history.pushState instead of a router), and mounts every panel/dialog above based on
+ * `view` (derived from the URL path) and the `year`/`week`/`instanceId`/... query parameters (used for deep
+ * links from notifications and for switching between historical weeks).
+ */
 function App() {
+  // --- Core data fetched from the API (profiles, task catalog, this week's instances) ---
   const [users, setUsers] = useState<User[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [instances, setInstances] = useState<Instance[]>([]);
@@ -3281,6 +3348,8 @@ function App() {
     useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const api = import.meta.env.VITE_API_URL ?? "";
+  // --- Derive the "current view" (week/instance/template/user being looked at) from the URL's query string,
+  // so a page reload or a deep link (e.g. from a notification) restores the exact same view. ---
   const queryParameters = new URLSearchParams(locationSearch);
   const queryYear = Number(queryParameters.get("year"));
   const queryWeek = Number(queryParameters.get("week"));
@@ -3300,6 +3369,8 @@ function App() {
     (week.year !== activeWeek.year || week.week !== activeWeek.week);
 
   useEffect(() => {
+    // Keep `view`/`locationSearch` in sync with the browser's back/forward navigation (popstate),
+    // since navigate() below updates the URL directly via history.pushState instead of a router.
     const onPopState = () => {
       setView(viewFromPath(window.location.pathname));
       setLocationSearch(window.location.search);
@@ -3312,6 +3383,7 @@ function App() {
     setDelegationTargetId(selected?.assignedUserId ?? "");
   }, [selected?.id, selected?.assignedUserId]);
 
+  /** Minimal client-side "router": pushes a new URL and derives the resulting view/query state from it. */
   function navigate(path: string) {
     const target = new URL(path, window.location.origin);
     window.history.pushState({}, "", path);
@@ -3322,6 +3394,7 @@ function App() {
 
   async function selectProfile(user: User) {
     try {
+      // "Login" is just picking a profile (ADR-003/ADR-006, no password); the server sets an auth cookie.
       const response = await fetch(`${api}/api/users/${user.id}/select`, { method: "POST" });
       if (!response.ok) {
         setNotice("Impossible de sélectionner ce profil.");
@@ -3349,6 +3422,8 @@ function App() {
   }
 
   useEffect(() => {
+    // Main bootstrap/refresh effect: reloads the current profile, the full user/template lists, and the
+    // target week's instances whenever the selected week (via query params) or a manual refresh trigger changes.
     const load = async () => {
       setLoading(true);
       setApiMessage("");
@@ -3433,6 +3508,7 @@ function App() {
 
         setApiError(false);
       } catch (reason) {
+        // API unreachable: fall back to a small built-in demo dataset so the UI remains explorable/screenshot-able offline.
         setApiError(true);
         setApiMessage(
           reason instanceof Error ? reason.message : "API indisponible.",
@@ -3458,6 +3534,8 @@ function App() {
   ]);
 
   useEffect(() => {
+    // Admin-only: also load every participant's instances for the week (not just the current user's),
+    // used by the multi-participant view toggle.
     if (!currentUser?.isAdmin) {
       setAdminInstances([]);
       return;
@@ -3495,9 +3573,11 @@ function App() {
   }, [api, currentUser]);
 
   useEffect(() => {
+    // Non-admins are redirected away from the admin audit journal if they land on it directly (e.g. stale bookmark).
     if (view === "Journal d’audit" && !currentUser?.isAdmin) navigate("/history");
   }, [view, currentUser?.isAdmin]);
 
+  /** Deep-links a notification's target ("/week?year=..&week=..&instanceId=..") into the app's own navigation, supporting a legacy hash-based instance id format for older notifications. */
   function openNotification(notification: NotificationItem) {
     if (!notification.link) return;
 
@@ -3581,6 +3661,7 @@ function App() {
     return () => window.clearInterval(timer);
   }, [api, currentUser]);
 
+  /** Unified handler for the three admin week actions (generate instances / run assignment engine / close week), sharing the busy-state and notice/error UX. */
   async function runWeekAction(action: "generate" | "assign" | "close", cancelIncompleteTasks = false) {
     const closureDate = new Date();
     const periodStartDate = currentPeriod
@@ -3677,6 +3758,7 @@ function App() {
     }
   }
 
+  /** Admin action: rebuilds a mid-week continuation segment for a week that was closed early (see RecoverWeekContinuationUseCase). */
   async function recoverContinuationPeriod() {
     setBusyAction("recover");
     try {
@@ -3700,6 +3782,8 @@ function App() {
   }
 
   const template = (id: string) => templates.find((item) => item.id === id);
+  /** Navigates to the next relevant period: the already-known continuation if one exists, otherwise computes
+   * whether the current period was closed early (next segment of the same ISO week) or normally (next week). */
   function openContinuationPeriod() {
     if (continuationPeriod) {
       const path = `/assignments?year=${continuationPeriod.year}&week=${continuationPeriod.weekNumber}`;
@@ -3720,6 +3804,7 @@ function App() {
     setPeriodRefresh((value) => value + 1);
     setNotice("Recherche de la période active suivante.");
   }
+  /** The current user's task list for the week dashboard: filtered by status/title/type/due-date/overdue, then sorted. */
   const visible = useMemo(() => {
     const mine = instances.filter(
       (item) => item.assignedUserId === currentUser?.id,
@@ -3789,6 +3874,7 @@ function App() {
   const todayTasks = visible.filter((item) => item.dueDate <= today);
   const futureTasks = visible.filter((item) => item.dueDate > today);
 
+  /** Renders one task card in the week dashboard list, including its carry-over/overdue/completed visual states. */
   function renderTask(item: Instance) {
     const pendingSibling = pendingCarryOverSibling(item, instances);
     return (
@@ -3874,9 +3960,11 @@ function App() {
     );
   }
 
+  /** Toggles a task instance's completion with an optimistic UI update, rolling back if the API call fails. */
   async function toggle(item: Instance) {
     if (weekStatus === "Closed") return;
     const next = !item.isCompleted;
+    // Optimistic update: reflect the new state immediately, before the request even resolves.
     setInstances((items) =>
       items.map((entry) =>
         entry.id === item.id ? { ...entry, isCompleted: next } : entry,
@@ -3930,6 +4018,7 @@ function App() {
           : entry,
       );
     } catch (reason) {
+      // Roll back the optimistic update on failure.
       setInstances((items) =>
         items.map((entry) =>
           entry.id === item.id
@@ -3946,6 +4035,7 @@ function App() {
     window.setTimeout(() => setNotice(""), 2200);
   }
 
+  /** Admin/self-service reassignment of one instance, updating both the personal and admin (all-participants) instance lists. */
   async function reassignInstance(instanceId: string, assignedUserId: string) {
     try {
       const response = await fetch(
@@ -3988,6 +4078,7 @@ function App() {
     }
   }
 
+  /** Admin-only: cancels an instance (terminal state, cannot be completed/reassigned afterwards). */
   async function cancelInstance(instanceId: string) {
     try {
       const response = await fetch(
@@ -4021,6 +4112,7 @@ function App() {
     }
   }
 
+  // --- Render: profile selection screen (no session yet) ---
   if (!currentUser)
     return (
       <main className="profile-screen">
@@ -4067,6 +4159,7 @@ function App() {
       </main>
     );
 
+  // --- Render: initial data still loading ---
   if (loading)
     return (
       <main className="app-shell">
@@ -4076,6 +4169,7 @@ function App() {
       </main>
     );
 
+  // --- Render: main app shell (sidebar + top bar + the view selected via the URL, see below) ---
   return (
     <main className="app-shell">
       <button
@@ -4280,6 +4374,7 @@ function App() {
             </button>
           </div>
         )}
+        {/* View router: renders one of the panels above based on `view` (derived from the URL path, see viewFromPath). */}
         {view === "Semaine" ? (
           <>
             <section

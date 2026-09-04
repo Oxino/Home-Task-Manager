@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="IReminderRepository"/>.</summary>
 public sealed class ReminderRepository(HomeTaskManagerDbContext dbContext) : IReminderRepository
 {
     public Task<Reminder?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => dbContext.Reminders.SingleOrDefaultAsync(reminder => reminder.Id == id, cancellationToken);

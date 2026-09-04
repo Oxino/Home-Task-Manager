@@ -3,6 +3,7 @@ using HomeTaskManager.Application.UseCases.TaskInstances;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies Add/Remove/List reaction use cases, including the idempotent-add-when-already-reacted behavior.</summary>
 public sealed class ReactionUseCasesTests
 {
     [Fact]

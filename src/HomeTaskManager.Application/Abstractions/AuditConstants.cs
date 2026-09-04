@@ -12,6 +12,7 @@ public static class AuditEntityTypes
     public const string UserPreferences = "UserPreferences";
 }
 
+/// <summary>Well-known action tags recorded alongside an <see cref="AuditEntityTypes"/> entry.</summary>
 public static class AuditActions
 {
     public const string Created = "Created";

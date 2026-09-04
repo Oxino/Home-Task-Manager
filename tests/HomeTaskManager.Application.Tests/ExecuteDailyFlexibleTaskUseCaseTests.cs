@@ -9,6 +9,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed DailyFlexibleExecution store in tests.</summary>
 public sealed class InMemoryDailyFlexibleExecutionRepository : IDailyFlexibleExecutionRepository
 {
     private readonly List<DailyFlexibleExecution> _executions = [];
@@ -16,6 +17,7 @@ public sealed class InMemoryDailyFlexibleExecutionRepository : IDailyFlexibleExe
     public Task AddAsync(DailyFlexibleExecution execution, CancellationToken cancellationToken = default) { _executions.Add(execution); return Task.CompletedTask; }
 }
 
+/// <summary>Verifies ExecuteDailyFlexibleTaskUseCase logs an execution and spawns the next day's placeholder instance.</summary>
 public sealed class ExecuteDailyFlexibleTaskUseCaseTests
 {
     [Fact]

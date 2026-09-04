@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Admin-only read endpoints backing the analytics dashboard (weekly/monthly load, completion rate, load distribution over time).</summary>
 [ApiController]
 [Route("api/analytics")]
 [Authorize]

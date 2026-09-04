@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.Abstractions.Repositories;
 
+/// <summary>Persists/retrieves per-user <see cref="Notification"/> records (in-app notification center).</summary>
 public interface INotificationRepository
 {
     Task<IReadOnlyList<Notification>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);

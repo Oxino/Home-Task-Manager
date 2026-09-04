@@ -6,6 +6,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Domain.Tests;
 
+/// <summary>Covers the INTELLIGENT_V1 assignment strategy: anti-repetition preference, and the BR-033 explanation steps it produces.</summary>
 public class IntelligentV1StrategyTests
 {
     [Fact]

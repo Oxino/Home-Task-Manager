@@ -9,6 +9,7 @@ namespace HomeTaskManager.Application.UseCases.TaskInstances;
 
 public sealed record CancelTaskInstanceCommand(Guid TaskInstanceId, Guid RequestingUserId);
 
+/// <summary>Admin-only: marks a task instance as cancelled, removing it from the active workload without deleting its history.</summary>
 public interface ICancelTaskInstanceUseCase
 {
     Task<TaskInstanceDto> ExecuteAsync(CancelTaskInstanceCommand command, CancellationToken cancellationToken = default);

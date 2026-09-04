@@ -7,6 +7,7 @@ export function formatDurationFromMinutes(totalMinutes: number): string {
   return `${hours}h${String(minutes).padStart(2, "0")}`;
 }
 
+/** Convenience wrapper when the source value is already in hours (e.g. analytics EstimatedHours) instead of minutes. */
 export function formatDurationFromHours(hours: number): string {
   return formatDurationFromMinutes(hours * 60);
 }

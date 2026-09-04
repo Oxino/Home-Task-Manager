@@ -2,6 +2,7 @@ using HomeTaskManager.Application.Abstractions.Repositories;
 
 namespace HomeTaskManager.Application.UseCases.Analytics;
 
+/// <summary>Aggregates task load (count/points/hours) per participant for a specific calendar month.</summary>
 public interface IGetMonthStatisticsUseCase
 {
     Task<MonthStatisticsDto> ExecuteAsync(int year, int month, CancellationToken cancellationToken = default);
@@ -21,6 +22,7 @@ public sealed class GetMonthStatisticsUseCase(
         var firstDay = new DateOnly(year, month, 1);
         var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
+        // Repository only supports "since a date", so filter the upper bound (end of month) in memory.
         var instances = (await taskInstanceRepository.GetAssignedSinceAsync(firstDay, cancellationToken))
             .Where(instance => instance.PlannedDate <= lastDay)
             .ToList();

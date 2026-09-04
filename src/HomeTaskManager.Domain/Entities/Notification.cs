@@ -3,6 +3,7 @@ using HomeTaskManager.Domain.Enums;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>An in-app notification shown to a single user (reminders, reassignments, etc.), with read/unread state.</summary>
 public sealed class Notification
 {
     private Notification() { }
@@ -30,6 +31,7 @@ public sealed class Notification
     public DateTime? ReadAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
+    /// <summary>Idempotent: calling this on an already-read notification keeps the original ReadAt timestamp.</summary>
     public void MarkAsRead()
     {
         IsRead = true;

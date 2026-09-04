@@ -38,6 +38,7 @@ type LoadDistribution = {
 type ActivityEntry = { performedAt: string; action: string; performedByUserId: string };
 type ActivityUser = { id: string; displayName: string };
 
+/** Formats a possibly-missing/NaN number as a fixed-decimal string, defaulting to "0.0" so the UI never shows "NaN%". */
 function safeNumber(value: number | null | undefined, digits = 1) {
   if (typeof value !== "number" || Number.isNaN(value)) return "0.0";
   return value.toFixed(digits);
@@ -67,6 +68,7 @@ function shiftWeek(current: { year: number; week: number }, delta: number) {
   return isoWeek(new Date(start.getTime() + delta * 7 * 86400000));
 }
 
+/** Sums per-participant rows into a single set of totals, used for the KPI header of each analytics zone. */
 function sumParticipantLoads(rows: ParticipantLoad[]) {
   return rows.reduce(
     (acc, row) => ({
@@ -79,6 +81,7 @@ function sumParticipantLoads(rows: ParticipantLoad[]) {
   );
 }
 
+/** Aggregate KPI cards (total points, estimated time, completion rate) shown above a participant load table. */
 function LoadKpis({ rows }: { rows: ParticipantLoad[] }) {
   const totals = sumParticipantLoads(rows);
   const completion = totals.totalTasks > 0 ? (totals.completedTasks * 100) / totals.totalTasks : 0;
@@ -103,6 +106,7 @@ function LoadKpis({ rows }: { rows: ParticipantLoad[] }) {
   );
 }
 
+/** Per-participant task/points/hours table, reused for both the current week and current month zones. */
 function LoadTable({ rows, emptyLabel }: { rows: ParticipantLoad[]; emptyLabel: string }) {
   return (
     <table className="analytics-table">
@@ -133,6 +137,10 @@ function LoadTable({ rows, emptyLabel }: { rows: ParticipantLoad[]; emptyLabel: 
   );
 }
 
+/**
+ * Admin analytics dashboard: three independent zones (navigable week, fixed current month, global trends)
+ * plus a completion activity calendar, each fetching its own data from the /api/analytics endpoints.
+ */
 export function AnalyticsPanel({ api, weekId, week, users }: { api: string; weekId: string | null; week: { year: number; week: number }; users: ActivityUser[] }) {
   // --- "Semaine courante" zone: navigable week loaded independently from the app's active week. ---
   const [viewedWeek, setViewedWeek] = useState(week);
@@ -252,6 +260,7 @@ export function AnalyticsPanel({ api, weekId, week, users }: { api: string; week
   const activityLeadingDays = (firstActivityDay.getDay() + 6) % 7;
   const activityCells = Array.from({ length: activityLeadingDays + activityDaysInMonth }, (_, index) => index < activityLeadingDays ? null : index - activityLeadingDays + 1);
   const participantName = (id: string) => users.find((user) => user.id === id)?.displayName ?? "Participant inconnu";
+  /** Per-participant completion counts for one calendar day, used to build the activity calendar's day tooltip. */
   const activityDetails = (day: number) => {
     const entries = visibleActivityEntries.filter((entry) => {
       const date = new Date(entry.performedAt);

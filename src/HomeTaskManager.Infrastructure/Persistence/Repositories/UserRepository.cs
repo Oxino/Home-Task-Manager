@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="IUserRepository"/>.</summary>
 public sealed class UserRepository(HomeTaskManagerDbContext dbContext) : IUserRepository
 {
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>

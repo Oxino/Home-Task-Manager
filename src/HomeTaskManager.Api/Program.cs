@@ -31,6 +31,8 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers()
+    // Enums are serialized as their string name (e.g. "Critical") instead of a numeric value, so the frontend
+    // never has to hardcode magic numbers matching the C# enum order.
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -41,6 +43,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.ExpireTimeSpan = TimeSpan.FromHours(12);
         options.SlidingExpiration = true;
+        // The default cookie auth handler redirects to a login page (HTML app assumption); this API
+        // instead returns plain 401/403 status codes for the SPA frontend to handle.
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -62,6 +66,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    // Auto-apply pending EF migrations on startup in Development only; Production deployments are expected
+    // to run migrations explicitly as part of the release process instead of on every app boot.
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<HomeTaskManagerDbContext>();
     dbContext.Database.Migrate();

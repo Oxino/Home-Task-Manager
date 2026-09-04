@@ -10,6 +10,7 @@ namespace HomeTaskManager.Application.UseCases.TaskInstances;
 
 public sealed record ReassignTaskInstanceCommand(Guid TaskInstanceId, Guid RequestingUserId, Guid AssignedUserId);
 
+/// <summary>ADR-013: manually re-points a task instance to a different (active) participant, notifying them.</summary>
 public interface IReassignTaskInstanceUseCase
 {
     Task<TaskInstanceDto> ExecuteAsync(ReassignTaskInstanceCommand command, CancellationToken cancellationToken = default);
@@ -45,6 +46,8 @@ public sealed class ReassignTaskInstanceUseCase(
 
         var previousUserId = instance.AssignedUserId;
         instance.Reassign(command.AssignedUserId);
+        // Best-effort notification: silently proceeds without notifying if the optional dependencies weren't wired
+        // (e.g. in tests), since notification delivery is not part of this use case's core contract.
         var notificationPreference = userPreferencesRepository is null
             ? "All"
             : (await userPreferencesRepository.GetByUserIdAsync(assignedUser.Id, cancellationToken))?.NotificationPreference ?? "All";

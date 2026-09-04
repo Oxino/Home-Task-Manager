@@ -2,6 +2,7 @@ using HomeTaskManager.Application.Abstractions.Repositories;
 
 namespace HomeTaskManager.Application.UseCases.TaskTemplates;
 
+/// <summary>Lists task templates flagged active, e.g. to populate the weekly instance generation catalog.</summary>
 public interface IListActiveTaskTemplatesUseCase
 {
     Task<IReadOnlyList<TaskTemplateDto>> ExecuteAsync(CancellationToken cancellationToken = default);

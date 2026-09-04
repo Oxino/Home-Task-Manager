@@ -6,6 +6,7 @@ using HomeTaskManager.Application.UseCases.Users;
 
 namespace HomeTaskManager.Api.Tests;
 
+/// <summary>End-to-end HTTP tests of profile-based "authentication" (ADR-003/ADR-006): create, select, and the resulting auth cookie session.</summary>
 public sealed class UserAuthenticationTests : IDisposable
 {
     private readonly HomeTaskManagerApiFactory _factory = new();

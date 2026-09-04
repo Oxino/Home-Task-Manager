@@ -8,6 +8,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed UserPreferences store in tests.</summary>
 public sealed class InMemoryUserPreferencesRepository : IUserPreferencesRepository
 {
     private readonly List<UserPreferences> _preferences = [];
@@ -16,6 +17,7 @@ public sealed class InMemoryUserPreferencesRepository : IUserPreferencesReposito
     public void Seed(UserPreferences preferences) => _preferences.Add(preferences);
 }
 
+/// <summary>Verifies RunAssignmentEngineUseCase respects each participant's NotificationPreference when notifying about new assignments.</summary>
 public sealed class RunAssignmentEngineNotificationPreferenceTests
 {
     [Fact]

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Add/remove/list emoji-style reactions on task comments.</summary>
 [ApiController]
 [Route("api/comments")]
 [Authorize]
@@ -15,6 +16,8 @@ public sealed class ReactionsController(
     [HttpPost("{commentId}/reactions")]
     public async Task<ActionResult<object>> AddReaction(Guid commentId, [FromBody] AddReactionRequest request, CancellationToken cancellationToken)
     {
+        // Reads the user id directly from the claim instead of the shared CurrentUserExtensions helper
+        // (kept here as-is; both resolve to the same standard ClaimTypes.NameIdentifier claim).
         var userId = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
         if (!Guid.TryParse(userId, out var parsedUserId)) return Unauthorized();
 

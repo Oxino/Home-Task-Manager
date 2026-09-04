@@ -15,6 +15,7 @@ using HomeTaskManager.Domain.Enums;
 
 namespace HomeTaskManager.Api.Tests;
 
+/// <summary>End-to-end HTTP tests of the full weekly workflow: generate instances, run the assignment engine, complete/reassign tasks, and close the week.</summary>
 public sealed class TaskWeeklyWorkflowTests : IDisposable
 {
     private readonly HomeTaskManagerApiFactory _factory = new();

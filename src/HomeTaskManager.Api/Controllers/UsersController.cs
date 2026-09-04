@@ -10,6 +10,7 @@ using HomeTaskManager.Application.Abstractions.Repositories;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Profile management: listing selectable profiles, "logging in" via profile selection (ADR-003/ADR-006, cookie-based session), and admin CRUD on profiles.</summary>
 [ApiController]
 [Route("api/users")]
 public class UsersController(
@@ -60,6 +61,7 @@ public class UsersController(
         try
         {
             var profile = await selectProfileUseCase.ExecuteAsync(id, cancellationToken);
+            // No password: "authentication" is simply issuing an auth cookie for the selected profile's identity/role.
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, profile.Id.ToString()),

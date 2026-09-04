@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.Abstractions.Repositories;
 
+/// <summary>Read access to the append-only <see cref="AuditLog"/> trail, including a filtered/sorted/paged query for the admin audit screen.</summary>
 public interface IAuditLogRepository
 {
     Task<IReadOnlyList<AuditLog>> GetByEntityAsync(string entityType, Guid entityId, CancellationToken cancellationToken = default);

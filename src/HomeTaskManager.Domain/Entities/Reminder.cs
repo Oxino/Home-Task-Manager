@@ -3,6 +3,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>A configured reminder rule attached to a <see cref="TaskTemplate"/> (e.g. "1 day before the due date"); notifications are generated from these by <c>ProcessReminderNotificationsUseCase</c>.</summary>
 public sealed class Reminder
 {
     private Reminder() { }

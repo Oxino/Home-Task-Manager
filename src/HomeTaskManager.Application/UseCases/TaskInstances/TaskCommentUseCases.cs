@@ -9,6 +9,7 @@ namespace HomeTaskManager.Application.UseCases.TaskInstances;
 public sealed record TaskCommentDto(Guid Id, Guid TaskInstanceId, Guid AuthorUserId, string Content, DateTime CreatedAt);
 public sealed record AddTaskCommentCommand(Guid TaskInstanceId, Guid RequestingUserId, string Content);
 
+/// <summary>Threaded discussion attached to a task instance; access restricted to admins and the assigned participant.</summary>
 public interface ITaskCommentUseCase
 {
     Task<IReadOnlyList<TaskCommentDto>> ListAsync(Guid taskInstanceId, Guid requestingUserId, CancellationToken cancellationToken = default);

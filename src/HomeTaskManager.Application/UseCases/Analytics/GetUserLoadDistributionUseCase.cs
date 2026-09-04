@@ -3,6 +3,7 @@ using System.Globalization;
 
 namespace HomeTaskManager.Application.UseCases.Analytics;
 
+/// <summary>Breaks down each user's assigned/completed task counts week by week over the last 20 weeks, to visualize load trends.</summary>
 public interface IGetUserLoadDistributionUseCase
 {
     Task<UserLoadDistributionDto> ExecuteAsync(CancellationToken cancellationToken = default);
@@ -20,6 +21,7 @@ public sealed class GetUserLoadDistributionUseCase(
 {
     public async Task<UserLoadDistributionDto> ExecuteAsync(CancellationToken cancellationToken = default)
     {
+        // 140 days ≈ 20 weeks: enough history to plot a meaningful trend line without scanning the whole database.
         var instances = await taskInstanceRepository.GetAssignedSinceAsync(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-140), cancellationToken);
         var users = await userRepository.GetAllAsync(cancellationToken);
 

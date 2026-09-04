@@ -41,6 +41,7 @@ public sealed class UpdateAssignmentEngineSettingsUseCase(
             throw new ForbiddenOperationException("Only an administrator can change the assignment engine settings.");
         }
 
+        // --- Business-rule validation for every parameter before persisting anything (BR-058). ---
         if (command.LowPriorityMultiplier <= 0 || command.NormalPriorityMultiplier <= 0 || command.CriticalPriorityMultiplier <= 0)
         {
             throw new DomainValidationException("Priority multipliers must be strictly positive.");
@@ -67,6 +68,8 @@ public sealed class UpdateAssignmentEngineSettingsUseCase(
             throw new DomainValidationException("The selected assignment engine is not supported.");
         }
 
+        // Each parameter is stored as its own SystemSetting row (upserted); this is a small settings
+        // set so a full transaction isn't needed until the final SaveChangesAsync commits everything atomically.
         await UpsertAsync(AssignmentEngineSettingKeys.LowPriorityMultiplier, command.LowPriorityMultiplier, requestingUser.Id, cancellationToken);
         await UpsertAsync(AssignmentEngineSettingKeys.NormalPriorityMultiplier, command.NormalPriorityMultiplier, requestingUser.Id, cancellationToken);
         await UpsertAsync(AssignmentEngineSettingKeys.CriticalPriorityMultiplier, command.CriticalPriorityMultiplier, requestingUser.Id, cancellationToken);
@@ -104,6 +107,7 @@ public sealed class UpdateAssignmentEngineSettingsUseCase(
         var existing = await systemSettingRepository.GetByKeyAsync(key, cancellationToken);
         if (existing is null)
         {
+            // First time this key is set: create the row instead of updating a non-existent one.
             await systemSettingRepository.AddAsync(new SystemSetting(key, value, updatedByUserId), cancellationToken);
             return;
         }

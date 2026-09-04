@@ -8,6 +8,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed TaskTemplate store in tests.</summary>
 public sealed class InMemoryTaskTemplateRepository : ITaskTemplateRepository
 {
     private readonly List<TaskTemplate> _taskTemplates = [];
@@ -39,6 +40,7 @@ public sealed class InMemoryTaskTemplateRepository : ITaskTemplateRepository
     }
 }
 
+/// <summary>Verifies CreateTaskTemplateUseCase's title-uniqueness enforcement and inactive-author guard.</summary>
 public class CreateTaskTemplateUseCaseTests
 {
     [Fact]
@@ -90,6 +92,7 @@ public class CreateTaskTemplateUseCaseTests
     }
 }
 
+/// <summary>Verifies UpdateTaskTemplateUseCase's author/admin-only authorization (BR-037) and title-uniqueness re-check.</summary>
 public class UpdateTaskTemplateUseCaseTests
 {
     [Fact]

@@ -8,6 +8,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed User store in tests.</summary>
 public sealed class InMemoryUserRepository : IUserRepository
 {
     private readonly List<User> _users = [];
@@ -36,11 +37,13 @@ public sealed class InMemoryUserRepository : IUserRepository
     }
 }
 
+/// <summary>No-op IUnitOfWork fake: in-memory repositories don't need an actual SaveChanges to persist.</summary>
 public sealed class NoOpUnitOfWork : IUnitOfWork
 {
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => Task.FromResult(0);
 }
 
+/// <summary>No-op IAuditLogger fake for tests that don't assert on the audit trail.</summary>
 public sealed class NoOpAuditLogger : IAuditLogger
 {
     public Task LogAsync(
@@ -53,6 +56,7 @@ public sealed class NoOpAuditLogger : IAuditLogger
         CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
+/// <summary>Verifies CreateUserUseCase's DisplayName-uniqueness rule (BR-002) and the BR-017 admin-bootstrap restriction.</summary>
 public class CreateUserUseCaseTests
 {
     [Fact]
@@ -115,6 +119,7 @@ public class CreateUserUseCaseTests
     }
 }
 
+/// <summary>Verifies ListActiveProfilesUseCase only returns active profiles.</summary>
 public class ListActiveProfilesUseCaseTests
 {
     [Fact]
@@ -134,6 +139,7 @@ public class ListActiveProfilesUseCaseTests
     }
 }
 
+/// <summary>Verifies SelectProfileUseCase rejects inactive profiles (BR-004).</summary>
 public class SelectProfileUseCaseTests
 {
     [Fact]

@@ -7,6 +7,7 @@ using HomeTaskManager.Application.UseCases.Users;
 
 namespace HomeTaskManager.Api.Tests;
 
+/// <summary>Verifies DevelopmentOnlyAttribute-gated endpoints return 404 outside Development, using HomeTaskManagerApiProductionFactory.</summary>
 public sealed class DevelopmentEndpointsTests : IDisposable
 {
     private readonly HomeTaskManagerApiProductionFactory _factory = new();

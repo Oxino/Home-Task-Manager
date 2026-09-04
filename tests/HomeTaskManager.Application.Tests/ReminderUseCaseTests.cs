@@ -8,6 +8,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed Reminder store in tests.</summary>
 public sealed class InMemoryReminderRepository : IReminderRepository
 {
     private readonly List<Reminder> _reminders = [];
@@ -17,6 +18,7 @@ public sealed class InMemoryReminderRepository : IReminderRepository
     public Task<IReadOnlyList<Reminder>> GetEnabledAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Reminder>>(_reminders.Where(reminder => reminder.IsEnabled).ToList());
 }
 
+/// <summary>Verifies ReminderUseCase's add/list/enable-disable operations and author/admin-only access.</summary>
 public sealed class ReminderUseCaseTests
 {
     [Fact]

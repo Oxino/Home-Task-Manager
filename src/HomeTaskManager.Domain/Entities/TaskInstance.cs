@@ -3,6 +3,10 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>
+/// A single concrete occurrence of a <see cref="TaskTemplate"/> generated for one week (ADR-001): e.g. a daily
+/// mandatory template produces 7 instances. Editing the template never alters instances already generated (BR-047).
+/// </summary>
 public sealed class TaskInstance
 {
     private TaskInstance()
@@ -73,11 +77,13 @@ public sealed class TaskInstance
 
     public DateTime UpdatedAt { get; private set; }
 
+    /// <summary>Sets completion using the current time; use <see cref="SetCompletionAt"/> to backdate (e.g. imports/tests).</summary>
     public void SetCompletion(bool isCompleted, Week week)
     {
         SetCompletionAt(isCompleted, week, DateTime.UtcNow);
     }
 
+    /// <summary>BR-043/BR-055: completion is freely toggled while the week is active, but frozen once the week is closed.</summary>
     public void SetCompletionAt(bool isCompleted, Week week, DateTime completedAt)
     {
         if (week.Id != WeekId)
@@ -101,6 +107,7 @@ public sealed class TaskInstance
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>Used when re-importing/reconstructing history: restores a past completion timestamp without going through the normal completion flow.</summary>
     public void RestoreCompletionAt(DateTime completedAt)
     {
         if (!IsCompleted) throw new DomainValidationException("Only completed task instances can restore a completion date.");
@@ -118,6 +125,7 @@ public sealed class TaskInstance
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>First assignment of this instance by an <see cref="AssignmentRun"/> (the assignment engine).</summary>
     public void Assign(Guid assignmentRunId, Guid userId)
     {
         if (Status == TaskInstanceStatus.Cancelled)
@@ -130,6 +138,7 @@ public sealed class TaskInstance
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>Manual admin reassignment to a different user (ADR-013), keeping the original AssignmentRunId.</summary>
     public void Reassign(Guid userId)
     {
         if (Status == TaskInstanceStatus.Completed || IsCompleted)

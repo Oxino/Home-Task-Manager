@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>Generic key/value store for admin-configurable settings (e.g. assignment engine parameters, BR-058), audited via UpdatedByUserId/UpdatedAt.</summary>
 public sealed class SystemSetting
 {
     private SystemSetting()

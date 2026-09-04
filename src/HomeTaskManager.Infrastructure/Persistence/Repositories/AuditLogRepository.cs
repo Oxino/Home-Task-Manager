@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="IAuditLogRepository"/>.</summary>
 public sealed class AuditLogRepository(HomeTaskManagerDbContext dbContext) : IAuditLogRepository
 {
     public async Task<IReadOnlyList<AuditLog>> GetByEntityAsync(
@@ -38,6 +39,8 @@ public sealed class AuditLogRepository(HomeTaskManagerDbContext dbContext) : IAu
         if (performerId.HasValue) query = query.Where(entry => entry.PerformedByUserId == performerId.Value);
         if (!string.IsNullOrWhiteSpace(entityType)) query = query.Where(entry => entry.EntityType == entityType);
         if (!string.IsNullOrWhiteSpace(action)) query = query.Where(entry => entry.Action == action);
+        // "admin"/"user" are UI-facing groupings (not a stored field) inferred heuristically from the action/entity/payload,
+        // so the audit screen can offer a coarse filter without adding a dedicated category column to AuditLog.
         if (category == "admin") query = query.Where(entry => entry.Action == "Reassigned" || entry.Action == "Cancelled" || entry.Action == "Executed" || entry.Action == "Generated" || entry.Action == "Closed" || entry.EntityType == "User" || entry.EntityType == "AssignmentEngineSettings" || (entry.Action == "Updated" && entry.EntityType == "TaskTemplate" && entry.NewValue != null && entry.NewValue.Contains("IsActive")));
         if (category == "user") query = query.Where(entry => entry.Action == "CompletionChanged" || entry.Action == "CommentAdded" || EF.Functions.Like(entry.EntityType, "%Preference%") || (entry.Action == "Updated" && entry.NewValue != null && (entry.NewValue.Contains("DateDisplayFormat") || entry.NewValue.Contains("NotificationsEnabled"))) || (entry.EntityType == "TaskTemplate" && entry.Action == "Created") || (entry.EntityType == "TaskTemplate" && entry.Action == "Updated" && entry.NewValue != null && !entry.NewValue.Contains("IsActive")));
         var totalCount = await query.CountAsync(cancellationToken);

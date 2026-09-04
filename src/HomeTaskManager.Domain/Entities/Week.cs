@@ -4,6 +4,11 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>
+/// An ISO-8601 week (ADR-008, BR-038), the unit every assignment run and task instance is rattached to.
+/// A week can be split into several "segments" (e.g. vacations changing the working period mid-week), hence
+/// SegmentNumber/StartDate/EndDate can be a sub-range of the full calendar week identified by <see cref="WeekKey"/>.
+/// </summary>
 public sealed class Week
 {
     private Week()
@@ -74,6 +79,7 @@ public sealed class Week
 
     public DateTime? ClosedAt { get; private set; }
 
+    /// <summary>BR-043: freezes the week so task completion and assignments can no longer change (ADR-011).</summary>
     public void Close(DateTime? closedAt = null)
     {
         if (Status == WeekStatus.Closed)

@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeTaskManager.Infrastructure;
 
+/// <summary>Registers the DbContext (SQLite by default, PostgreSQL when configured), every repository, and the technical services; called once from the Api's Program.cs.</summary>
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
@@ -19,6 +20,7 @@ public static class DependencyInjection
 
         services.AddDbContext<HomeTaskManagerDbContext>(options =>
         {
+            // Self-hosted app defaults to a local SQLite file; PostgreSQL is opt-in via configuration for larger deployments.
             if (provider == "POSTGRESQL")
             {
                 options.UseNpgsql(connectionString);
@@ -46,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IAssignmentExplanationRepository, AssignmentExplanationRepository>();
 
         services.AddScoped<INotificationService, NotificationService>();
+        // Singleton is safe: SystemClock is stateless and just reads DateTime.UtcNow.
         services.AddSingleton<IClock, SystemClock>();
 
         return services;

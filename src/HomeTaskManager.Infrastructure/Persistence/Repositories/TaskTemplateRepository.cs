@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="ITaskTemplateRepository"/>.</summary>
 public sealed class TaskTemplateRepository(HomeTaskManagerDbContext dbContext) : ITaskTemplateRepository
 {
     public Task<TaskTemplate?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -18,6 +19,7 @@ public sealed class TaskTemplateRepository(HomeTaskManagerDbContext dbContext) :
     public async Task<IReadOnlyList<TaskTemplate>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await dbContext.TaskTemplates.OrderBy(task => task.Title).ToListAsync(cancellationToken);
 
+    // Case-insensitive comparison since the unique DB index on Title is case-sensitive by default (SQLite/Postgres).
     public Task<bool> ExistsByTitleAsync(string title, CancellationToken cancellationToken = default) =>
         dbContext.TaskTemplates.AnyAsync(task => task.Title.ToLower() == title.ToLower(), cancellationToken);
 

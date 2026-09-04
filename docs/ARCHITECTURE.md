@@ -40,7 +40,7 @@ Caractéristiques structurantes :
 │                          Frontend (React)                      │
 │         Écrans, composants, appels API, état local             │
 └───────────────────────────────▲───────────────────────────────┘
-                                 │ HTTP/JSON (REST)
+                                │ HTTP/JSON (REST)
 ┌───────────────────────────────┴───────────────────────────────┐
 │                              API                               │
 │   Endpoints REST, validation, mapping DTO, authz, DI          │

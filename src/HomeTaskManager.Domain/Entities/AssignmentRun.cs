@@ -1,5 +1,6 @@
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>One execution of the assignment engine for a given <see cref="Week"/> (manual or automatic, BR-038/BR-041). Re-running overwrites the week's existing assignments.</summary>
 public sealed class AssignmentRun
 {
     private AssignmentRun()

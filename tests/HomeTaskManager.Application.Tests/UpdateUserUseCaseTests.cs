@@ -6,6 +6,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies UpdateUserUseCase's admin-only authorization and DisplayName-uniqueness re-check.</summary>
 public sealed class UpdateUserUseCaseTests
 {
     [Fact]

@@ -7,6 +7,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed Week store in tests.</summary>
 public sealed class InMemoryWeekRepository : IWeekRepository
 {
     private readonly List<Week> _weeks = [];
@@ -35,6 +36,7 @@ public sealed class InMemoryWeekRepository : IWeekRepository
     }
 }
 
+/// <summary>In-memory fake standing in for the EF-backed TaskInstance store in tests.</summary>
 public sealed class InMemoryTaskInstanceRepository : ITaskInstanceRepository
 {
     private readonly List<TaskInstance> _instances = [];
@@ -62,6 +64,7 @@ public sealed class InMemoryTaskInstanceRepository : ITaskInstanceRepository
     public void RemoveRange(IEnumerable<TaskInstance> instances) => _instances.RemoveAll(instance => instances.Contains(instance));
 }
 
+/// <summary>Verifies GenerateWeekInstancesUseCase's per-FrequencyType date computation and its idempotency on re-runs.</summary>
 public class GenerateWeekInstancesUseCaseTests
 {
     private static TaskTemplate CreateTemplate(FrequencyType frequencyType) =>

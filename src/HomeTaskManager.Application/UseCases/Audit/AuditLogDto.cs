@@ -1,5 +1,6 @@
 namespace HomeTaskManager.Application.UseCases.Audit;
 
+/// <summary>API-facing mirror of <see cref="HomeTaskManager.Domain.Entities.AuditLog"/>.</summary>
 public sealed record AuditLogDto(
     Guid Id,
     string EntityType,

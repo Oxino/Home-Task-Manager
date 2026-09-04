@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Reads/updates the caller's own display and notification preferences.</summary>
 [ApiController]
 [Route("api/users/preferences")]
 [Authorize]

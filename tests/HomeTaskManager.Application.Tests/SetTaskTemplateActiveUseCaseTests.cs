@@ -6,6 +6,7 @@ using HomeTaskManager.Domain.Enums;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies SetTaskTemplateActiveUseCase's admin-only authorization.</summary>
 public sealed class SetTaskTemplateActiveUseCaseTests
 {
     [Fact]

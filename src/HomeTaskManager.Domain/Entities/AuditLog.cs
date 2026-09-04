@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>Immutable trace of a change made to any entity (who/what/when/before/after). Never purged (ADR-004, BR-057).</summary>
 public sealed class AuditLog
 {
     private AuditLog()
@@ -13,6 +14,7 @@ public sealed class AuditLog
     {
     }
 
+    /// <param name="performedAt">Explicit timestamp overload, used mainly by tests/seed data; production code should use the 6-argument constructor which stamps UtcNow.</param>
     public AuditLog(string entityType, Guid entityId, string action, Guid performedByUserId, string? oldValue, string? newValue, DateTime performedAt)
     {
         if (string.IsNullOrWhiteSpace(entityType))

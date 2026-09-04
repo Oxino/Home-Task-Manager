@@ -3,6 +3,11 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>
+/// The reusable definition of a recurring/one-off household task (ADR-001): its schedule, difficulty and priority.
+/// <see cref="TaskInstance"/> records are generated from this template each week; changing the template afterwards
+/// never retroactively changes instances already generated (BR-047).
+/// </summary>
 public sealed class TaskTemplate
 {
     private const int MinimumDifficultyScore = 1;
@@ -124,6 +129,7 @@ public sealed class TaskTemplate
         Touch();
     }
 
+    /// <summary>Parses the comma-separated ActiveWeekDays storage column back into strongly-typed days.</summary>
     public IReadOnlyList<DayOfWeek> GetActiveWeekDays() =>
         ActiveWeekDays.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(value => Enum.TryParse<DayOfWeek>(value, out var day) ? day : (DayOfWeek?)null)

@@ -8,6 +8,7 @@ using HomeTaskManager.Api;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Reads (any authenticated user) and updates (admin-only, BR-058) the assignment engine's tunable parameters.</summary>
 [ApiController]
 [Route("api/settings/assignment-engine")]
 public class AssignmentEngineSettingsController(

@@ -6,6 +6,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Domain.Tests;
 
+/// <summary>Covers RandomStrategy, BalancedPointsStrategy and BalancedTimeStrategy: fairness of task-count/score/time distribution.</summary>
 public sealed class BalancedStrategiesTests
 {
     [Fact]

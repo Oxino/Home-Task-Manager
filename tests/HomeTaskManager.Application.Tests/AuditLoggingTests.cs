@@ -12,6 +12,7 @@ namespace HomeTaskManager.Application.Tests;
 
 public sealed record RecordedAuditEntry(string EntityType, Guid EntityId, string Action, Guid PerformedByUserId, string? OldValue, string? NewValue);
 
+/// <summary>In-memory fake IAuditLogger that records calls for assertion instead of persisting them.</summary>
 public sealed class InMemoryAuditLogger : IAuditLogger
 {
     public List<RecordedAuditEntry> Entries { get; } = [];
@@ -30,6 +31,7 @@ public sealed class InMemoryAuditLogger : IAuditLogger
     }
 }
 
+/// <summary>In-memory fake standing in for the EF-backed AuditLog store in tests.</summary>
 public sealed class InMemoryAuditLogRepository : IAuditLogRepository
 {
     private readonly List<AuditLog> _entries = [];
@@ -57,6 +59,7 @@ public sealed class InMemoryAuditLogRepository : IAuditLogRepository
     }
 }
 
+/// <summary>Verifies key use cases actually write an audit entry (BR-033) with the expected entity/action/actor.</summary>
 public class AuditLoggingTests
 {
     [Fact]
@@ -126,6 +129,7 @@ public class AuditLoggingTests
     }
 }
 
+/// <summary>Verifies GetAuditLogsForEntityUseCase's various query modes (by entity, performer, period, page).</summary>
 public class GetAuditLogsForEntityUseCaseTests
 {
     [Fact]

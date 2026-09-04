@@ -6,6 +6,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Domain.Tests;
 
+/// <summary>Covers RandomStrategy's basic assignment guarantees (every task assigned, no assignment when no participant is available).</summary>
 public class RandomStrategyTests
 {
     [Fact]

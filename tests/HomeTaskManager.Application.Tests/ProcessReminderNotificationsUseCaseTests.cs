@@ -7,6 +7,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies ProcessReminderNotificationsUseCase's trigger-time computation and idempotency (no duplicate notification per instance).</summary>
 public sealed class ProcessReminderNotificationsUseCaseTests
 {
     [Fact]

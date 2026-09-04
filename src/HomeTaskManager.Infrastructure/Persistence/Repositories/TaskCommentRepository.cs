@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="ITaskCommentRepository"/>.</summary>
 public sealed class TaskCommentRepository(HomeTaskManagerDbContext dbContext) : ITaskCommentRepository
 {
     public async Task<IReadOnlyList<TaskComment>> GetByTaskInstanceAsync(Guid taskInstanceId, CancellationToken cancellationToken = default) =>

@@ -65,6 +65,8 @@ public sealed class RunAssignmentEngineUseCase(
             .ToList();
 
         var settings = await settingsProvider.GetAsync(cancellationToken);
+        // Resolve the admin-configured strategy by name among all registered IAssignmentStrategy implementations
+        // (falls back to the injected default when the DI container only wires a single strategy, e.g. in tests).
         var selectedStrategy = assignmentStrategies?.FirstOrDefault(strategy => strategy.Name == settings.StrategyName) ?? assignmentStrategy;
         if (assignmentStrategies is not null && !assignmentStrategies.Any(strategy => strategy.Name == settings.StrategyName))
         {

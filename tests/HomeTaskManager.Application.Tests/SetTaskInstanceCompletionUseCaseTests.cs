@@ -7,6 +7,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies SetTaskInstanceCompletionUseCase's assignee-only authorization and closed-week guard (BR-043/BR-055).</summary>
 public class SetTaskInstanceCompletionUseCaseTests
 {
     private static SetTaskInstanceCompletionUseCase CreateUseCase(

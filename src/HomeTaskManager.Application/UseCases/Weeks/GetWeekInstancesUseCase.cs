@@ -6,6 +6,7 @@ namespace HomeTaskManager.Application.UseCases.Weeks;
 
 public sealed record GetWeekInstancesResult(WeekDto Week, IReadOnlyList<TaskInstanceDto> Instances);
 
+/// <summary>Reads a week and its task instances; carried-over instances are enriched with their original week/due date for display.</summary>
 public interface IGetWeekInstancesUseCase
 {
     Task<GetWeekInstancesResult> ExecuteAsync(int year, int weekNumber, CancellationToken cancellationToken = default);
@@ -29,6 +30,8 @@ public sealed class GetWeekInstancesUseCase(
             var dto = WeekMapper.ToDto(instance);
             if (instance.ParentTaskInstanceId is Guid parentId)
             {
+                // Carry-over instance (ADR-005): look up its original occurrence so the UI can show
+                // "originally due in week X" instead of just the new planned/due date.
                 var parent = await taskInstanceRepository.GetByIdAsync(parentId, cancellationToken);
                 var parentWeek = parent is null ? null : await weekRepository.GetByIdAsync(parent.WeekId, cancellationToken);
                 if (parent is not null && parentWeek is not null)

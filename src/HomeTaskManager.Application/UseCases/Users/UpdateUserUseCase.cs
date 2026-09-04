@@ -7,6 +7,7 @@ namespace HomeTaskManager.Application.UseCases.Users;
 
 public sealed record UpdateUserCommand(Guid UserId, Guid RequestingUserId, string DisplayName, bool IsAdmin, int AvailabilityPercentage, bool IsActive);
 
+/// <summary>Admin-only: edits any profile's name/role/availability/active flag.</summary>
 public interface IUpdateUserUseCase
 {
     Task<UserProfileDto> ExecuteAsync(UpdateUserCommand command, CancellationToken cancellationToken = default);

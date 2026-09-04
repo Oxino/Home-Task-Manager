@@ -7,6 +7,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed SystemSetting store in tests.</summary>
 public sealed class InMemorySystemSettingRepository : ISystemSettingRepository
 {
     private readonly List<SystemSetting> _settings = [];
@@ -24,6 +25,7 @@ public sealed class InMemorySystemSettingRepository : ISystemSettingRepository
     }
 }
 
+/// <summary>Verifies AssignmentEngineSettingsProvider falls back to documented defaults when a setting is missing/unparsable.</summary>
 public class AssignmentEngineSettingsProviderTests
 {
     [Fact]
@@ -52,6 +54,7 @@ public class AssignmentEngineSettingsProviderTests
     }
 }
 
+/// <summary>Verifies GetAssignmentEngineSettingsUseCase exposes the provider's settings unchanged.</summary>
 public class GetAssignmentEngineSettingsUseCaseTests
 {
     [Fact]
@@ -66,6 +69,7 @@ public class GetAssignmentEngineSettingsUseCaseTests
     }
 }
 
+/// <summary>Verifies UpdateAssignmentEngineSettingsUseCase's validation (BR-058) and admin-only authorization.</summary>
 public class UpdateAssignmentEngineSettingsUseCaseTests
 {
     private static UpdateAssignmentEngineSettingsCommand ValidCommand(Guid requestingUserId) =>

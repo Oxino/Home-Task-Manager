@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="ITaskInstanceRepository"/>.</summary>
 public sealed class TaskInstanceRepository(HomeTaskManagerDbContext dbContext) : ITaskInstanceRepository
 {
     public Task<TaskInstance?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -24,6 +25,7 @@ public sealed class TaskInstanceRepository(HomeTaskManagerDbContext dbContext) :
     public async Task<IReadOnlyList<TaskInstance>> GetAssignedSinceAsync(
         DateOnly since,
         CancellationToken cancellationToken = default) =>
+        // Cancelled instances are excluded: they must not count toward analytics or assignment history.
         await dbContext.TaskInstances
             .Where(instance => instance.AssignedUserId != null
                 && instance.PlannedDate >= since

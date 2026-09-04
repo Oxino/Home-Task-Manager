@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.Abstractions.Repositories;
 
+/// <summary>Persists/retrieves <see cref="Reaction"/>s (e.g. emoji) attached to task comments.</summary>
 public interface IReactionRepository
 {
     Task<Reaction?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);

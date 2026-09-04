@@ -4,6 +4,7 @@ namespace HomeTaskManager.Application.UseCases.TaskTemplates;
 
 public static class TaskTemplateMapper
 {
+    /// <summary>Flat projection; GetActiveWeekDays() re-parses the entity's comma-separated storage column into a list.</summary>
     public static TaskTemplateDto ToDto(TaskTemplate taskTemplate) => new(
         taskTemplate.Id,
         taskTemplate.Title,

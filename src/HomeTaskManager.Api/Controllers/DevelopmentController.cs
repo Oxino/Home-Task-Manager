@@ -15,6 +15,12 @@ using System.Globalization;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>
+/// Development/demo-only tooling: resets and reseeds the database with realistic multi-week history
+/// (users, task templates, generated+assigned weeks, completions, comments, reactions) for manual testing
+/// and Playwright E2E fixtures. Gated by <see cref="DevelopmentOnlyAttribute"/> (404 outside Development) and,
+/// where not anonymous, by the Admin role.
+/// </summary>
 [ApiController]
 [Route("api/development")]
 [Authorize(Roles = "Admin")]
@@ -57,7 +63,10 @@ public sealed class DevelopmentController(
     [AllowAnonymous]
     public async Task<ActionResult<object>> ResetAndSeedFullDemo(FullDemoSeedRequest request, CancellationToken cancellationToken)
     {
-//TODO: expliquer cette partie de code. PK restreindre les semaines entre 6 et 20?
+        // Lower bound (6): fewer weeks wouldn't leave enough history to exercise the assignment engine's
+        // default 8-week equity window (BR-053) or show a meaningful load trend on the analytics dashboard.
+        // Upper bound (20): seeding (generate + assign + apply scenario + comments/reactions per week) is
+        // sequential and gets noticeably slower beyond this, with no added test value for a demo dataset.
         if (request.Weeks is < 6 or > 20)
             return BadRequest(new { error = "Weeks must be between 6 and 20." });
 
@@ -105,6 +114,9 @@ public sealed class DevelopmentController(
 
         var applied = new List<object>();
 
+        // Cycle through the scenario list (oldest week first) so the seeded history shows a variety of
+        // completion patterns instead of the same distribution every week; the last scenario repeats if
+        // there are more weeks than named scenarios.
         for (var i = 0; i < generatedWeeks.Count; i++)
         {
             var weekInfo = generatedWeeks[i];
@@ -128,6 +140,7 @@ public sealed class DevelopmentController(
             var shouldCloseWeek = i < generatedWeeks.Count - 1;
             if (shouldCloseWeek)
             {
+                // Keep only the most recent seeded week Active, so the demo has one "current" week to interact with.
                 week.Close();
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
@@ -193,6 +206,7 @@ public sealed class DevelopmentController(
         return Ok(result);
     }
 
+    /// <summary>Demo-only helper: fabricates a task carried over from the previous seeded week into the current one, to showcase the carry-over UI (ADR-005) without waiting for a real week closure.</summary>
     private async Task<object> EnsureAdminCarryOverScenarioAsync(
         IReadOnlyList<(int Year, int WeekNumber, Guid WeekId)> generatedWeeks,
         Guid adminId,
@@ -233,6 +247,7 @@ public sealed class DevelopmentController(
         return new { created = true, templateId = template.Id, previousInstanceId = previousInstance.Id, carryOverInstanceId = carryOver.Id, adminId };
     }
 
+    /// <summary>One-off migration endpoint: older seeded notifications stored a "/week?year=..&amp;week=.." link without an instanceId; this re-derives it from the notification's message text so old links become clickable/deep-linkable again.</summary>
     [HttpPost("backfill-notification-instance-links")]
     [AllowAnonymous]
     public async Task<ActionResult<object>> BackfillNotificationInstanceLinks(CancellationToken cancellationToken)
@@ -301,6 +316,7 @@ public sealed class DevelopmentController(
         return Ok(new { processed = notifications.Count, updated, skipped });
     }
 
+    /// <summary>Fixed catalog of demo task templates spanning every <see cref="FrequencyType"/> and <see cref="TaskPriority"/>, alternating ownership between the two demo users.</summary>
     private static List<TaskTemplate> BuildTemplates(Guid adminId, Guid userId)
     {
         var specs = new (string Title, FrequencyType Frequency, TaskPriority Priority, int Score, int Duration, Guid Owner)[]
@@ -339,6 +355,7 @@ public sealed class DevelopmentController(
             .ToList();
     }
 
+    /// <summary>Deterministically decides which instances look completed for a given named scenario, using a stable hash of the instance/week so the same seed always reproduces the same demo data.</summary>
     private static void ApplyScenarioCompletions(
         IReadOnlyList<TaskInstance> instances,
         Week week,
@@ -457,6 +474,7 @@ public sealed class DevelopmentController(
         await Task.CompletedTask;
     }
 
+    /// <summary>Parses "year"/"week" query params out of a "/week?..." notification link, used by the backfill migration above.</summary>
     private static bool TryParseYearWeek(string link, out int year, out int weekNumber)
     {
         year = 0;

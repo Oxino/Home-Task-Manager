@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="IAssignmentRunRepository"/>.</summary>
 public sealed class AssignmentRunRepository(HomeTaskManagerDbContext dbContext) : IAssignmentRunRepository
 {
     public Task<bool> ExistsForWeekAsync(Guid weekId, CancellationToken cancellationToken = default) =>

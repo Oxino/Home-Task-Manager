@@ -8,6 +8,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed TaskComment store in tests.</summary>
 public sealed class InMemoryTaskCommentRepository : ITaskCommentRepository
 {
     private readonly List<TaskComment> _comments = [];
@@ -22,6 +23,7 @@ public sealed class InMemoryTaskCommentRepository : ITaskCommentRepository
     }
 }
 
+/// <summary>Verifies TaskCommentUseCase's list/add operations and assignee/admin-only access restriction.</summary>
 public sealed class TaskCommentUseCaseTests
 {
     [Fact]

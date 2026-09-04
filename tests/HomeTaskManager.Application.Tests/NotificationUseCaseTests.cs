@@ -5,6 +5,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed Notification store in tests.</summary>
 public sealed class InMemoryNotificationRepository : INotificationRepository
 {
     private readonly List<Notification> _notifications = [];
@@ -20,6 +21,7 @@ public sealed class InMemoryNotificationRepository : INotificationRepository
     public Task DeleteReadByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) { _notifications.RemoveAll(notification => notification.UserId == userId && notification.IsRead); return Task.CompletedTask; }
 }
 
+/// <summary>Verifies NotificationUseCase's read/unread state changes, ownership check, and preference-based filtering.</summary>
 public sealed class NotificationUseCaseTests
 {
     [Fact]

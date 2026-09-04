@@ -19,6 +19,8 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
 
     public AssignmentResult Assign(AssignmentContext context)
     {
+        // Step 1: only participants with availability > 0% take part in this run, sorted by Id for
+        // deterministic tie-breaking further down (LINQ grouping/ordering otherwise has no guaranteed order).
         var participants = context.ActiveParticipants
             .Where(p => p.AvailabilityPercentage > 0)
             .OrderBy(p => p.Id)
@@ -28,25 +30,40 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
             return new AssignmentResult([]);
         }
 
+        // Step 2: turn the raw task instances into "allocation items" — one item per instance, except
+        // non-distributed daily-mandatory templates whose 7 instances are merged into a single item
+        // (see BuildItems) so the optimizer always moves/swaps all 7 days together.
         var items = BuildItems(context, participants);
         if (items.Count == 0)
         {
             return new AssignmentResult([]);
         }
 
+        // Step 3: seed each participant's starting load/count from their recent history (BR-053 equity
+        // window) instead of zero, so someone who was already heavily loaded in prior weeks keeps being
+        // treated as loaded even before this run's tasks are added.
         var baseline = participants.ToDictionary(
             p => p.Id,
             p => context.HistoryByUserId.TryGetValue(p.Id, out var history) ? history.TotalScore : 0m);
         var baselineCount = participants.ToDictionary(
             p => p.Id,
             p => context.HistoryByUserId.TryGetValue(p.Id, out var history) ? history.TotalAssignedCount : 0);
+        // Step 4: each participant's "target" is their availability as a fraction (e.g. 50% -> 0.5), used
+        // to normalize load so a part-time participant isn't expected to carry a full-time share.
         var target = participants.ToDictionary(p => p.Id, p => p.AvailabilityPercentage / 100m);
 
         var participantNames = participants.ToDictionary(p => p.Id, p => p.DisplayName);
+        // Step 5: build an initial allocation with the greedy LPT construction (heaviest items first).
         var (assignment, decisions) = Construct(items, participants, baseline, baselineCount, target, context.Settings);
+        // Keep a snapshot of the construction result so BuildExplanationSteps can later say "this was
+        // moved from X to Y during optimization" whenever Improve changes an owner.
         var constructionAssignment = new Dictionary<Guid, Guid>(assignment);
+        // Step 6: refine that initial allocation in place with bounded local search (single moves + swaps).
         Improve(items, participants, baseline, target, context.Settings, assignment);
 
+        // Step 7: expand each allocation item back into its individual TaskInstance assignments (a grouped
+        // daily-mandatory item fans out into its 7 instances, all pointing to the same final owner), and
+        // attach the BR-033 explanation trace for each.
         var assignments = items
             .SelectMany(item => item.InstanceIds.Select(instanceId => new TaskAssignment(
                 instanceId,
@@ -65,6 +82,8 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
         IReadOnlyDictionary<Guid, string> participantNames,
         AssignmentEngineSettings settings)
     {
+        // Step 1: explain the BR-052 score formula for this item (difficulty x priority x duration), with a
+        // slightly different wording when it's a grouped daily-mandatory item (score already multiplied by 7).
         var scoreStep = item.IsGroupedDaily
             ? new ExplanationStep(
                 "Score",
@@ -75,12 +94,16 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                 "Score de la tâche",
                 $"{item.Label} : difficulté {item.ManualDifficultyScore:0.##} × priorité {item.PriorityMultiplier:0.##} × durée {item.DurationFactor:0.##} = {item.Score:0.##} pts.");
 
+        // Step 2: explain why the participant chosen during the LPT construction phase was picked (lowest
+        // projected normalized load at that point in time), reusing the candidate comparison captured then.
         var loadStep = new ExplanationStep(
             "Load",
             "Comparaison des charges",
             $"{participantNames[decision.SelectedParticipantId]} avait la charge normalisée projetée la plus faible ({decision.Candidates.First(c => c.Selected).Value.GetValueOrDefault():0.##}) parmi les participants éligibles.",
             decision.Candidates);
 
+        // Step 3: explain the BR-054 anti-repetition penalty applied to whoever ends up as the FINAL owner
+        // (which may differ from the construction-phase owner if step 5 below moved it during local search).
         var occurrences = item.RecentOccurrences(finalOwnerId);
         var penalty = occurrences * settings.RepetitionPenaltyWeight * item.Score;
         var penaltyStep = occurrences > 0
@@ -95,6 +118,9 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
 
         var steps = new List<ExplanationStep> { scoreStep, loadStep, penaltyStep };
 
+        // Step 4: if the local search phase moved this item away from its construction-phase owner, add a
+        // final step so the explanation trace doesn't silently contradict itself (step 2 names one owner,
+        // the actual assignment shows another) — this makes the optimization pass visible to the user.
         if (finalOwnerId != constructionOwnerId)
         {
             steps.Add(new ExplanationStep(
@@ -113,15 +139,20 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
         var items = new List<AllocationItem>();
         var dailyMandatoryGroups = new Dictionary<Guid, List<TaskInstance>>();
 
+        // Step 1: walk every instance once, sorting each into either its own item or a per-template
+        // "daily mandatory, not distributed" bucket to be merged afterwards.
         foreach (var instance in context.TaskInstances)
         {
             if (!context.TaskTemplatesById.TryGetValue(instance.TaskTemplateId, out var template))
             {
+                // Orphaned instance (its template was deleted/not loaded): skip, nothing to score it with.
                 continue;
             }
 
             if (template.FrequencyType == FrequencyType.DailyMandatory && !template.DistributeDailyMandatory)
             {
+                // Collect this instance into its template's group instead of creating a standalone item;
+                // the group is turned into one combined AllocationItem after the loop (step 2).
                 if (!dailyMandatoryGroups.TryGetValue(template.Id, out var group))
                 {
                     group = [];
@@ -131,11 +162,15 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                 continue;
             }
 
+            // Regular case: one AllocationItem per instance, scored individually via BR-052.
             var breakdown = TaskScoreCalculator.CalculateBreakdown(template, settings);
             var occurrences = BuildOccurrenceMap(context, participants, template.Id);
             items.Add(new AllocationItem(instance.Id, [instance.Id], breakdown.Score, instance.PlannedDate, occurrences, template.Title, isGroupedDaily: false, breakdown));
         }
 
+        // Step 2: turn each collected group into a single AllocationItem whose score is the per-instance
+        // score multiplied by 7 (one occurrence per day) and whose InstanceIds cover the whole week, so the
+        // optimizer treats "do the dishes every day" as one indivisible unit rather than 7 separate choices.
         foreach (var (templateId, instances) in dailyMandatoryGroups)
         {
             var template = context.TaskTemplatesById[templateId];
@@ -146,9 +181,12 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
             items.Add(new AllocationItem(instanceIds[0], instanceIds, breakdown.Score * instances.Count, earliestDate, occurrences, template.Title, isGroupedDaily: true, breakdown));
         }
 
+        // Step 3: sort by earliest planned date so both Construct and Improve iterate items in a stable,
+        // reproducible order (important for deterministic tie-breaking and for the LPT heuristic's secondary sort key).
         return items.OrderBy(item => item.EarliestPlannedDate).ThenBy(item => item.Id).ToList();
     }
 
+    /// <summary>How many times each participant recently did this task template, used to compute the anti-repetition penalty (BR-054).</summary>
     private static Dictionary<Guid, int> BuildOccurrenceMap(AssignmentContext context, IReadOnlyList<User> participants, Guid taskTemplateId) =>
         participants.ToDictionary(
             p => p.Id,
@@ -168,13 +206,23 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
     {
         var assignment = new Dictionary<Guid, Guid>();
         var decisions = new Dictionary<Guid, ConstructionDecision>();
+        // `load`/`count` start at each participant's historical baseline and accumulate as items are placed,
+        // so this construction phase "continues" the equity window instead of starting fresh at zero.
         var load = new Dictionary<Guid, decimal>(baseline);
         var count = new Dictionary<Guid, int>(baselineCount);
         var participantNames = participants.ToDictionary(p => p.Id, p => p.DisplayName);
 
+        // Process items heaviest-score-first (LPT = Longest Processing Time first, a classic bin-packing
+        // heuristic): placing the biggest chunks of work while every participant is still near their
+        // baseline leaves more "room" to fine-tune the smaller, lighter items afterwards.
         foreach (var item in items.OrderByDescending(i => i.Score).ThenBy(i => i.EarliestPlannedDate).ThenBy(i => i.Id))
         {
+            // For each candidate participant, compute what their normalized load WOULD become if they took
+            // this item (current load + item's score adjusted for that participant's own repetition penalty,
+            // divided by their availability target) — this is a "what if" projection, not a mutation yet.
             var projectedLoad = participants.ToDictionary(p => p.Id, p => (load[p.Id] + item.AdjustedContribution(p.Id, settings)) / target[p.Id]);
+            // Pick whoever would end up least-loaded; ties broken by fewer tasks so far, then by fewer recent
+            // occurrences of this exact template (BR-054 preference), then by Id for full determinism.
             var candidate = participants
                 .OrderBy(p => projectedLoad[p.Id])
                 .ThenBy(p => count[p.Id])
@@ -182,6 +230,7 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                 .ThenBy(p => p.Id)
                 .First();
 
+            // Capture the full candidate comparison (for the BR-033 explanation trace) before committing.
             var minLoad = projectedLoad[candidate.Id];
             var candidateComparisons = participants
                 .OrderBy(p => projectedLoad[p.Id])
@@ -197,6 +246,8 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                             : "non retenu(e) sur ce départage"))
                 .ToList();
 
+            // Commit: record the decision, then update the running totals so the NEXT item's projection
+            // reflects this one having already been placed.
             assignment[item.Id] = candidate.Id;
             decisions[item.Id] = new ConstructionDecision(candidate.Id, candidateComparisons);
             load[candidate.Id] += item.Score;
@@ -215,6 +266,7 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
         AssignmentEngineSettings settings,
         Dictionary<Guid, Guid> assignment)
     {
+        // A single participant, or a single item, can never be rebalanced (nothing to move/swap against).
         if (items.Count < 2 || participants.Count < 2)
         {
             return;
@@ -222,6 +274,9 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
 
         var currentObjective = ComputeObjective(items, participants, baseline, target, settings, assignment);
 
+        // Hill-climbing loop: each iteration searches for the single best move/swap, applies it if it
+        // improves the objective, and stops as soon as no improving move exists (local optimum) or the
+        // iteration budget is exhausted (safety net against pathological inputs / infinite loops).
         for (var iteration = 0; iteration < MaxLocalSearchIterations; iteration++)
         {
             Guid? bestItemA = null;
@@ -229,6 +284,9 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
             var bestNewOwnerForA = Guid.Empty;
             var bestObjective = currentObjective;
 
+            // 1) Try moving a single item to a different participant ("single move").
+            // For every item, tentatively reassign it to every OTHER participant, recompute the objective
+            // from scratch, and remember the best one found so far (then always revert before trying the next).
             foreach (var item in items)
             {
                 var currentOwner = assignment[item.Id];
@@ -249,10 +307,13 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                         bestNewOwnerForA = participant.Id;
                     }
 
-                    assignment[item.Id] = currentOwner;
+                    assignment[item.Id] = currentOwner; // revert the tentative move before testing the next candidate
                 }
             }
 
+            // 2) Try swapping the owners of two items between each other ("pairwise swap"),
+            // which can improve the balance in ways a single move cannot (e.g. exchanging a big task for a
+            // small one between two participants without changing anyone else's load).
             for (var i = 0; i < items.Count; i++)
             {
                 for (var j = i + 1; j < items.Count; j++)
@@ -263,6 +324,7 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                     var ownerB = assignment[itemB.Id];
                     if (ownerA == ownerB)
                     {
+                        // Swapping two items that already belong to the same person is a no-op.
                         continue;
                     }
 
@@ -276,16 +338,18 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
                         bestItemB = itemB.Id;
                     }
 
-                    assignment[itemA.Id] = ownerA;
+                    assignment[itemA.Id] = ownerA; // revert the tentative swap before testing the next pair
                     assignment[itemB.Id] = ownerB;
                 }
             }
 
+            // No move or swap improved the objective this iteration: local optimum reached, stop early.
             if (bestItemA is null)
             {
                 break;
             }
 
+            // Apply whichever the best move turned out to be (a single reassignment, or a two-item swap).
             if (bestItemB is null)
             {
                 assignment[bestItemA.Value] = bestNewOwnerForA;
@@ -299,6 +363,8 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
         }
     }
 
+    /// <summary>Sum of squared deviations from the mean normalized load (population variance, unnormalized); lower is a more balanced allocation.</summary>
+    /// <summary>Sum of squared deviations from the mean normalized load (population variance, unnormalized); lower is a more balanced allocation.</summary>
     private static decimal ComputeObjective(
         IReadOnlyList<AllocationItem> items,
         IReadOnlyList<User> participants,
@@ -307,6 +373,8 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
         AssignmentEngineSettings settings,
         IReadOnlyDictionary<Guid, Guid> assignment)
     {
+        // Start every participant at their normalized historical baseline (same idea as in Construct),
+        // then add each currently-assigned item's adjusted (penalty-inclusive) contribution to its owner.
         var normalizedLoad = participants.ToDictionary(p => p.Id, p => baseline[p.Id] / target[p.Id]);
         foreach (var item in items)
         {
@@ -314,6 +382,8 @@ public sealed class IntelligentV1Strategy : IAssignmentStrategy
             normalizedLoad[owner] += item.AdjustedContribution(owner, settings) / target[owner];
         }
 
+        // Sum of squared deviations from the mean: this is minimized (not maximized) by Improve, so a
+        // perfectly even distribution across participants scores 0, and any imbalance scores > 0.
         var mean = normalizedLoad.Values.Average();
         return normalizedLoad.Values.Sum(value => (value - mean) * (value - mean));
     }

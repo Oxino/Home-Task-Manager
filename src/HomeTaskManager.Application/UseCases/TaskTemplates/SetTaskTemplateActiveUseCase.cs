@@ -7,6 +7,7 @@ namespace HomeTaskManager.Application.UseCases.TaskTemplates;
 
 public sealed record SetTaskTemplateActiveCommand(Guid TaskTemplateId, Guid RequestingUserId, bool IsActive);
 
+/// <summary>Admin-only: activates/deactivates a template without deleting it or its already-generated instances (BR-047).</summary>
 public interface ISetTaskTemplateActiveUseCase
 {
     Task<TaskTemplateDto> ExecuteAsync(SetTaskTemplateActiveCommand command, CancellationToken cancellationToken = default);

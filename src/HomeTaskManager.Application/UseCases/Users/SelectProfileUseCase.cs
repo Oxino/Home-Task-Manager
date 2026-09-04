@@ -3,6 +3,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Application.UseCases.Users;
 
+/// <summary>ADR-003/ADR-006: "logs in" a user by selecting their profile (no password); rejects inactive profiles.</summary>
 public interface ISelectProfileUseCase
 {
     Task<UserProfileDto> ExecuteAsync(Guid userId, CancellationToken cancellationToken = default);

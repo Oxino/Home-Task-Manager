@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence;
 
+/// <summary>EF Core mapping of every Domain entity to its table, including the unique indexes that enforce business invariants (BR-002 DisplayName, ADR-001 TaskTemplate.Title, etc.).</summary>
 public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
@@ -31,6 +32,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(user => user.Id);
+            // BR-002: DisplayName must be unique (there is no email/password, so it is effectively the login key).
             entity.HasIndex(user => user.DisplayName).IsUnique();
             entity.Property(user => user.DisplayName).HasMaxLength(200).IsRequired();
         });
@@ -49,6 +51,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         modelBuilder.Entity<Week>(entity =>
         {
             entity.HasKey(week => week.Id);
+            // A given ISO week can have several segments (mid-week early closures); the triple must stay unique.
             entity.HasIndex(week => new { week.Year, week.WeekNumber, week.SegmentNumber }).IsUnique();
         });
 
@@ -56,6 +59,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         {
             entity.HasKey(instance => instance.Id);
             entity.HasIndex(instance => new { instance.WeekId, instance.AssignedUserId });
+            // Prevents generating the same template's instance twice on the same day within a week.
             entity.HasIndex(instance => new
             {
                 instance.TaskTemplateId,
@@ -106,6 +110,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
 
         modelBuilder.Entity<Notification>(entity =>
         {
+            // Stored as int so the enum can be reordered/renamed in code without a migration, as long as values are kept stable.
             entity.Property(notification => notification.Importance).HasConversion<int>().IsRequired();
         });
 
@@ -136,6 +141,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         {
             entity.HasKey(reaction => reaction.Id);
             entity.HasIndex(reaction => reaction.CommentId);
+            // A user can react with a given reaction type at most once per comment.
             entity.HasIndex(reaction => new { reaction.CommentId, reaction.UserId, reaction.ReactionType }).IsUnique();
             entity.Property(reaction => reaction.ReactionType).HasMaxLength(50).IsRequired();
         });
@@ -143,6 +149,7 @@ public sealed class HomeTaskManagerDbContext(DbContextOptions<HomeTaskManagerDbC
         modelBuilder.Entity<AssignmentExplanation>(entity =>
         {
             entity.HasKey(explanation => explanation.Id);
+            // BR-033: at most one decision trace per task instance (overwritten on re-run, see RunAssignmentEngineUseCase).
             entity.HasIndex(explanation => explanation.TaskInstanceId).IsUnique();
             entity.Property(explanation => explanation.EngineName).HasMaxLength(50).IsRequired();
             entity.Property(explanation => explanation.SummaryText).HasMaxLength(1000).IsRequired();

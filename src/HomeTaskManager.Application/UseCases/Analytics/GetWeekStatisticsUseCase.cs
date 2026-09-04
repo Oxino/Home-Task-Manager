@@ -3,6 +3,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.UseCases.Analytics;
 
+/// <summary>Aggregates task load (count/points/hours) per participant for a single week, used by the week detail/analytics view.</summary>
 public interface IGetWeekStatisticsUseCase
 {
     Task<WeekStatisticsDto> ExecuteAsync(Guid weekId, CancellationToken cancellationToken = default);

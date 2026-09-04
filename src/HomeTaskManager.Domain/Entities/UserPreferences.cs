@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>Per-user display/notification settings (one row per <see cref="User"/>), separate from the shared engine <see cref="SystemSetting"/>s.</summary>
 public sealed class UserPreferences
 {
     private UserPreferences() { }

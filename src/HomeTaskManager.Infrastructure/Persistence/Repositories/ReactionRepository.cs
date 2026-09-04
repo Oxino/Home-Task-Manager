@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="IReactionRepository"/>.</summary>
 internal sealed class ReactionRepository(HomeTaskManagerDbContext dbContext) : IReactionRepository
 {
     public async Task<Reaction?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>

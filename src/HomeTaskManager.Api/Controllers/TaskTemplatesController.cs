@@ -9,6 +9,7 @@ using HomeTaskManager.Application.Abstractions.Repositories;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>CRUD for task templates (ADR-001) plus their reminders. Any authenticated user can create/edit their own templates; only admins can activate/deactivate or edit others' (BR-037).</summary>
 [ApiController]
 [Route("api/task-templates")]
 public class TaskTemplatesController(
@@ -30,6 +31,7 @@ public class TaskTemplatesController(
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IReadOnlyList<TaskTemplateDto>>> GetAll(CancellationToken cancellationToken)
     {
+        // Unlike the public GetActiveTaskTemplates, this includes inactive templates (admin management screen).
         var taskTemplates = await taskTemplateRepository.GetAllAsync(cancellationToken);
         return Ok(taskTemplates.Select(TaskTemplateMapper.ToDto).ToList());
     }

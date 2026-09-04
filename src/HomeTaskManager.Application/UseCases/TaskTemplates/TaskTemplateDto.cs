@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Enums;
 
 namespace HomeTaskManager.Application.UseCases.TaskTemplates;
 
+/// <summary>API-facing mirror of <see cref="HomeTaskManager.Domain.Entities.TaskTemplate"/>; enums are serialized as strings for the frontend.</summary>
 public sealed record TaskTemplateDto(
     Guid Id,
     string Title,

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="IAssignmentExplanationRepository"/>.</summary>
 internal sealed class AssignmentExplanationRepository(HomeTaskManagerDbContext dbContext) : IAssignmentExplanationRepository
 {
     public async Task<AssignmentExplanation?> GetByTaskInstanceIdAsync(Guid taskInstanceId, CancellationToken cancellationToken = default) =>

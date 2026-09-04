@@ -4,6 +4,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Tests;
 
+/// <summary>Validates the AuditLog entity's construction rules (required entity type/action).</summary>
 public class AuditLogTests
 {
     [Fact]

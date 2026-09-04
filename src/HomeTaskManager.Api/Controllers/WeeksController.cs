@@ -8,6 +8,7 @@ using HomeTaskManager.Api;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Week lifecycle: generating a week's instances, reading them (scoped to the caller unless admin opts into the full view), closing a week, and recovering a mid-week continuation segment.</summary>
 [ApiController]
 [Route("api/weeks")]
 public class WeeksController(

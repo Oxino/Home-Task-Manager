@@ -11,6 +11,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed AssignmentRun store in tests.</summary>
 public sealed class InMemoryAssignmentRunRepository : IAssignmentRunRepository
 {
     private readonly List<AssignmentRun> _runs = [];
@@ -28,6 +29,7 @@ public sealed class InMemoryAssignmentRunRepository : IAssignmentRunRepository
     }
 }
 
+/// <summary>Verifies RunAssignmentEngineUseCase's admin-only authorization, strategy selection, and re-run/overwrite behavior (ADR-013).</summary>
 public class RunAssignmentEngineUseCaseTests
 {
     private static RunAssignmentEngineUseCase CreateUseCase(

@@ -4,6 +4,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.UseCases.TaskInstances;
 
+/// <summary>Adds a reaction to a comment, idempotently (returns the existing one if the same user/type pair already reacted).</summary>
 public interface IAddReactionUseCase
 {
     Task<ReactionDto> ExecuteAsync(Guid commentId, Guid userId, string reactionType, CancellationToken cancellationToken = default);
@@ -25,6 +26,7 @@ public sealed class AddReactionUseCase(IReactionRepository reactionRepository, I
 {
     public async Task<ReactionDto> ExecuteAsync(Guid commentId, Guid userId, string reactionType, CancellationToken cancellationToken = default)
     {
+        // Same user reacting twice with the same type is a no-op, not a duplicate row.
         var existing = await reactionRepository.GetByCommentAndUserAndTypeAsync(commentId, userId, reactionType, cancellationToken);
         if (existing is not null) return new ReactionDto(existing.Id, existing.CommentId, existing.UserId, existing.ReactionType, existing.CreatedAt);
 

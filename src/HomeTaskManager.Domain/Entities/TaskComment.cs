@@ -2,6 +2,7 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>A user comment on a <see cref="TaskInstance"/>, optionally a reply to another comment via ParentCommentId (threaded discussion).</summary>
 public sealed class TaskComment
 {
     private TaskComment() { }

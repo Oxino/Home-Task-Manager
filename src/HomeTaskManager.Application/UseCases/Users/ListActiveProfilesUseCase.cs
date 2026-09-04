@@ -2,6 +2,7 @@ using HomeTaskManager.Application.Abstractions.Repositories;
 
 namespace HomeTaskManager.Application.UseCases.Users;
 
+/// <summary>Lists selectable profiles for the login screen (ADR-003: authentication by profile selection).</summary>
 public interface IListActiveProfilesUseCase
 {
     Task<IReadOnlyList<UserProfileDto>> ExecuteAsync(CancellationToken cancellationToken = default);

@@ -11,6 +11,7 @@ using HomeTaskManager.Api;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Actions on a single task instance: completion, reassignment, cancellation, comments, decision explanation, and flexible-task execution logging.</summary>
 [ApiController]
 [Route("api/task-instances")]
 public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskInstanceCompletionUseCase, IReassignTaskInstanceUseCase reassignTaskInstanceUseCase, ICancelTaskInstanceUseCase cancelTaskInstanceUseCase, ITaskCommentUseCase taskCommentUseCase, IExecuteDailyFlexibleTaskUseCase executeDailyFlexibleTaskUseCase, ITaskInstanceRepository taskInstanceRepository, IWeekRepository weekRepository, IUserRepository userRepository, IAssignmentExplanationRepository assignmentExplanationRepository) : ControllerBase
@@ -22,6 +23,7 @@ public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskIn
         var instance = await taskInstanceRepository.GetByIdAsync(id, cancellationToken);
         if (instance is null) return NotFound();
         var user = await userRepository.GetByIdAsync(User.GetCurrentUserId(), cancellationToken);
+        // Only the assigned participant or an administrator may view a task instance's details.
         if (user is null || (!user.IsAdmin && instance.AssignedUserId != user.Id)) return Forbid();
         var week = await weekRepository.GetByIdAsync(instance.WeekId, cancellationToken);
         if (week is null) return NotFound();
@@ -92,6 +94,7 @@ public class TaskInstancesController(ISetTaskInstanceCompletionUseCase setTaskIn
         catch (DomainValidationException exception) { return BadRequest(new { error = exception.Message }); }
     }
 
+    /// <summary>Returns the BR-033 "why was this assigned this way" decision trace, restricted to the same viewers as <see cref="Get"/>.</summary>
     [HttpGet("{id:guid}/explanation")]
     [Authorize]
     public async Task<ActionResult<AssignmentExplanationDto>> GetExplanation(Guid id, CancellationToken cancellationToken)

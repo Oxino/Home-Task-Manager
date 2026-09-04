@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="IDailyFlexibleExecutionRepository"/>.</summary>
 public sealed class DailyFlexibleExecutionRepository(HomeTaskManagerDbContext dbContext) : IDailyFlexibleExecutionRepository
 {
     public async Task<IReadOnlyList<DailyFlexibleExecution>> GetByTaskInstanceAsync(Guid taskInstanceId, CancellationToken cancellationToken = default) => await dbContext.DailyFlexibleExecutions.Where(execution => execution.TaskInstanceId == taskInstanceId).OrderBy(execution => execution.ExecutionDate).ToListAsync(cancellationToken);

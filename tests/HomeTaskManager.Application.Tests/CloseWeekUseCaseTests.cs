@@ -7,6 +7,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies CloseWeekUseCase's carry-over logic (ADR-005), early-closure segmentation, and cancel-incomplete option.</summary>
 public class CloseWeekUseCaseTests
 {
     private static CloseWeekUseCase CreateUseCase(

@@ -20,6 +20,7 @@ public sealed record CreateTaskTemplateCommand(
     WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek,
     bool DistributeDailyMandatory = true);
 
+/// <summary>Creates a new reusable task definition (title must be unique, ADR-001).</summary>
 public interface ICreateTaskTemplateUseCase
 {
     Task<TaskTemplateDto> ExecuteAsync(CreateTaskTemplateCommand command, CancellationToken cancellationToken = default);

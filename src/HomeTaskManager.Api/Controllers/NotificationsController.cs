@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>The caller's own in-app notification center: list (paged), mark read, and prune read items.</summary>
 [ApiController]
 [Route("api/notifications")]
 [Authorize]

@@ -11,6 +11,7 @@ public sealed record ReminderDto(Guid Id, Guid TaskTemplateId, ReminderTriggerTy
 public sealed record AddReminderCommand(Guid TaskTemplateId, Guid RequestingUserId, ReminderTriggerType TriggerType, int OffsetValue, ReminderOffsetUnit OffsetUnit);
 public sealed record SetReminderEnabledCommand(Guid ReminderId, Guid RequestingUserId, bool IsEnabled);
 
+/// <summary>Manages <see cref="Reminder"/> rules on a task template; access limited to the template's author or an administrator.</summary>
 public interface IReminderUseCase
 {
     Task<IReadOnlyList<ReminderDto>> ListAsync(Guid taskTemplateId, Guid requestingUserId, CancellationToken cancellationToken = default);

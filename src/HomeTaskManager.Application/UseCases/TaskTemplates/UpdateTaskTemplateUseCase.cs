@@ -21,6 +21,7 @@ public sealed record UpdateTaskTemplateCommand(
     WeeklyScheduleType WeeklyScheduleType = WeeklyScheduleType.EndOfWeek,
     bool DistributeDailyMandatory = true);
 
+/// <summary>Edits an existing task template's definition; never retroactively changes instances already generated (BR-047).</summary>
 public interface IUpdateTaskTemplateUseCase
 {
     Task<TaskTemplateDto> ExecuteAsync(UpdateTaskTemplateCommand command, CancellationToken cancellationToken = default);
@@ -54,6 +55,7 @@ public sealed class UpdateTaskTemplateUseCase(
 
         var oldValue = $"Title={taskTemplate.Title}; Priority={taskTemplate.Priority}";
 
+        // Apply every field change through the entity's own setters so domain invariants are re-validated.
         taskTemplate.Rename(command.Title);
         taskTemplate.ChangeDescription(command.Description);
         taskTemplate.ChangeDifficulty(command.ManualDifficultyScore);

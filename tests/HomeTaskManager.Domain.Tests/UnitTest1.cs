@@ -6,6 +6,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Domain.Tests;
 
+/// <summary>Core domain invariants: entity validation rules, WeekKey ISO-8601 arithmetic, and TaskInstance lifecycle transitions.</summary>
 public class DomainTests
 {
     [Fact]

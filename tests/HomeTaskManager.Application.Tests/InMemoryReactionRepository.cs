@@ -3,6 +3,7 @@ using HomeTaskManager.Domain.Entities;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>In-memory fake standing in for the EF-backed Reaction store in tests.</summary>
 internal sealed class InMemoryReactionRepository : IReactionRepository
 {
     private readonly List<Reaction> _reactions = [];

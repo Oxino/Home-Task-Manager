@@ -10,6 +10,7 @@ using HomeTaskManager.Application.UseCases.Weeks;
 
 namespace HomeTaskManager.Api.Controllers;
 
+/// <summary>Admin-only: triggers/re-triggers the assignment engine for a week and lists its past runs.</summary>
 [ApiController]
 [Route("api/assignments")]
 public class AssignmentsController(IRunAssignmentEngineUseCase runAssignmentEngineUseCase, IWeekRepository weekRepository, IAssignmentRunRepository assignmentRunRepository) : ControllerBase

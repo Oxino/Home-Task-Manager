@@ -1,5 +1,6 @@
 namespace HomeTaskManager.Application.UseCases.Weeks;
 
+/// <summary>API-facing mirror of <see cref="HomeTaskManager.Domain.Entities.TaskInstance"/>; Original* fields are populated only for carry-over instances (ADR-005).</summary>
 public sealed record TaskInstanceDto(
     Guid Id,
     Guid TaskTemplateId,
@@ -16,6 +17,7 @@ public sealed record TaskInstanceDto(
     int? OriginalWeekNumber = null,
     DateOnly? OriginalDueDate = null);
 
+/// <summary>API-facing mirror of <see cref="HomeTaskManager.Domain.Entities.Week"/>.</summary>
 public sealed record WeekDto(
     Guid Id,
     int Year,

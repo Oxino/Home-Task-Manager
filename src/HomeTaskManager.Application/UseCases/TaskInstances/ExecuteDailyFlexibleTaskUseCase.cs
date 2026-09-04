@@ -11,6 +11,7 @@ namespace HomeTaskManager.Application.UseCases.TaskInstances;
 public sealed record DailyFlexibleExecutionDto(Guid Id, Guid TaskInstanceId, Guid ExecutedByUserId, DateOnly ExecutionDate, DateTime CreatedAt);
 public sealed record ExecuteDailyFlexibleTaskCommand(Guid TaskInstanceId, Guid RequestingUserId, DateOnly ExecutionDate);
 
+/// <summary>Logs one execution of a DailyFlexible task (done on a given day, any number of times per week).</summary>
 public interface IExecuteDailyFlexibleTaskUseCase
 {
     Task<DailyFlexibleExecutionDto> ExecuteAsync(ExecuteDailyFlexibleTaskCommand command, CancellationToken cancellationToken = default);
@@ -39,6 +40,8 @@ public sealed class ExecuteDailyFlexibleTaskUseCase(
         await executionRepository.AddAsync(execution, cancellationToken);
         if (!instance.IsCompleted)
         {
+            // First execution of the week completes the tracked instance and, if days remain in the week,
+            // spawns a fresh placeholder instance for the next day so the task keeps appearing as available.
             instance.SetCompletion(true, week);
             var nextDate = command.ExecutionDate.AddDays(1);
             if (nextDate <= week.EndDate)

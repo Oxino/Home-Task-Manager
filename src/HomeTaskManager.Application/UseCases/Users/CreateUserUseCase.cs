@@ -8,6 +8,7 @@ namespace HomeTaskManager.Application.UseCases.Users;
 
 public sealed record CreateUserCommand(string DisplayName, bool IsAdmin, int AvailabilityPercentage, bool RequestingUserIsAdmin = false);
 
+/// <summary>Creates a household member profile; enforces DisplayName uniqueness (BR-002) and the admin-bootstrap rule (BR-017).</summary>
 public interface ICreateUserUseCase
 {
     Task<UserProfileDto> ExecuteAsync(CreateUserCommand command, CancellationToken cancellationToken = default);

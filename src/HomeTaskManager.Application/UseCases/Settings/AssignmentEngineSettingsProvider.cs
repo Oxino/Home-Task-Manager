@@ -18,6 +18,8 @@ public sealed class AssignmentEngineSettingsProvider(ISystemSettingRepository sy
         var defaults = AssignmentEngineSettings.Default;
         var byKey = (await systemSettingRepository.GetAllAsync(cancellationToken)).ToDictionary(s => s.Key, s => s.Value);
 
+        // SystemSetting stores everything as free-form strings; parse defensively and fall back to the
+        // documented default whenever a key is missing or holds an unparsable value.
         decimal ReadDecimal(string key, decimal fallback) =>
             byKey.TryGetValue(key, out var raw) && decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed)
                 ? parsed

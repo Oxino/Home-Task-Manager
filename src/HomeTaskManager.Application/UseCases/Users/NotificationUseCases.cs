@@ -9,6 +9,7 @@ namespace HomeTaskManager.Application.UseCases.Users;
 public sealed record NotificationDto(Guid Id, Guid UserId, string Title, string Message, string? Link, bool IsRead, DateTime? ReadAt, DateTime CreatedAt, string Importance);
 public sealed record SetNotificationReadCommand(Guid NotificationId, Guid UserId, bool IsRead);
 
+/// <summary>Manages a user's notification center: listing (filtered by their preference), marking read, and pruning read items.</summary>
 public interface INotificationUseCase
 {
     Task<IReadOnlyList<NotificationDto>> ListAsync(Guid userId, CancellationToken cancellationToken = default);
@@ -54,6 +55,7 @@ public sealed class NotificationUseCase(INotificationRepository repository, IUni
 
     private async Task<IReadOnlyList<Notification>> FilterAsync(IReadOnlyList<Notification> notifications, Guid userId, CancellationToken cancellationToken)
     {
+        // "None" hides everything, "Important" keeps only high-severity items, "All" (default) passes everything through.
         var preference = preferencesRepository is null ? "All" : (await preferencesRepository.GetByUserIdAsync(userId, cancellationToken))?.NotificationPreference ?? "All";
         return preference switch
         {

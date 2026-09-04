@@ -2,6 +2,11 @@ using HomeTaskManager.Domain.Exceptions;
 
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>
+/// A household member. Only two roles exist, carried by <see cref="IsAdmin"/> (ADR-010); there is no password/email,
+/// authentication is by profile selection (ADR-003/ADR-006) and uniqueness is enforced on <see cref="DisplayName"/>.
+/// <see cref="AvailabilityPercentage"/> feeds the assignment engine's load-normalization (e.g. a part-time participant).
+/// </summary>
 public sealed class User
 {
     private const int MinimumAvailabilityPercentage = 0;

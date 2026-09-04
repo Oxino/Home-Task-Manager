@@ -2,6 +2,7 @@ using HomeTaskManager.Application.Abstractions.Repositories;
 
 namespace HomeTaskManager.Application.UseCases.Analytics;
 
+/// <summary>Reports each user's completion rate over the last 28 days, used for the analytics dashboard.</summary>
 public interface IGetCompletionStatisticsUseCase
 {
     Task<CompletionStatisticsDto> ExecuteAsync(CancellationToken cancellationToken = default);
@@ -17,6 +18,7 @@ public sealed class GetCompletionStatisticsUseCase(
 {
     public async Task<CompletionStatisticsDto> ExecuteAsync(CancellationToken cancellationToken = default)
     {
+        // Fixed 4-week rolling window (not admin-configurable) for the completion-rate widget.
         var instances = await taskInstanceRepository.GetAssignedSinceAsync(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-28), cancellationToken);
         var users = await userRepository.GetAllAsync(cancellationToken);
 

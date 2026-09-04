@@ -1,5 +1,6 @@
 namespace HomeTaskManager.Domain.Entities;
 
+/// <summary>A single user's reaction (e.g. emoji) to a <see cref="TaskComment"/>.</summary>
 public sealed class Reaction
 {
     public Reaction(Guid commentId, Guid userId, string reactionType)

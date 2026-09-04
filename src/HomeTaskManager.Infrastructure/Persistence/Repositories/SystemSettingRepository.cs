@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeTaskManager.Infrastructure.Persistence.Repositories;
 
+/// <summary>EF Core implementation of <see cref="ISystemSettingRepository"/>.</summary>
 public sealed class SystemSettingRepository(HomeTaskManagerDbContext dbContext) : ISystemSettingRepository
 {
     public Task<SystemSetting?> GetByKeyAsync(string key, CancellationToken cancellationToken = default) =>

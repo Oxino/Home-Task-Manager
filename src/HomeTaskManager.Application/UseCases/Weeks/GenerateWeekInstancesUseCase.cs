@@ -41,6 +41,7 @@ public sealed class GenerateWeekInstancesUseCase(
 
         var activeTemplates = await taskTemplateRepository.GetActiveAsync(cancellationToken);
         var existingInstances = await taskInstanceRepository.GetByWeekAsync(week.Id, cancellationToken);
+        // (Template, PlannedDate) pairs already generated, so re-running this use case for the same week is idempotent.
         var existingPlannedDates = existingInstances
             .Select(instance => (instance.TaskTemplateId, instance.PlannedDate))
             .ToHashSet();
@@ -56,6 +57,9 @@ public sealed class GenerateWeekInstancesUseCase(
                     continue;
                 }
 
+                // Due date depends on frequency: daily/monthly tasks are due the day they're planned;
+                // weekly tasks are due per their configured WeeklyScheduleType offset within the week;
+                // everything else (weekly-flexible) defaults to the end of the week.
                 var dueDate = template.FrequencyType switch
                 {
                     FrequencyType.DailyMandatory or FrequencyType.Monthly => plannedDate,
@@ -89,6 +93,7 @@ public sealed class GenerateWeekInstancesUseCase(
         return new GenerateWeekInstancesResult(WeekMapper.ToDto(week), newInstances.Select(WeekMapper.ToDto).ToList());
     }
 
+    /// <summary>Computes which calendar dates within the week should get an instance, per the template's <see cref="FrequencyType"/>.</summary>
     private async Task<IReadOnlyList<DateOnly>> GetPlannedDatesAsync(
         TaskTemplate template,
         Week week,
@@ -104,6 +109,7 @@ public sealed class GenerateWeekInstancesUseCase(
                 return [week.StartDate];
 
             case FrequencyType.WeeklyFlexible:
+                // DayOfWeek.Sunday = 0 in .NET but should map to the last day of an ISO (Monday-first) week.
                 return template.GetActiveWeekDays()
                     .Select(day => week.StartDate.AddDays(((int)day + 6) % 7))
                     .ToList();
@@ -112,6 +118,7 @@ public sealed class GenerateWeekInstancesUseCase(
                 return GetMonthlyDates(template, week);
 
             case FrequencyType.OneTime:
+                // A one-time task must only ever generate a single instance across its entire lifetime.
                 var alreadyGenerated = await taskInstanceRepository.ExistsForTaskTemplateAsync(template.Id, cancellationToken);
                 return alreadyGenerated ? [] : [week.StartDate];
 
@@ -139,6 +146,7 @@ public sealed class GenerateWeekInstancesUseCase(
 
     private static DateOnly Max(DateOnly first, DateOnly second) => first > second ? first : second;
 
+    /// <summary>Resolves a Monthly template's due day (start/middle/end/specific) within a given month, clamped to the actual number of days in that month.</summary>
     private static DateOnly GetMonthlyDate(TaskTemplate template, DateOnly month)
     {
         var lastDay = DateTime.DaysInMonth(month.Year, month.Month);

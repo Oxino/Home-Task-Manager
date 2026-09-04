@@ -7,6 +7,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies CancelTaskInstanceUseCase's admin-only authorization and closed-week guard.</summary>
 public sealed class CancelTaskInstanceUseCaseTests
 {
     [Fact]

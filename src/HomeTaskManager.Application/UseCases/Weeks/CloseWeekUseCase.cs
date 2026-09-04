@@ -55,10 +55,14 @@ public sealed class CloseWeekUseCase(
             .ToList();
         var templates = (await taskTemplateRepository.GetByIdsAsync(instances.Select(instance => instance.TaskTemplateId).Distinct(), cancellationToken))
             .ToDictionary(template => template.Id);
+        // A WeeklyFlexible task can generate several candidate-day instances; once one of them is completed,
+        // the other same-week instances for that template are no longer needed and must not be carried over.
         var completedFluidTemplates = instances
             .Where(instance => instance.IsCompleted && templates.TryGetValue(instance.TaskTemplateId, out var template) && template.FrequencyType == FrequencyType.WeeklyFlexible)
             .Select(instance => instance.TaskTemplateId)
             .ToHashSet();
+        // ADR-005: only one carry-over instance per template (the earliest unfinished one); already-carried
+        // instances are excluded to avoid carrying a carry-over again across multiple week closures.
         var carryCandidates = unfinishedInstances
             .Where(instance => !instance.IsCarryOver)
             .Where(instance => !completedFluidTemplates.Contains(instance.TaskTemplateId))
@@ -72,6 +76,7 @@ public sealed class CloseWeekUseCase(
 
         if (command.CancelIncompleteTasks)
         {
+            // Admin opted out of carry-over: every unfinished instance is simply cancelled instead of moved forward.
             foreach (var instance in unfinishedInstances)
             {
                 instance.Cancel();
@@ -85,6 +90,9 @@ public sealed class CloseWeekUseCase(
         var carriedOverInstances = new List<TaskInstance>();
         var fullWeek = new WeekKey(command.Year, command.WeekNumber);
         var closedOn = DateOnly.FromDateTime(closedAt);
+        // An "early closure" happens strictly before the ISO week's natural end date (e.g. closing mid-week);
+        // in that case a new segment covering the remainder of the same ISO week is created instead of
+        // jumping straight to next week.
         var isEarlyClosure = closedOn >= week.StartDate && closedOn < week.EndDate;
         Week? nextPeriod = null;
         if (isEarlyClosure)
@@ -118,6 +126,8 @@ public sealed class CloseWeekUseCase(
 
             foreach (var instance in carryCandidates)
             {
+                // Find the earliest free day in the next period for this template, to avoid colliding with
+                // an instance the normal weekly generation may already have created there.
                 var plannedDate = nextPeriod.StartDate;
                 while (!occupiedDates.Add((instance.TaskTemplateId, plannedDate)))
                 {

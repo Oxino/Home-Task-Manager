@@ -8,6 +8,7 @@ using HomeTaskManager.Domain.ValueObjects;
 
 namespace HomeTaskManager.Application.Tests;
 
+/// <summary>Verifies ReassignTaskInstanceUseCase's authorization (admin or assignee) and closed-week guard.</summary>
 public sealed class ReassignTaskInstanceUseCaseTests
 {
     private static async Task<(User Admin, User Owner, User Target, User Other, Week Week, TaskInstance Instance, ReassignTaskInstanceUseCase UseCase, InMemoryNotificationRepository Notifications)> CreateContext(bool closed = false, bool withNotifications = false, bool completed = false)
